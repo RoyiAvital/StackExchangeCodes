@@ -1,0 +1,23 @@
+# Media Files
+# *.png
+# *.jpg
+# *.bmp
+# *.tif
+# *.avi
+# *.mp4
+
+# Documnets
+*.docx
+*.doc
+*.xlsx
+*.xls
+*.pptx
+*.ppt
+*.pdf
+
+# Compilation files:
+*.obj
+*.pdb
+
+# Temporary Files
+.asv
