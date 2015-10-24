@@ -1,5 +1,5 @@
 % Audio Deconvolution
-% See 
+% See http://dsp.stackexchange.com/questions/26433
 
 %% General Parameters and Initialization
 
@@ -63,6 +63,14 @@ mGradientKernel = convmtx(vGradientKernel, numSamples);
 mBlurKernel     = mBlurKernel(1:numSamples, :);
 mGradientKernel = mGradientKernel(1:numSamples, :);
 
+% Enforcing Circulant Matrix (Like DFT Based Convolution)
+mBlurKernel(1, (end - 3):end) = vBlurKernel(1:4);
+mBlurKernel(2, (end - 2):end) = vBlurKernel(1:3);
+mBlurKernel(3, (end - 1):end) = vBlurKernel(1:2);
+mBlurKernel(4, (end - 0):end) = vBlurKernel(1:1);
+
+mGradientKernel(1, end:end) = vGradientKernel(1);
+
 regFactor = 0.02; % Regularization Factor - Lambda
 
 %% Least Squares Solution
@@ -92,13 +100,25 @@ hFigure = figure();
 hAxes   = axes();
 hLineSeries = plot(1:numSamples, [vRefSignal, vLsRestoredSignal, vRegLsRestoredSignal]);
 set(hLineSeries, 'LineWidth', normalLineWidth);
-set(get(hAxes, 'Title'), 'String', ['Restored Signa'], ...
+set(get(hAxes, 'Title'), 'String', ['Restored Signals and the Reference Signal'], ...
     'FontSize', titleFontSize);
 set(get(hAxes, 'XLabel'), 'String', 'Samples Index', ...
     'FontSize', axisFotnSize);
 set(get(hAxes, 'YLabel'), 'String', 'Samples Value', ...
     'FontSize', axisFotnSize);
 hLegend = legend({['Reference Signal'], ['Least Squares Restored Signal'], ['Regularized Least Squares Restored Signal']});
+
+hFigure = figure();
+hAxes   = axes();
+hLineSeries = plot(1:numSamples, [vInputSignal, vLsRestoredSignal, vRegLsRestoredSignal]);
+set(hLineSeries, 'LineWidth', normalLineWidth);
+set(get(hAxes, 'Title'), 'String', ['Restored Signals and the Input Signal'], ...
+    'FontSize', titleFontSize);
+set(get(hAxes, 'XLabel'), 'String', 'Samples Index', ...
+    'FontSize', axisFotnSize);
+set(get(hAxes, 'YLabel'), 'String', 'Samples Value', ...
+    'FontSize', axisFotnSize);
+hLegend = legend({['Input Signal'], ['Least Squares Restored Signal'], ['Regularized Least Squares Restored Signal']});
 
 
 
