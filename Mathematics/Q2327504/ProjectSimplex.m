@@ -2,14 +2,14 @@ function [ vX ] = ProjectSimplex( vY, ballRadius, stopThr )
 % ----------------------------------------------------------------------------------------------- %
 % [ vX ] = ProjectSimplex( vY, ballRadius, stopThr )
 %   Solving the Orthoginal Porjection Problem of the input vector onto the
-%   Simplex Ball using Dual Function and Newtin Iteration.
+%   Simplex Ball using Dual Function and Newton Iteration.
 % Input:
 %   - vY            -   Input Vector.
 %                       Structure: Vector (Column).
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
 %   - ballRadius    -   Ball Radius.
-%                       Sets the Radiuf of the Simplex Ball. For Unit
+%                       Sets the Radius of the Simplex Ball. For Unit
 %                       Simplex set to 1.
 %                       Structure: Scalar.
 %                       Type: 'Single' / 'Double'.
@@ -36,6 +36,8 @@ function [ vX ] = ProjectSimplex( vY, ballRadius, stopThr )
 % TODO:
 %   1.  U.
 % Release Notes:
+%   -   1.0.001     09/05/2017  Royi Avital
+%       *   Renaming 'paramLambda' -> 'paramMu' to match derivation.
 %   -   1.0.000     09/05/2017  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
@@ -46,18 +48,18 @@ TRUE    = 1;
 OFF     = 0;
 ON      = 1;
 
-paramLambda = min(vY) - ballRadius;
+paramMu = min(vY) - ballRadius;
 % The objective functions which its root (The 'paramLambda' which makes it
 % vanish) is the solution
-objFun      = sum( max(vY - paramLambda, 0) ) - ballRadius;
+objFun      = sum( max(vY - paramMu, 0) ) - ballRadius;
 
 while(abs(objFun) > stopThr)
-    objFun      = sum( max(vY - paramLambda, 0) ) - ballRadius;
-    df          = sum(-((vY - paramLambda) > 0)); %<! Derivative of 'objVal' with respect to Lambda
-    paramLambda = paramLambda - (objFun / df); %<! Newton Iteration
+    objFun      = sum( max(vY - paramMu, 0) ) - ballRadius;
+    df          = sum(-((vY - paramMu) > 0)); %<! Derivative of 'objVal' with respect to Mu
+    paramMu = paramMu - (objFun / df); %<! Newton Iteration
 end
 
-vX = max(vY - paramLambda, 0);
+vX = max(vY - paramMu, 0);
 
 
 end
