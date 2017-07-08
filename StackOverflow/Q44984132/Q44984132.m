@@ -1,4 +1,5 @@
-% StackOverflow 44984132
+% StackOverflow Q44984132
+% https://stackoverflow.com/questions/44984132
 % How to calculate weight to minimize variance?
 % Remarks:
 %   1.  sa
