@@ -1,0 +1,107 @@
+% !TeX document-id = {d3b263d9-4ae8-4edf-a203-72d775f66a9e}
+\documentclass[]{article}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{dsfont} % /mathds{}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref} % Hyperlinks
+\usepackage{xcolor} % \colorbox{} & \textcolor{}
+
+%% \usepackage{minted} % Syntax Highlighting (Requires Python)
+%% !TeX TXS-program:compile = txs:///pdflatex/[--shell-escape]
+
+% See https://tex.stackexchange.com/a/78393/1661
+\usepackage[framed, numbered, autolinebreaks, useliterate]{mcode} % Syntax Highlighting MATLAB
+
+% Math Symbols
+% http://www.cs.put.poznan.pl/ksiek/latexmath.html
+
+%\newtheorem{theorem}{Theorem}[section]
+%\newtheorem{corollary}{Corollary}[theorem]
+%\newtheorem*{lemma*}[theorem]{Lemma}
+\newtheorem*{lemma}{Lemma}
+\newtheorem*{remark}{Remark}
+
+\DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\prox}{prox}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\Tr}{Tr}
+\DeclareMathOperator{\cond}{cond}
+\DeclareMathOperator{\chol}{chol}
+
+% Math Commands
+\newcommand{\MyParen}[1]{\left( #1 \right)}
+\newcommand{\MyBrack}[1]{\left\lbrack #1 \right\rbrack}
+\newcommand{\MyBrace}[1]{\left\lbrace #1 \right\rbrace}
+\newcommand{\MyNorm}[2]{{\left\| #1 \right\|}_{#2}}
+\newcommand{\MyNormSqr}[2]{{\left\| #1 \right\|}_{#2}^{2}}
+\newcommand{\MyAbs}[1]{\left| #1 \right|}
+\newcommand{\MyNormTwo}[1]{\MyNorm{#1}{2}}
+\newcommand{\MyNormTwoSqr}[1]{\MyNormSqr{#1}{2}}
+\newcommand{\MyCeil}[1]{\lceil #1 \rceil}
+\newcommand{\MyProd}[2]{\langle #1, #2 \rangle}
+\newcommand{\MyUndBrace}[2]{\underset{#2}{\underbrace{#1}}}
+% \newcommand{\RR}[1]{\mathds{R}^{#1}} % Asaf's Style
+\newcommand{\RR}[1]{\mathbb{R}^{#1}}
+\newcommand{\EE}[1]{\mathbb{E} \MyBrack{#1}}
+
+% Text Commands
+\newcommand{\inlinecode}[1]{\colorbox{lightgray}{\texttt{#1}}}
+
+\begin{document}
+	
+	\section*{Question - Calculate the Optimal Weights which Minimizes Variance}
+	
+	Given $ \MyBrace{ \boldsymbol{{x}_{1}}, \boldsymbol{{x}_{2}}, \ldots, \boldsymbol{{x}_{m}} } $ where $ {x}_{i} \in \RR{n} $ find $ w \in \RR{m} $ which minimized the Variance of $ y $ given by $ y = {w}_{1} \boldsymbol{{x}_{1}} + {w}_{2} \boldsymbol{{x}_{2}} + \cdots + {w}_{m} \boldsymbol{{x}_{m}} $ where $ \forall i \: {w}_{i} \geq 0 $ and $ \sum_{i = 1}^{m} {w}_{i} = 1 $.
+	
+	\begin{remark}
+		The question is given at \href{https://stackoverflow.com/questions/44984132}{Question 44984132 on StackOverflow}.
+	\end{remark}
+	
+	\section*{Answer - Calculate the Optimal Weights which Minimizes Variance}
+	
+	The above can be written as following:
+	
+	\begin{alignat*}{3}
+	\arg \min_{w} 		& \quad && \frac{1}{2} \MyNormTwoSqr{ X w - \frac{1}{m} {e}^{T} X w e } \\
+	\text{subject to} 	& \quad && w \succeq 0 \\
+						& \quad && {e}^{T} w = 1 \\
+	\end{alignat*}
+	
+	Where $ X $ is composed by $ \MyBrace{ \boldsymbol{{x}_{1}}, \boldsymbol{{x}_{2}}, \ldots, \boldsymbol{{x}_{m}} } $ as its columns, $ w = \MyBrack{{w}_{1}, {w}_{2}, \ldots, {w}_{m}}^{T} $ and $ e = \MyBrack{1, 1, \ldots, 1}^{T}, \, e \in \RR{m} $.
+	
+	The above is a Convex Problem where the solution is limited to the Unit Simplex.
+	
+	A method to solve is using \href{https://en.wikipedia.org/wiki/Subgradient_method}{Projected Sub Gradient Method}. The idea is to apply a Sub Gradient step and project the result onto the Unit Simplex.
+	
+	In order to so one have to calculate the following:
+	\begin{itemize}
+		\item The Sub Gradient (Gradient in the case above as the function is smooth) of the Objective Function.
+		\item The Projection onto the unit simplex.
+	\end{itemize}
+	
+	\subsubsection*{The Gradient of the Objective Function}
+	% See https://en.wikipedia.org/wiki/Matrix_calculus for "Denominator Layout"
+	\begin{align*}
+	\frac{\partial }{\partial w} f \MyParen{w} & = \frac{\partial }{\partial w} \MyParen{\frac{1}{2} \MyNormTwoSqr{ X w - \frac{1}{m} {e}^{T} X w e }} && \text{} \\
+	& = \frac{\partial }{\partial w} \MyParen{ X w - \frac{1}{m} {e}^{T} X w e } \frac{\partial }{\partial \MyParen{X w - \frac{1}{m} {e}^{T} X w e}} f \MyParen{w} && \text{} \\
+	& = \MyParen{ {X}^{T} - \frac{1}{m} \frac{\partial }{\partial w} \MyParen{{e}^{T} X w e} } \MyParen{X w - \frac{1}{m} {e}^{T} X w e} && \text{} \\
+	& = \MyParen{ {X}^{T} - \frac{1}{m} {X}^{T} e {e}^{T} } \MyParen{X w - \frac{1}{m} {e}^{T} X w e} && \text{} \\
+	\end{align*}
+	
+	\subsubsection*{The Projection onto the Unit Simplex}
+	There are 2 options to apply this:
+	\begin{itemize}
+		\item Solving the Projection Minimization as done in \href{https://math.stackexchange.com/a/2338491}{MathExchange Answer 2338491}.
+		\item Iteratively projecting onto the Non Negative Half Space and the set of vectors which their sum is $ 1 $.
+	\end{itemize}
+	
+	\begin{remark}
+		The answer (With MATLAB code) is given at \href{https://stackoverflow.com/a/44986301/195787}{Answer 195787 on StackOverflow}.
+	\end{remark}
+	
+	
+\end{document}

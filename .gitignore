@@ -15,6 +15,22 @@
 *.ppt
 *.pdf
 
+## TeX / LaTeX Files
+*.aux
+*.log
+*.synctex*
+*.toc
+*.out
+*.bbl
+*.blg
+*.nav
+*.snm
+*.vrb
+*eps-converted-to.pdf
+
+# MATLAB Files
+*.asv
+
 # Compilation files:
 *.obj
 *.pdb
