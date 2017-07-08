@@ -13,7 +13,7 @@
 *.xls
 *.pptx
 *.ppt
-*.pdf
+#*.pdf
 
 ## TeX / LaTeX Files
 *.aux
