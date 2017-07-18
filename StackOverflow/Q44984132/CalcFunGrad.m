@@ -30,6 +30,7 @@ function [ vG ] = CalcFunGrad( vX, hObjFun, difMode, epsVal )
 %                       Range: (-inf, inf).
 % References
 %   1.  https://en.wikipedia.org/wiki/Finite_difference_coefficient.
+%   2.  https://stackoverflow.com/a/43099198/195787.
 % Remarks:
 %   1.  a
 % TODO:
