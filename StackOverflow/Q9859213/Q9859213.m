@@ -26,7 +26,7 @@ generateFigures = ON;
 
 DISTANCE_TYPE_EUCLIDEAN = 1; %<! L2 Norm
 DISTANCE_TYPE_MANHATTAN = 2; %<! L1 Norm
-DISTANCE_TYPE_CHEBYSHEV = 3; %<! L1 Norm
+DISTANCE_TYPE_CHEBYSHEV = 3; %<! L Infinity Norm
 
 hEuclideanDist = @(vX, vY) sum((vX - vY) .^ 2);
 hManhattanDist = @(vX, vY) sum(abs(vX - vY));
