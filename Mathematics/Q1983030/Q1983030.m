@@ -84,8 +84,6 @@ disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
 disp([' ']);
 
 
-
-
 %% Restore Defaults
 
 % set(0, 'DefaultFigureWindowStyle', 'normal');
