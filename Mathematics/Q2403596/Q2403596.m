@@ -45,7 +45,23 @@ mA = randn([numRows, numCols]);
 vB = randn([numRows, 1]);
 
 
-%% Validate Derivative
+%% Validate Derivative || x ||_{p} - Problem I
+
+vX          = randn([numCols, 1]);
+hNormFun    = @(vX) norm(vX, paramP);
+
+vGNumerical = CalcFunGrad(vX, hNormFun, difMode, epsVal);
+
+% mX = mX * ((1 / paramP) * (sum(abs(vX) .^ paramP) .^ ((1 / paramP) - 1)));
+% vGAnalytic = paramP * mX * vX;
+
+mX          = diag((sum(abs(vX) .^ paramP) .^ ((1 / paramP) - 1)) .* abs(vX) .^ (paramP - 2));
+vGAnalytic  = mX * vX;
+
+disp(['Maximum Deviation Between Analytic and Numerical Derivative - ', num2str( max(abs(vGNumerical - vGAnalytic)) )]);
+
+
+%% Validate Derivative || x ||_{p}^{p} - Problem II
 
 vX          = randn([numCols, 1]);
 hNormFun    = @(vX) sum(abs(vX) .^ paramP);
@@ -59,7 +75,69 @@ vGAnalytic = paramP * mX * vX;
 disp(['Maximum Deviation Between Analytic and Numerical Derivative - ', num2str( max(abs(vGNumerical - vGAnalytic)) )]);
 
 
-%% Solution by CVX
+%% Solution by CVX - Problem II
+
+cvx_begin('quiet')
+    cvx_precision('best');
+    variable vX(numCols)
+    minimize( (0.5 * sum_square(mA * vX - vB)) + (paramLambda * norm(vX, paramP)) )
+cvx_end
+
+disp([' ']);
+disp(['CVX Solution Summary']);
+disp(['The CVX Solver Status - ', cvx_status]);
+disp(['The Optimal Value Is Given By - ', num2str(cvx_optval)]);
+disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
+disp([' ']);
+
+
+%% Solution by Iterative Reweighted Least Squares (IRLS) - Problem I
+
+hObjFun = @(vX) (0.5 * sum((mA * vX - vB) .^ 2)) + (paramLambda * norm(vX, paramP));
+vObjVal = zeros([numIterations, 1]);
+
+mAA = mA.' * mA;
+vAb = mA.' * vB;
+
+vX          = mA \ vB; %<! Initialization by the Least Squares Solution
+vObjVal(1)  = hObjFun(vX);
+
+for ii = 2:numIterations
+    
+    mX = diag((sum(abs(vX) .^ paramP) .^ ((1 / paramP) - 1)) .* abs(vX) .^ (paramP - 2));
+    
+    vX = (mAA + (paramLambda * mX)) \ vAb;
+    
+    vObjVal(ii) = hObjFun(vX);
+end
+
+disp([' ']);
+disp(['Iterative Reweighted Least Squares (IRLS) Solution Summary']);
+disp(['The Optimal Value Is Given By - ', num2str(vObjVal(numIterations))]);
+disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
+disp([' ']);
+
+hFigure     = figure('Position', figPosLarge);
+hAxes       = axes();
+hLineSeries = plot(1:numIterations, [vObjVal, cvx_optval * ones([numIterations, 1])]);
+set(hLineSeries, 'LineWidth', lineWidthNormal);
+set(hLineSeries(2), 'LineStyle', ':');
+set(get(hAxes, 'Title'), 'String', {['Objective Function Value vs. Iteration - Problem I'], ['\lambda = ', num2str(paramLambda), ', p = ', num2str(paramP)]}, ...
+    'FontSize', fontSizeTitle);
+set(get(hAxes, 'XLabel'), 'String', 'Iteration Number', ...
+    'FontSize', fontSizeAxis);
+set(get(hAxes, 'YLabel'), 'String', 'Objective Function Value', ...
+    'FontSize', fontSizeAxis);
+set(hAxes, 'XLim', [1, numIterations]);
+hLegend = ClickableLegend({['IRLS'], ['Optimal Value (CVX)']});
+set(hAxes, 'LooseInset', [0.07, 0.07, 0.07, 0.07]);
+
+if(generateFigures == ON)
+    saveas(hFigure,['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
+end
+
+
+%% Solution by CVX - Problem II
 
 cvx_begin('quiet')
     cvx_precision('best');
@@ -75,7 +153,7 @@ disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
 disp([' ']);
 
 
-%% Solution by Iterative Reweighted Least Squares (IRLS)
+%% Solution by Iterative Reweighted Least Squares (IRLS)  - Problem II
 
 hObjFun = @(vX) (0.5 * sum((mA * vX - vB) .^ 2)) + (paramLambda * sum(abs(vX) .^ paramP));
 vObjVal = zeros([numIterations, 1]);
@@ -106,7 +184,7 @@ hAxes       = axes();
 hLineSeries = plot(1:numIterations, [vObjVal, cvx_optval * ones([numIterations, 1])]);
 set(hLineSeries, 'LineWidth', lineWidthNormal);
 set(hLineSeries(2), 'LineStyle', ':');
-set(get(hAxes, 'Title'), 'String', {['Objective Function Value vs. Iteration'], ['\lambda = ', num2str(paramLambda), ', p = ', num2str(paramP)]}, ...
+set(get(hAxes, 'Title'), 'String', {['Objective Function Value vs. Iteration - Problem II'], ['\lambda = ', num2str(paramLambda), ', p = ', num2str(paramP)]}, ...
     'FontSize', fontSizeTitle);
 set(get(hAxes, 'XLabel'), 'String', 'Iteration Number', ...
     'FontSize', fontSizeAxis);
