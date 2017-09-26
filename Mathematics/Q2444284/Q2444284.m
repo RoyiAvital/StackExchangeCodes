@@ -59,6 +59,11 @@ for kk = 1:dimOrder
     end
 end
 
+% Answer by Greg (https://math.stackexchange.com/a/2444449/33)
+mM = (mP .* mX) - mR;
+mPP = mP .* mM;
+vGAnalytic = (mPP + mPP.') * vX;
+
 disp(['Maximum Deviation Between Analytic and Numerical Derivative - ', num2str( max(abs(vGNumerical - vGAnalytic)) )]);
 
 
