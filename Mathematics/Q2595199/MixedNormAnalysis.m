@@ -2,7 +2,7 @@
 % https://math.stackexchange.com/questions/2595199
 % Proximal Mapping of Least Squares with L1 and L2 Mixed Norm Regularization (Elastic Net)
 % References:
-%   1.  aa
+%   1.  See https://math.stackexchange.com/a/2689627/33.
 % Remarks:
 %   1.  sa
 % TODO:
@@ -28,7 +28,7 @@ paramLam1 = 0.75;
 paramLam2 = 1;
 
 numElements = 2;
-numSamples  = 15;
+numSamples  = 5;
 
 
 %% Generate Data
@@ -39,9 +39,12 @@ vB = zeros([numElements, 1]);
 mB = zeros([numElements, numSamples * numSamples]);
 mX = zeros([numElements, numSamples * numSamples]);
 
+mXX = zeros([numElements, numSamples * numSamples]);
 
 hObjFun = @(vX) (0.5 * sum((vX - vB) .^ 2)) + (paramLam1 * norm(vX, 1)) + (paramLam2 * norm(vX, 2));
-hL2SubGrad = @(vX) (norm(vX, 2) == 0) * (vX ./ (norm(vX, 2) + ((norm(vX, 2) == 0) * 1e-7)));
+
+hSoftThresholdL1 = @(vX, paramLambda) sign(vX) .* max(abs(vX) - paramLambda, 0);
+hSoftThresholdL2 = @(vX, paramLambda) vX .* (1 - (paramLambda / (max(norm(vX, 2), paramLambda))));
 
 
 %% Solution by CVX
@@ -64,14 +67,18 @@ for ii = 1:numSamples
         mB(:, itrIdx) = vB;
         mX(:, itrIdx) = vX;
         
+        % Analytic Solution
+        mXX(:, itrIdx) = hSoftThresholdL2(hSoftThresholdL1(vB, paramLam1), paramLam2);
+        % mXX(:, itrIdx) = hSoftThresholdL1(hSoftThresholdL2(vB, paramLam2), paramLam1); %<! Wrong (Order matters)
+        
         disp(['Finished Sample #', num2str(itrIdx, figureCounterSpec), ' Ouf of ', num2str(numSamples * numSamples)]);
     end
     
     
 end
 
-vBB = mB(1, :) ./ mB(2, :);
-vXX = mX(1, :) ./ mX(2, :);
+mD = mX - mXX;
+max(abs(mD(:)))
 
 
 %% Display Result

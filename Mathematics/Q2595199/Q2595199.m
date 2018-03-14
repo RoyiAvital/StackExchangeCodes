@@ -72,6 +72,12 @@ for ii = 2:numIterations
     
 end
 
+
+%% Solution by ADMM
+
+
+%% Display Reesults
+
 hFigure     = figure('Position', figPosLarge);
 hAxes       = axes();
 hLineSeries = plot([1:numIterations], [cvx_optval * ones([numIterations, 1]), vObjValSgm]);
@@ -89,23 +95,6 @@ set(hAxes, 'LooseInset', [0.07, 0.07, 0.07, 0.07]);
 if(generateFigures == ON)
     saveas(hFigure,['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
 end
-
-
-
-vX = SolveLsNormConst(mA, vB, normConst);
-
-objVal = sum((mA * vX - vB) .^ 2);
-
-disp([' ']);
-disp(['Projected Gradient Solution Summary']);
-disp(['The Optimal Value Is Given By - ', num2str(objVal)]);
-disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
-disp([' ']);
-
-
-%% Solution by Proximal Gradient Method
-
-
 
 
 %% Restore Defaults
