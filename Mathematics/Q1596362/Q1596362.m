@@ -1,5 +1,5 @@
 % Mathematics Q1596362
-% https://math.stackexchange.com/questions/2403596
+% https://math.stackexchange.com/questions/1596362
 % Linear Least Squares with Linear Equality Constraints - Iterative Solver
 % References:
 %   1.  aa
@@ -72,7 +72,7 @@ vObjVal = zeros([numIterations, 1]);
 mAA = mA.' * mA;
 vAb = mA.' * vB;
 
-vX          = mA \ vB; %<! Initialization by the Least Squares Solution
+vX          = mB \ vD; %<! Initialization by the Least Squares Solution of the Constraint
 vX          = hProjFun(vX);
 vObjVal(1)  = hObjFun(vX);
 
@@ -85,7 +85,7 @@ for ii = 2:numIterations
 end
 
 disp([' ']);
-disp(['Iterative Reweighted Least Squares (IRLS) Solution Summary']);
+disp(['Projected Gradient Descent Solution Summary']);
 disp(['The Optimal Value Is Given By - ', num2str(vObjVal(numIterations))]);
 disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
 disp([' ']);
