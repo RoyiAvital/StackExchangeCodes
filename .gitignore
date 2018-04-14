@@ -30,6 +30,7 @@
 
 # MATLAB Files
 *.asv
+*.m~
 
 # Compilation files:
 *.obj
