@@ -31,7 +31,19 @@ paramLambda = 4.0;
 
 numIterations = 1000;
 
-methodIdx = 0;
+cSolversFun = {@(mA, vB, paramLambda, numIterations) SolveLsL1ComplexSubGrad(mA, vB, paramLambda, numIterations); ...
+    @(mA, vB, paramLambda, numIterations) SolveLsL1ComplexRealSubGrad(mA, vB, paramLambda, numIterations); ...
+    @(mA, vB, paramLambda, numIterations) SolveLsL1ComplexPgm(mA, vB, paramLambda, numIterations); ...
+    @(mA, vB, paramLambda, numIterations) SolveLsL1ComplexRealPgm(mA, vB, paramLambda, numIterations); ...
+    @(mA, vB, paramLambda, numIterations) SolveLsL1ComplexAdmm(mA, vB, paramLambda, numIterations); ...
+    @(mA, vB, paramLambda, numIterations) SolveLsL1ComplexIrls(mA, vB, paramLambda, numIterations); ...
+    @(mA, vB, paramLambda, numIterations) SolveLsL1ComplexCd(mA, vB, paramLambda, numIterations); ...
+    @(mA, vB, paramLambda, numIterations) SolveLsL1ComplexRealCd(mA, vB, paramLambda, numIterations);};
+
+cMethodString = {['Sub Gradient Method']; ['Sub Gradient Method - Real Domain']; ...
+    ['Proximal Gradient Method']; ['Proximal Gradient Method - Real Domain']; ...
+    ['ADMM Method']; ['Fixed Point Iteration (IRLS) Method']; ...
+    ['Coordinate Descent (CD) Method']; ['Coordinate Descent (CD) Method - Real Domain']};
 
 
 %% Generate Data
@@ -60,95 +72,24 @@ toc();
 % disp([' ']);
 
 
-%% Sub Gradient Method
+%% Method Analysis 
 
-methodIdx   = methodIdx + 1;
-methodName  = ['Sub Gradient Method'];
+numMethods = length(cSolversFun);
 
-hRunTime = tic();
-[vX, mX] = SolveLsL1ComplexSubGrad(mA, vB, paramLambda, numIterations);
-runTime = toc(hRunTime);
-
-cMethodString{methodIdx}    = methodName;
-vRunTime(methodIdx)         = runTime;
-mErrorNorm(:, methodIdx)    = hCalcErrorNorm(mX, vXCvx);
-mObjFunVal(:, methodIdx)    = hCalcObjFunVal(mX);
+vRunTime = zeros([numMethods, 1]);
+mErrorNorm = zeros([numIterations, numMethods]);
+mObjFunVal = zeros([numIterations, numMethods]);
 
 
-%% Sub Gradient Method - Real Domain
-
-methodIdx   = methodIdx + 1;
-methodName  = ['Sub Gradient Method - Real Domain'];
-
-hRunTime = tic();
-[vX, mX] = SolveLsL1ComplexRealSubGrad(mA, vB, paramLambda, numIterations);
-runTime = toc(hRunTime);
-
-cMethodString{methodIdx}    = methodName;
-vRunTime(methodIdx)         = runTime;
-mErrorNorm(:, methodIdx)    = hCalcErrorNorm(mX, vXCvx);
-mObjFunVal(:, methodIdx)    = hCalcObjFunVal(mX);
-
-
-%% Proximal Gradient Method
-
-methodIdx   = methodIdx + 1;
-methodName  = ['Proximal Gradient Method'];
-
-hRunTime = tic();
-[vX, mX] = SolveLsL1ComplexPgm(mA, vB, paramLambda, numIterations);
-runTime = toc(hRunTime);
-
-cMethodString{methodIdx}    = methodName;
-vRunTime(methodIdx)         = runTime;
-mErrorNorm(:, methodIdx)    = hCalcErrorNorm(mX, vXCvx);
-mObjFunVal(:, methodIdx)    = hCalcObjFunVal(mX);
-
-
-%% Proximal Gradient Method - Real Domain
-
-methodIdx   = methodIdx + 1;
-methodName  = ['Proximal Gradient Method - Real Domain'];
-
-hRunTime = tic();
-[vX, mX] = SolveLsL1ComplexRealPgm(mA, vB, paramLambda, numIterations);
-runTime = toc(hRunTime);
-
-cMethodString{methodIdx}    = methodName;
-vRunTime(methodIdx)         = runTime;
-mErrorNorm(:, methodIdx)    = hCalcErrorNorm(mX, vXCvx);
-mObjFunVal(:, methodIdx)    = hCalcObjFunVal(mX);
-
-
-%% Alternating Direction Method of Multipliers (ADMM) Method
-
-methodIdx   = methodIdx + 1;
-methodName  = ['ADMM Method'];
-
-hRunTime = tic();
-[vX, mX] = SolveLsL1ComplexAdmm(mA, vB, paramLambda, numIterations);
-% [vX, mX] = SolveLsL1Admm(mA, vB, paramLambda, numIterations);
-runTime = toc(hRunTime);
-
-cMethodString{methodIdx}    = methodName;
-vRunTime(methodIdx)         = runTime;
-mErrorNorm(:, methodIdx)    = hCalcErrorNorm(mX, vXCvx);
-mObjFunVal(:, methodIdx)    = hCalcObjFunVal(mX);
-
-
-%% Fixed Point Iteration Method (IRLS)
-
-methodIdx   = methodIdx + 1;
-methodName  = ['Fixed Point Iteration (IRLS) Method'];
-
-hRunTime = tic();
-[vX, mX] = SolveLsL1ComplexIrls(mA, vB, paramLambda, numIterations);
-runTime = toc(hRunTime);
-
-cMethodString{methodIdx}    = methodName;
-vRunTime(methodIdx)         = runTime;
-mErrorNorm(:, methodIdx)    = hCalcErrorNorm(mX, vXCvx);
-mObjFunVal(:, methodIdx)    = hCalcObjFunVal(mX);
+for ii = 1:numMethods
+    hRunTime = tic();
+    [vX, mX] = cSolversFun{ii}(mA, vB, paramLambda, numIterations);
+    runTime = toc(hRunTime);
+    
+    vRunTime(ii)         = runTime;
+    mErrorNorm(:, ii)    = hCalcErrorNorm(mX, vXCvx);
+    mObjFunVal(:, ii)    = hCalcObjFunVal(mX);
+end
 
 
 %% Display Results

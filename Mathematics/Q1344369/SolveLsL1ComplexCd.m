@@ -1,10 +1,8 @@
-function [ vX, mX ] = SolveLsL1ComplexRealSubGrad( mA, vB, lambdaFctr, numIterations )
+function [ vX, mX ] = SolveLsL1ComplexCd( mA, vB, lambdaFctr, numIterations )
 % ----------------------------------------------------------------------------------------------- %
-%[ vX, mX ] = SolveLsL1ComplexRealSubGrad( mA, vB, lambdaFctr, numIterations )
-% Solves the 0.5 * || A x - b ||_2 + \lambda || x ||_1 problem using Sub
-% Gradient Method. The model allows A, b and x to be Complex. This
-% algorithm solves the problem by transforming the problem into the Real
-% Domain.
+%[ vX, mX ] = SolveLsL1ComplexPgm( mA, vB, lambdaFctr, numIterations )
+% Solves the 0.5 * || A x - b ||_2 + \lambda || x ||_1 problem using
+% Coordinate Descent Method. The model allows A, b and x to be Complex.
 % Input:
 %   - mA                -   Model Matrix.
 %                           The model matrix.
@@ -32,9 +30,9 @@ function [ vX, mX ] = SolveLsL1ComplexRealSubGrad( mA, vB, lambdaFctr, numIterat
 %                           Type: 'Single' / 'Double'.
 %                           Range: (-inf, inf).
 % References
-%   1.  Wikipedia Sub Gradient Method - https://en.wikipedia.org/wiki/Subgradient_method.
+%   1.  Wikipedia Coordinate Descent Method - https://en.wikipedia.org/wiki/Coordinate_descent.
 % Remarks:
-%   1.  A
+%   1.  Coordienat Descent is basically Steepest Descnt in L1 Norm.
 % Known Issues:
 %   1.  A
 % TODO:
@@ -44,44 +42,49 @@ function [ vX, mX ] = SolveLsL1ComplexRealSubGrad( mA, vB, lambdaFctr, numIterat
 %       *   First realease version.
 % ----------------------------------------------------------------------------------------------- %
 
-% vX  = mAA \ vAb;
+vANorm = sum(mA .* conj(mA), 1);
+numElements = size(mA, 2); %<! Size of solution
+
 vX  = pinv(mA) * vB; %<! Dealing with "Fat Matrix"
 
-numRows = size(vX, 1);
-
-% paramAlphaBase = 2 / (1.05 * (norm(mA, 2) ^ 2));
-
-mB = real(mA);
-mC = imag(mA);
-vC = real(vB);
-vD = imag(vB);
-vY = real(vX);
-vZ = imag(vX);
-
-mD = [mB, -mC; mC, mB];
-vE = [vC; vD];
-vW = [vY; vZ];
-
-vDE = mD.' * vE;
-mDD = mD.' * mD;
-
-paramAlphaBase = 2 / (1.05 * (norm(mD, 2) ^ 2)); 
-
-vCmplxNrm = zeros([(numRows * 2), 1]);
-
-mX = zeros([numRows, numIterations]);
+mX = zeros([size(vX, 1), numIterations]);
 mX(:, 1) = vX;
 
 for ii = 2:numIterations
-    vCmplxNrm(:)    = repmat(sqrt(sum(reshape((vW .* vW), [numRows, 2]), 2)), [2, 1]);
-    vWGrad          = (mDD * vW) - vDE + (lambdaFctr * (vW ./ vCmplxNrm));
     
-    paramAlpha  = paramAlphaBase / sqrt(ii);
-    vW          = vW - (paramAlpha * vWGrad);
+    for jj = 1:numElements
+         vA = mA(:, jj);
+         colNormSqr = vANorm(jj);
+         vExcCoord = [1:jj - 1, jj + 1:numElements];
+         
+         vR = vB - (mA(:, vExcCoord) * vX(vExcCoord));
+         vBeta = vA' * vR;
+         
+         vX(jj) = ProxL1(vBeta, lambdaFctr) / colNormSqr;
+    end
     
-    vX = vW(1:numRows) + (1i * vW((numRows + 1):end));
     mX(:, ii) = vX;
+    
 end
+
+
+end
+
+
+function [ vX ] = ProxL1( vX, lambdaFactor )
+
+% Soft Thresholding - Complex Domain -> Keep Phase, Soft Threshold the
+% Modulus
+
+% vXAbs   = abs(vX);
+% vXPhase = angle(vX);
+% 
+% vX = max(vXAbs - lambdaFactor, 0) .* exp(1i * vXPhase);
+
+vXAbs = abs(vX);
+
+vX              = (vX ./ vXAbs) .* max((vXAbs - lambdaFactor), 0);
+vX(vXAbs == 0)  = 0;
 
 
 end

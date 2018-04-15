@@ -1,10 +1,10 @@
-function [ vX, mX ] = SolveLsL1ComplexRealPgm( mA, vB, lambdaFctr, numIterations )
+function [ vX, mX ] = SolveLsL1ComplexRealCd( mA, vB, lambdaFctr, numIterations )
 % ----------------------------------------------------------------------------------------------- %
 %[ vX, mX ] = SolveLsL1ComplexPgm( mA, vB, lambdaFctr, numIterations )
 % Solves the 0.5 * || A x - b ||_2 + \lambda || x ||_1 problem using
-% Proximal Gradient Method. The model allows A, b and x to be Complex. This
-% algorithm solves the problem by transforming the problem into the Real
-% Domain.
+% Coordinate Descent Method. The model allows A, b and x to be Complex.
+% This algorithm solves the problem by transforming the problem into the
+% Real Domain.
 % Input:
 %   - mA                -   Model Matrix.
 %                           The model matrix.
@@ -32,9 +32,13 @@ function [ vX, mX ] = SolveLsL1ComplexRealPgm( mA, vB, lambdaFctr, numIterations
 %                           Type: 'Single' / 'Double'.
 %                           Range: (-inf, inf).
 % References
-%   1.  Wikipedia Proximal Gradient Method - https://en.wikipedia.org/wiki/Proximal_gradient_method.
+%   1.  Wikipedia Coordinate Descent Method - https://en.wikipedia.org/wiki/Coordinate_descent.
 % Remarks:
-%   1.  A
+%   1.  Coordienat Descent is basically Steepest Descnt in L1 Norm.
+%   2.  This implementation, using transformation into Real Domain, does
+%       Coordinate Descent in 2 coordinates (jj, jj + numElements) which
+%       are tied due to the Complex Norm. Basically generalizing the
+%       solution in the Complex - Real PGM.
 % Known Issues:
 %   1.  A
 % TODO:
@@ -44,7 +48,6 @@ function [ vX, mX ] = SolveLsL1ComplexRealPgm( mA, vB, lambdaFctr, numIterations
 %       *   First realease version.
 % ----------------------------------------------------------------------------------------------- %
 
-% vX  = mAA \ vAb;
 vX  = pinv(mA) * vB; %<! Dealing with "Fat Matrix"
 
 numRows = size(vX, 1);
@@ -56,22 +59,31 @@ vW = [real(vX); imag(vX)];
 
 % 0.5 * || mB * vZ - vC ||^2 + g(vZ)
 
-mBB = mB.' * mB;
-vBC = mB.' * vC;
+vBNorm = sum(mB .* conj(mB), 1);
+numElements = size(mB, 2); %<! Size of solution
+numElements = numElements / 2;
 
-paramAlphaBase = 2 / (1.05 * (norm(mA, 2) ^ 2));
-
-mX = zeros([numRows, numIterations]);
-mX(:, 1) = vW(1:numRows) + (1i * vW((numRows + 1):end));
+mX = zeros([size(vX, 1), numIterations]);
+mX(:, 1) = vX;
 
 for ii = 2:numIterations
-    vWGrad      = (mBB * vW) - vBC;
     
-    paramAlpha  = paramAlphaBase / sqrt(ii - 1);
-    vW          = ProxBlockL2(vW - (paramAlpha * vWGrad), paramAlpha * lambdaFctr);
+    for jj = 1:numElements
+         vB = mB(:, [jj, jj + numElements]);
+         colNormSqr = vBNorm(jj);
+         
+         vExcCoord = [1:(jj - 1), (jj + 1):numElements, (numElements + 1):(numElements + jj - 1), (numElements + jj + 1):(numElements + numElements)];
+         
+         vR = vC - (mB(:, vExcCoord) * vW(vExcCoord));
+         vBeta = vB' * vR;
+         
+         % vW([jj, jj + numElements]) = ProxBlockL2(vBeta / colNormSqr, lambdaFctr / colNormSqr);
+         vW([jj, jj + numElements]) = ProxBlockL2(vBeta, lambdaFctr) / colNormSqr;
+    end
     
     vX = vW(1:numRows) + (1i * vW((numRows + 1):end));
     mX(:, ii) = vX;
+    
 end
 
 
