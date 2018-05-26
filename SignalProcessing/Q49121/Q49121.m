@@ -1,6 +1,6 @@
 % StackExchange Signal Processing Q49121
 % https://dsp.stackexchange.com/questions/49121/
-% Finding the best Gaussian Smoothing Kernel to Minimize the Discrepancy Between Two Images
+% Finding the Best Gaussian Smoothing Kernel to Minimize the Discrepancy Between Two Images
 % References:
 %   1.  aa
 % Remarks:
