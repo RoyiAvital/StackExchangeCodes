@@ -97,7 +97,7 @@ mOGaussianRef = conv2(PadArrayCircular(mI, kernelRadius), mGaussianKernel, 'vali
 mOLogRef = conv2(PadArrayCircular(mI, kernelRadius), mLog, 'valid');
 
 % Convolution in Frequency Domain
-% Padding and centering of the Kernel
+% Padding and centering of the Kernel (To match Circular Boundary Conditions)
 mGaussianKernel(numRows, numCols) = 0;
 mGaussianKernel = circshift(mGaussianKernel, [-kernelRadius, -kernelRadius]);
 
