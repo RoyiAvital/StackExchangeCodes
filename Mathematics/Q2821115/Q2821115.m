@@ -43,7 +43,7 @@ funTranformation = root(funCdf - varU, varX);
 %% Simulation Parameters
 
 numSamples = 1e6;
-paramTheta = 0.3;
+paramTheta = 0.99;
 
 gridSamplesData     = 100;
 gridSamplesTheta    = 200;
@@ -73,6 +73,7 @@ for ii = 1:gridSamplesTheta
 end
 
 paramThetaEst = fzero(hObjFun, 0);
+paramThetaEst = min(max(paramThetaEst, -1), 1);
 
 
 %% Display Results
