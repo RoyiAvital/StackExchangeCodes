@@ -25,7 +25,6 @@ generateFigures     = ON;
 
 numRows     = 5;
 ballRadius  = 2.9;
-stopThr     = 1e-6;
 
 
 %% Generate Data
@@ -55,10 +54,9 @@ disp(['The Optimal Argument Is Given By - [ ', num2str(vXCvx.'), ' ]']);
 disp([' ']);
 
 
-%% Solution by Dual Function and Newton Iteration
+%% Solution by Dual Function / KKT Conditions
 
-vX = ProjectL1Ball123(vY, ballRadius, vLowerBound, vUpperBound);
-% vX = ProjectL1BallOrg(vY, ballRadius, stopThr);
+vX = ProjectL1Ball(vY, ballRadius, vLowerBound, vUpperBound);
 
 disp([' ']);
 disp(['Dual Function Solution Summary']);

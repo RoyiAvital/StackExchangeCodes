@@ -52,9 +52,20 @@ TRUE    = 1;
 OFF     = 0;
 ON      = 1;
 
+DEBUG_MODE = OFF;
+
 paramLambda     = 0; %<! Initialization value
 
-if(sum(min(abs(vLowerBound), abs(vUpperBound))) > ballRadius)
+% Check feasibility of the problem
+minSum = 0;
+for ii = 1:size(vY, 1)
+    if(sign(vLowerBound(ii)) == sign(vUpperBound(ii)))
+        % Zero isn't within the boundary
+        minSum = minSum + min(abs(vLowerBound(ii)), abs(vUpperBound(ii)));
+    end
+end
+
+if(minSum > ballRadius)
     % The problem is infeasible
     vX = mean([vLowerBound, vUpperBound], 2);
     return;
