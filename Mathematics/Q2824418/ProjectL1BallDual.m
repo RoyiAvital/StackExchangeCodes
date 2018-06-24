@@ -34,7 +34,7 @@ function [ vX ] = ProjectL1BallDual( vY, ballRadius, vLowerBound, vUpperBound )
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
 % References
-%   1.  https://math.stackexchange.com/a/2829935/33.
+%   1.  https://math.stackexchange.com/a/2830242/33.
 % Remarks:
 %   1.  S
 % TODO:
