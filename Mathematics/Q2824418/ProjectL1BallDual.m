@@ -1,8 +1,8 @@
-function [ vX ] = ProjectL1Ball( vY, ballRadius, vLowerBound, vUpperBound )
+function [ vX ] = ProjectL1BallDual( vY, ballRadius, vLowerBound, vUpperBound )
 % ----------------------------------------------------------------------------------------------- %
 % [ vX ] = ProjectL1Ball( vY, ballRadius, vLowerBound, vUpperBound )
 %   Solving the Orthogonal Porjection Problem of the input vector onto the
-%   L1 Ball with Box Constraints using KKT Conditions.
+%   L1 Ball with Box Constraints using Dual Function.
 % Input:
 %   - vY            -   Input Vector.
 %                       Structure: Vector (Column).
@@ -36,9 +36,7 @@ function [ vX ] = ProjectL1Ball( vY, ballRadius, vLowerBound, vUpperBound )
 % References
 %   1.  https://math.stackexchange.com/a/2829935/33.
 % Remarks:
-%   1.  Solution is based on the trick || x ||_{1} = sign(x)^T * x. Hence
-%       reformulating the problem for easy solution.
-%   2.  Boundaries must be updated to validate the Trick for the solution.
+%   1.  S
 % TODO:
 %   1.  U.
 % Release Notes:
@@ -71,32 +69,11 @@ if(minSum > ballRadius)
     return;
 end
 
-
-% The objective functions which its root (The 'paramLambda' which makes it
-% vanish) is the solution
-
-% The vector vS should be vS = sign(vX). Using some basic logic the sign of
-% the solution could be infered without having it explicitly. By default it
-% is given by the initialization
-vS = sign(vY);
-
-for ii = 1:size(vY, 1)
-    if(sign(vLowerBound(ii)) == sign(vUpperBound(ii)))
-        vS(ii) = sign(vLowerBound(ii));
-    elseif(sign(vY(ii)) == sign(vLowerBound(ii)))
-        % Updating boundaries to make sure the solution for vX has the
-        % correct sign.
-        vUpperBound(ii) = 0;
-    elseif(sign(vY(ii)) == sign(vUpperBound(ii)))
-        % Updating boundaries to make sure the solution for vX has the
-        % correct sign.
-        vLowerBound(ii) = 0;
-    end
-    
-end
-
-hProjFun    = @(vX) min(max(vX, vLowerBound), vUpperBound); %<! Validated projection function
-hObjFun     = @(paramLambda) (vS.' * hProjFun(vY - (paramLambda * vS))) - ballRadius; %<! Objective function
+% The dual objective function which should be maximized to find the optimal
+% 'paramLambda'.
+% The functios is negated as we want to maximize while using
+% MATLAB's minimization function
+hObjFun = @(paramLambda) -ObjectiveDualFunction(vY, ballRadius, vLowerBound, vUpperBound, paramLambda); %<! Objective function
 
 if(DEBUG_MODE == ON)
     numSamples = 1000;
@@ -105,19 +82,55 @@ if(DEBUG_MODE == ON)
     vObjVal         = zeros([numSamples, 1]);
     
     for ii = 1:numSamples
-        vObjVal(ii) = (vS.' * hProjFun(vY - (vParamLambda(ii) * vS))) - ballRadius;
+        vObjVal(ii) = hObjFun(vParamLambda(ii));
     end
     
     figure();
     plot(vParamLambda, vObjVal);
 end
 
-paramLambda = fzero(hObjFun, paramLambda); %<! Objective Function isn't smooth hence can't use Newotin Method
+paramLambda = fminsearch(hObjFun, paramLambda); %<! Objective Function isn't smooth hence can't use Newton Method
 paramLambda = max(paramLambda, 0);
 
 % Solution as derived for the updated forumaltion of the problem.
-vX = hProjFun(vY - (paramLambda * vS));
+[~, vX] = ObjectiveDualFunction(vY, ballRadius, vLowerBound, vUpperBound, paramLambda);
 
 
 end
+
+
+function [ valObj, vX ] = ObjectiveDualFunction( vY, ballRadius, vL, vU, paramLambda )
+
+vX      = zeros([size(vY, 1), 1]);
+
+for ii = 1:size(vY, 1)
+    
+    if(sign(vL(ii)) == sign(vU(ii)))
+        valX = ProjBoxFunction(vY(ii) - (paramLambda * sign(vL(ii))), vL(ii), vU(ii));
+    elseif(sign(vY(ii)) == sign(vL(ii)))
+        % Implictily vL(ii) <= 0, vU(ii) >= 0 and vY(ii) <= 0
+        valX = ProjBoxFunction(vY(ii) + paramLambda, vL(ii), 0); %<! Making sure sign of valX is non positive
+    elseif(sign(vY(ii)) == sign(vU(ii)))
+        % Implictily vU(ii) >= 0, vL(ii) <= 0 and vY(ii) >= 0
+        valX = ProjBoxFunction(vY(ii) - paramLambda, 0, vU(ii)); %<! Making sure sign of valX is non negative
+    end
+    
+    vX(ii) = valX;
+    
+end
+
+valObj = (0.5 * sum((vX - vY) .^ 2)) + (paramLambda * (sum(abs(vX)) - ballRadius));
+
+
+
+end
+
+
+function [ outVal ] = ProjBoxFunction( valIn, valL, valU )
+
+outVal = min(max(valIn, valL), valU);
+
+
+end
+
 
