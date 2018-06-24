@@ -122,7 +122,6 @@ end
 valObj = (0.5 * sum((vX - vY) .^ 2)) + (paramLambda * (sum(abs(vX)) - ballRadius));
 
 
-
 end
 
 
