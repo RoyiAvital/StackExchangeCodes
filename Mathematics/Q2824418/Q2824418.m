@@ -8,6 +8,8 @@
 % TODO:
 % 	1.  ds
 % Release Notes
+% - 1.2.000     28/06/2018
+%   *   Added Projected Sub Gradient Method.
 % - 1.1.000     24/06/2018
 %   *   Added Dual Function solver.
 %   *   Added Objective Function value.
@@ -28,6 +30,9 @@ generateFigures     = ON;
 
 numRows     = 5;
 ballRadius  = 2.9;
+
+numIterations   = 1000;
+stepSize        = 1e-5;
 
 
 %% Generate Data
@@ -81,12 +86,27 @@ disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
 disp([' ']);
 
 
+%% Solution by Projected Gradient Descent
+
+for ii = 1:numIterations
+    vX = vX - (stepSize * (vX - vY));
+    vX = ProjectL1Ball(vX, ballRadius, -inf([numRows, 1]), inf([numRows, 1]));
+    vX = max(min(vX, vUpperBound), vLowerBound);
+end
+
+disp([' ']);
+disp(['Projected Sub Gradient Solution Summary']);
+disp(['The Optimal Value Is Given By - ', num2str(hObjFun(vX))]);
+disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
+disp([' ']);
+
+
 %% Display Results
 
 disp([' ']);
 disp(['CVX Solution L1 Norm - ', num2str(norm(vXCvx, 1))]);
 disp(['KKT Function Solution L1 Norm - ', num2str(norm(vX, 1))]);
-disp(['Solutions Difference L1 Norn - ', num2str(norm(vXCvx - vX, 1))]);
+disp(['Solutions Difference L1 Norm - ', num2str(norm(vXCvx - vX, 1))]);
 disp([' ']);
 
 
