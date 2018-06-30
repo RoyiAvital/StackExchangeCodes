@@ -35,7 +35,7 @@ refSignalEndIdx     = refSignalStartIdx + 2000 - 1;
 
 %% Load & Generate Data
 
-[vA, aSamplingRate] = audioread('Toto - Africa.wav');
+[vA, samplingRate] = audioread('Toto - Africa.wav');
 
 vTestSignal = vA(testSignalStartIdx:testSignalEndIdx);
 vRefSignal  = vA(refSignalStartIdx:refSignalEndIdx);
@@ -52,12 +52,12 @@ numSamplesRefSignal     = size(vRefSignal, 1);
 vCrossCorrelationVal            = zeros([numSamplesTestSignal - numSamplesRefSignal + 1, 1]);
 vCrossCorrelationNormalizedVal  = zeros([numSamplesTestSignal - numSamplesRefSignal + 1, 1]);
 
-vRefSignalNorm = norm(vRefSignal);
+refSignalNorm = norm(vRefSignal);
 
 for ii = 1:size(vCrossCorrelationVal, 1)
     vTestSignalSamples                  = vTestSignal(ii:(ii + numSamplesRefSignal - 1));
     vCrossCorrelationVal(ii)            = sum(vTestSignalSamples .* vRefSignal);
-    vCrossCorrelationNormalizedVal(ii)  = vCrossCorrelationVal(ii) / (vRefSignalNorm * norm(vTestSignalSamples));
+    vCrossCorrelationNormalizedVal(ii)  = vCrossCorrelationVal(ii) / (refSignalNorm * norm(vTestSignalSamples));
 end
 
 
