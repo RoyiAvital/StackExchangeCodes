@@ -90,7 +90,27 @@ disp(['Maximum Absolute Error Between Matrix Form to Convolution (Horizontal Der
 
 mDDh    = mDh.' * mDh;
 mDDv    = mDv.' * mDv;
-mDD     = mDDh + mDDv;
+mDD     = mDDh + mDDv; %<! Laplacian
+
+% The following are equivalent:
+% mO = reshape(mDD * mI(:), numRows, numCols);
+% mO = conv2(conv2(mI, vDx, 'valid'), vDx(end:-1:1), 'full') + conv2(conv2(mI, vDy, 'valid'), vDy(end:-1:1), 'full');
+% Pay attnetion that in real Laplacian we would apply convolution twice
+% while in the above we apply its Adjoint (Correlation) hence the filter is
+% practically [-1, 2, -1] while for Laplacian it is [1, -2, 1].
+% In parts:
+% mO = reshape(mDDh * mI(:), numRows, numCols);
+% mO = conv2(conv2(mI, vDx, 'valid'), vDx(end:-1:1), 'full');
+% mO = reshape(mDDv * mI(:), numRows, numCols);
+% mO = conv2(conv2(mI, vDy, 'valid'), vDy(end:-1:1), 'full');
+
+% Verification Code:
+% mII         = speye(numPixels);
+% paramLambda = 0.5;
+% mXRef       = reshape((mII + (paramLambda * mDD)) * mI(:), numRows, numCols);
+% mX          = mI + (paramLambda * CalcImageLaplacian(mI));
+% mE          = mXRef - mX;
+% max(abs(mE(:)))
 
 
 %% Analysis
@@ -104,7 +124,6 @@ for ii = 1:length(vParamLambda)
     mO(:, :, ii) = reshape((mII + (paramLambda * mDD)) \ ((paramLambda * mDD * mI(:)) + vB), numRows, numCols);
 end
 toc();
-
 
 
 %% Display Results
