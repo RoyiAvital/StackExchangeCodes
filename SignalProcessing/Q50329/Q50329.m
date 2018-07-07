@@ -63,6 +63,9 @@ tic();
 colShift = 0;
 for ii = 1:(numPixels - numRows)
     if(mod(ii + colShift, numRows) == 0)
+        % Take care of cases where the pixel is the last pixel in the
+        % column (Resided on the lasr row of the image hence no valid
+        % vertical derivative).
         colShift = colShift + 1;
     end
     mDv(ii, ii + colShift) = -1;
