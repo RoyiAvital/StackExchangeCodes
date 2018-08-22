@@ -1,5 +1,5 @@
-% StackExchange Signal Processing Q50003
-% https://dsp.stackexchange.com/questions/50003/
+% StackExchange Signal Processing Q50329
+% https://dsp.stackexchange.com/questions/50329/
 % Automatic Image Enhancement of Images of Scanned Documents
 % References:
 %   1.  aa
