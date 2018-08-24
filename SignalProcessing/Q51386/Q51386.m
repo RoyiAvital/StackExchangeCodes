@@ -25,17 +25,18 @@ figureCounterSpec   = '%04d';
 
 generateFigures = OFF;
 
-JACOBIAN_METHOD_ANALYTIC = 1;
-JACOBIAN_METHOD_NUMERIC  = 2;
+EKF_JACOBIAN_METHOD_ANALYTIC    = 1;
+EKF_JACOBIAN_METHOD_NUMERIC     = 2;
+UKF                             = 3;
 
 
 %% Simulation Parameters
 
 numMeasurements = 100;
 
-dT = 1.0;
+dT = 1.5;
 
-vX0 = [1000; -7.5; 1000; -5]; %!< x, vx, y, vy
+vX0 = [1500; -7.5; 1500; -5]; %!< x, vx, y, vy
 mF  = [1, dT, 0, 0; 0, 1, 0, 0; 0, 0, 1, dT; 0, 0, 0, 1];
 hF = @(vX) mF * vX;
 hH  = @(vX) [norm(vX([1, 3])); atan(vX(3) / vX(1))]; %<! Usage of 'norm()' won't work with Complex Step Derivative
@@ -47,8 +48,9 @@ mP0 = diag([1, 0.1, 1, 0.1]);
 mQ = [0.35, 0, 0, 0; 0, 0.05, 0, 0; 0, 0, 0.35, 0; 0, 0, 0, 0.05];
 mR = [0.1, 0; 0, (0.3 / 180) * pi];
 
-jacobianMethod = JACOBIAN_METHOD_ANALYTIC;
-% jacobianMethod = JACOBIAN_METHOD_NUMERIC;
+kalmanMethod = EKF_JACOBIAN_METHOD_ANALYTIC;
+% kalmanMethod = EKF_JACOBIAN_METHOD_NUMERIC;
+kalmanMethod = UKF;
 
 
 %% Generate Data
@@ -85,7 +87,7 @@ tP(:, :, 1) = mP0;
 mH = zeros(measDim, modelDim);
 
 for ii = 1:numMeasurements
-    if(jacobianMethod == JACOBIAN_METHOD_ANALYTIC)
+    if(kalmanMethod == EKF_JACOBIAN_METHOD_ANALYTIC)
         % Analytic Jacobian
         vX = hF(mXEst(:, ii));
         mH(:) = [vX(1) / norm(vX([1, 3])); -vX(3) / (norm(vX([1, 3])) ^ 2); zeros(2, 1); vX(3) / norm(vX([1, 3])); vX(1) / (norm(vX([1, 3])) ^ 2); zeros(2, 1)];
@@ -94,12 +96,17 @@ for ii = 1:numMeasurements
         % mE = mH - CalcFunJacob(vX, hH, 4, 1e-7);
         % max(abs(mE(:)))
         
-        [mXEst(:, ii + 1), tP(:, :, ii + 1)] = ApplyKalmanFilterIteration(mXEst(:, ii), tP(:, :, ii), mZ(:, ii + 1), hF, hH, mQ, mR, mF, mH);
+        % [mXEst(:, ii + 1), tP(:, :, ii + 1)] = ApplyKalmanFilterIteration(mXEst(:, ii), tP(:, :, ii), mZ(:, ii + 1), hF, hH, mQ, mR, mF, mH);
+        [mXEst(:, ii + 1), tP(:, :, ii + 1)] = ApplyUnscentedKalmanFilterIteration(mXEst(:, ii), tP(:, :, ii), mZ(:, ii + 1), hF, hH, mQ, mR);
     end
     
-    if(jacobianMethod == JACOBIAN_METHOD_NUMERIC)
+    if(kalmanMethod == EKF_JACOBIAN_METHOD_NUMERIC)
         % Numeric Jacobian
         [mXEst(:, ii + 1), tP(:, :, ii + 1)] = ApplyKalmanFilterIteration(mXEst(:, ii), tP(:, :, ii), mZ(:, ii + 1), hF, hH, mQ, mR);
+    end
+    
+    if(kalmanMethod == UKF)
+        [mXEst(:, ii + 1), tP(:, :, ii + 1)] = ApplyUnscentedKalmanFilterIteration(mXEst(:, ii), tP(:, :, ii), mZ(:, ii + 1), hF, hH, mQ, mR);
     end
 end
 
@@ -118,7 +125,7 @@ set(hLineSeries, 'LineStyle', 'none', 'Marker', '*', 'Color', mColorOrder(2, :))
 hLineSeries = plot(mXEst(1, :), mXEst(3, :));
 set(hLineSeries, 'LineStyle', 'none', 'Marker', '*', 'Color', mColorOrder(3, :));
 set(hAxes, 'DataAspectRatio', [1, 1, 1]);
-set(hAxes, 'Xlim', [0, 1200], 'YLim', [0, 1200]);
+set(hAxes, 'Xlim', [0, 2000], 'YLim', [0, 2000]);
 set(get(hAxes, 'Title'), 'String', {['Extended Kalman Estimation - Cartesian Coordinate Model and Polar Coordinate Measurement']}, ...
     'FontSize', fontSizeTitle);
 set(get(hAxes, 'XLabel'), 'String', {['x [Meters]']}, ...

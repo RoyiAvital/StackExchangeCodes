@@ -32,7 +32,6 @@ function [ mJ ] = CalcFunJacob( vX, hObjFun, difMode, epsVal )
 % References
 %   1.  https://en.wikipedia.org/wiki/Finite_difference_coefficient.
 % Remarks:
-% Remarks:
 %   1.  If the Complex Mode is selected the function must return complex
 %       values in order to work. For instance, if the input function is
 %       'norm(vX)' use 'sum(vX .^ 2)' and if the input function is

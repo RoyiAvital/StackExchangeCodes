@@ -34,6 +34,7 @@ function [ vG ] = CalcFunGrad( vX, hObjFun, difMode, epsVal )
 %   2.  Nick Higham Talk (https://www.youtube.com/watch?v=Q9OLOqEhc64) At 02:15.
 %   3.  Complex Step Differentiation - https://blogs.mathworks.com/cleve/2013/10/14/complex-step-differentiation/.
 %   4.  Complex Step Derivative - https://timvieira.github.io/blog/post/2014/08/07/complex-step-derivative/.
+%   5.  The Complex Step Derivative Approximation - https://dl.acm.org/citation.cfm?id=838251.
 % Remarks:
 %   1.  If the Complex Mode is selected the function must return complex
 %       values in order to work. For instance, if the input function is
