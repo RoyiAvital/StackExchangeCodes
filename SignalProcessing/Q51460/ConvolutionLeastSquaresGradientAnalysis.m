@@ -1,6 +1,6 @@
-% Convolution Gradient Analysis
+% Gradient of Convolution in Least Squares Term Analysis
 % References:
-%   1.  Derivative of Convolution with Respect to One of the Arguments of the Convolution - https://math.stackexchange.com/questions/1871525.
+%   1.  Deconvolve of a 1D Signal with Known Kernel (Square Wave) - https://dsp.stackexchange.com/questions/51460.
 % Remarks:
 %   1.  sa
 % TODO:
@@ -29,15 +29,11 @@ DIFF_MODE_COMPLEX   = 4;
 
 %% Simulation Parameters
 
-numSamples      = 10;
-kernelRadius    = 1;
+numSamples      = 1000;
+kernelRadius    = 4;
 
 difMode = DIFF_MODE_COMPLEX;
 epsVal  = 1e-9;
-
-diffIdx = randi([1, numSamples + (2 * kernelRadius)], [1, 1]);
-% diffIdx = 22; %<! 1 to numSamples + (2 * kernelRadius)
-diffIdx = min(max(diffIdx, 1), numSamples + (2 * kernelRadius));
 
 
 %% Generate Data
@@ -47,25 +43,15 @@ kernelLength = (2 * kernelRadius) + 1;
 vX = randn(numSamples, 1);
 vH = randn(kernelLength, 1);
 
-hConvFun = @(vX) conv2(vX, vH);
-% Accessing index of array which output of a function.
-% See https://www.mathworks.com/matlabcentral/answers/38732-getting-first-element-of-a-function-output#answer_48229
-hObjFun = @(vX) subsref(hConvFun(vX), struct('type', '()', 'subs', {{diffIdx}}));
+vY = conv2(vX, vH, 'valid');
+
+hObjFun = @(vX) 0.5 * sum( (conv2(vX, vH, 'valid') - vY) .^ 2 );
 
 
 %% Analysis - Numeric Gradient vs. Analytic Gradient
 
+vG      = conv2((conv2(vX, vH, 'valid') - vY), vH(end:-1:1), 'full');
 vGRef   = CalcFunGrad(vX, hObjFun, difMode, epsVal);
-
-vG      = zeros(size(vX, 1), 1);
-
-for jj = 1:length(vG)
-    for mm = 0:(kernelLength - 1)
-        if(diffIdx - kernelLength + 1 + mm == jj)
-            vG(jj) = vH(kernelLength - mm);
-        end
-    end
-end
 
 
 %% Analysis
