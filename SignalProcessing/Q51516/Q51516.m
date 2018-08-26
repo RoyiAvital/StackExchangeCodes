@@ -63,8 +63,8 @@ vFftMean = mean(mFftTime).';
 vDftMax = max(mDftTime).';
 vFftMax = max(mFftTime).';
 
-vDftMin = max(mDftTime).';
-vFftMin = max(mFftTime).';
+vDftMin = min(mDftTime).';
+vFftMin = min(mFftTime).';
 
 
 %% Display Results
