@@ -1,4 +1,4 @@
-% Mathematics Q51516
+% StackExchange Signal Processing Q51516
 % https://dsp.stackexchange.com/questions/51516
 % FFT vs DFT Run Time Comparison (Complexity Analysis) in MATLAB
 % References:

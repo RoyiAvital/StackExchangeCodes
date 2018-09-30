@@ -1,4 +1,4 @@
-% Mathematics Q51460
+% StackExchange Signal Processing Q51460
 % https://dsp.stackexchange.com/questions/51460
 % Deconvolution of a 1D Signal with Known Kernel (Square Wave)
 % References:
