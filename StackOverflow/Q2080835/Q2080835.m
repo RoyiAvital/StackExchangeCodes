@@ -1,0 +1,125 @@
+% StackOverflow Q2080835
+% https://stackoverflow.com/questions/2080835
+% Calculating Inverse Filter of Image Convolution Kernel
+% References:
+%   1.  A
+% Remarks:
+%   1.  B
+% TODO:
+% 	1.  C
+% Release Notes
+% - 1.0.000     14/01/2019
+%   *   First release.
+
+
+%% General Parameters
+
+subStreamNumberDefault = 0;
+
+run('InitScript.m');
+
+figureIdx           = 0; %<! Continue from Question 1
+figureCounterSpec   = '%04d';
+
+generateFigures = OFF;
+generateImages  = OFF;
+
+OPERATION_MODE_CONVOLUTION = 1;
+OPERATION_MODE_CORRELATION = 2;
+
+CONVOLUTION_SHAPE_FULL         = 1;
+CONVOLUTION_SHAPE_SAME         = 2;
+CONVOLUTION_SHAPE_VALID        = 3;
+
+
+%% Simulation Parameters
+
+operationMode = OPERATION_MODE_CONVOLUTION;
+convShape = CONVOLUTION_SHAPE_VALID;
+
+vPhotoshopValues = randi([0, 100], [6, 1]);
+% vPhotoshopValues = [56; 61; 50; 78; 76; 54];
+vPhotoshopValues = [30; 98; 51; 73; 5; 53]; %<! This is used in Photoshop
+
+% 11 Colors - [H, 1, 0.5] Where H goes in 30% Steps -> [0, 30, 60, ..., 330]
+% Each color is a row.
+mBaseColors = [1, 0, 0; 1, 0.5, 0; 1, 1, 0; 0.5, 1, 0; 0, 1, 0; 0, 1, 0.5; 0, 1, 1; 0, 0.5, 1; 0, 0, 1; 0.5, 0, 1; 1, 0, 1; 1, 0, 0.5];
+cellSize    = 50; %<! Pixels
+
+
+%% Generate Data
+
+numColors = size(mBaseColors, 1);
+
+numRows = cellSize;
+numCols = cellSize * numColors;
+
+mI = zeros(numRows, numCols, 3);
+
+for ii = 1:numColors
+    vCurrColor = mBaseColors(ii, :);
+    firstColIdx = ((ii - 1) * cellSize) + 1;
+    lastColIdx  = ii * cellSize;
+    mI(:, firstColIdx:lastColIdx, :) = repmat(reshape(vCurrColor, [1, 1, 3]), [cellSize, cellSize 1]);
+end
+
+% vCoeffValues = [0.5; 0; 0; 0; 0; 0];
+vCoeffValues = (vPhotoshopValues - 50) ./ 50;
+mO = ApplyBlackWhiteFilter(mI, vCoeffValues);
+
+% figure;
+% imshow(mI);
+% figure;
+% imshow(mO);
+% 
+% figure;
+% imshow(im2uint8(mO));
+
+if(generateImages == ON)
+    imwrite(im2uint8(mI), 'ReferenceImage.png');
+end
+
+
+%% Analysis vs. Photoshop
+
+mORef   = im2single(imread('PhotoshopImage.png'));
+mE      = mORef - mO;
+
+maxAbsDev = max(abs(mE(:)));
+
+
+%% Display Results
+
+figureIdx = figureIdx + 1;
+
+hFigure = figure('Position', figPosLarge);
+hAxes   = subplot(4, 1, 1);
+hImgObj = imshow(mI);
+set(get(hAxes, 'Title'), 'String', {['Reference Image']}, ...
+    'FontSize', fontSizeTitle);
+
+hAxes   = subplot(4, 1, 2);
+hImgObj = imshow(mO);
+set(get(hAxes, 'Title'), 'String', {['MATLAB Output'], ['Black & White Adjustment Layer Input Values - ', num2str(vPhotoshopValues.')]}, ...
+    'FontSize', fontSizeTitle);
+
+hAxes   = subplot(4, 1, 3);
+hImgObj = imshow(mO);
+set(get(hAxes, 'Title'), 'String', {['Photoshop Output'], ['Black & White Adjustment Layer Input Values - ', num2str(vPhotoshopValues.')]}, ...
+    'FontSize', fontSizeTitle);
+
+hAxes   = subplot(4, 1, 4);
+hImgObj = imshow(mO);
+set(get(hAxes, 'Title'), 'String', {['Error Image (Absolute Deviation)'], ['Max Absolute Deviation - ', num2str(maxAbsDev)]}, ...
+    'FontSize', fontSizeTitle);
+
+if(generateFigures == ON)
+    saveas(hFigure,['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
+end
+
+
+%% Restore Defaults
+
+% set(0, 'DefaultFigureWindowStyle', 'normal');
+% set(0, 'DefaultAxesLooseInset', defaultLoosInset);
+
