@@ -19,13 +19,13 @@ end
 
 switch(boundaryMode)
     case(BOUNDARY_MODE_ZEROS)
-        mK = CreateConvMtxZeros(vK, numElements);
+        mK = CreateConvMtxZeros(mH, numRows, numCols);
     case(BOUNDARY_MODE_SYMMETRIC)
-        mK = CreateConvMtxSymmetric(vK, numElements);
+        mK = CreateConvMtxSymmetric(mH, numRows, numCols);
     case(BOUNDARY_MODE_REPLICATE)
-        mK = CreateConvMtxReplicate(vK, numElements);
+        mK = CreateConvMtxReplicate(mH, numRows, numCols);
     case(BOUNDARY_MODE_CIRCULAR)
-        mK = CreateConvMtxCircular(vK, numElements);
+        mK = CreateConvMtxCircular(mH, numRows, numCols);
 end
 
 
@@ -37,156 +37,216 @@ function [ mK ] = CreateConvMtxZeros( mH, numRows, numCols )
 %   Detailed explanation goes here
 
 numElementsImage    = numRows * numCols;
-numElementsKernel   = numel(mH);
+numRowsKernel       = size(mH, 1);
+numColsKernel       = size(mH, 2);
+numElementsKernel   = numRowsKernel * numColsKernel;
 
 vRows = reshape(repmat(1:numElementsImage, numElementsKernel, 1), numElementsImage * numElementsKernel, 1);
-vCols = zeros(numRows * numCols * numElementsKernel, 1);
-vVals = zeros(numRows * numCols * numElementsKernel, 1);
+vCols = zeros(numElementsImage * numElementsKernel, 1);
+vVals = zeros(numElementsImage * numElementsKernel, 1);
 
-vShift = [1:numElementsKernel].' - ceil(numElementsKernel / 2);
+kernelRadiusV = floor(numRowsKernel / 2);
+kernelRadiusH = floor(numColsKernel / 2);
 
-vCurrCols = zeros(numElementsKernel, 1);
-vCurrVals = zeros(numElementsKernel, 1);
-
-iterIdx = 0;
-
-pxIdx = 0;
-colIdx = 0;
+pxIdx       = 0;
+elmntIdx    = 0;
 
 for jj = 1:numCols
     for ii = 1:numRows
         pxIdx = pxIdx + 1;
-        for ll = 1:numColsKernel
-            for kk = 1:numRowsKernel
-                fd
+        for ll = -kernelRadiusH:kernelRadiusH
+            for kk = -kernelRadiusV:kernelRadiusV
+                elmntIdx = elmntIdx + 1;
+                
+                pxShift = (ll * numCols) + kk;
+                
+                if((ii + kk <= numRows) && (ii + kk >= 1) && (jj + ll <= numCols) && (jj + ll >= 1))
+                    vCols(elmntIdx) = pxIdx + pxShift;
+                    vVals(elmntIdx) = mH(kk + kernelRadiusV + 1, ll + kernelRadiusH + 1);
+                else
+                    vCols(elmntIdx) = pxIdx;
+                    vVals(elmntIdx) = 0; % See the accumulation property of 'sparse()'.
+                end
             end
         end
     end
 end
 
-
-
-
-for ii = 1:numElementsImage
-    
-    vCurrCols(:) = ii + vShift;
-    vCurrVals(:) = mH(:);
-    
-    vInvalidIdx = vCurrCols < 1;
-    
-    if(any(vInvalidIdx))
-        vCurrVals(vInvalidIdx) = 0;
-        vCurrCols(vInvalidIdx) = 1;
-    end
-    
-    vCols(((iterIdx - 1) * numElementsKernel + 1):(iterIdx * numElementsKernel)) = vCurrCols;
-    vVals(((iterIdx - 1) * numElementsKernel + 1):(iterIdx * numElementsKernel)) = vCurrVals;
-end
-
-mK = sparse(vRows, vCols, vVals, numRows * numCols, numRows * numCols);
+mK = sparse(vRows, vCols, vVals, numElementsImage, numElementsImage);
 
 
 end
 
 
-function [ mK ] = CreateConvMtxSymmetric( vK, numElements )
+function [ mK ] = CreateConvMtxSymmetric( mH, numRows, numCols )
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
 
-kernelLength    = length(vK);
-kernelRadius    = floor(kernelLength / 2); %<! Assuming Odd Kernel
-refIdx          = kernelRadius + 1; %<! Assuming Odd Kernel
+numElementsImage    = numRows * numCols;
+numRowsKernel       = size(mH, 1);
+numColsKernel       = size(mH, 2);
+numElementsKernel   = numRowsKernel * numColsKernel;
 
-mK = zeros([numElements, numElements]);
+vRows = reshape(repmat(1:numElementsImage, numElementsKernel, 1), numElementsImage * numElementsKernel, 1);
+vCols = zeros(numElementsImage * numElementsKernel, 1);
+vVals = zeros(numElementsImage * numElementsKernel, 1);
 
-for ii = 1:numElements
-    
-    colFirstIdx  = max(ii - kernelRadius, 1);
-    colLastIdx   = min(ii + kernelRadius, numElements);
-    
-    kernelFirstIdx    = colFirstIdx - ii + refIdx;
-    kernelLastIdx     = colLastIdx - ii + refIdx;
-    
-    mK(ii, colFirstIdx:colLastIdx)   = vK(kernelFirstIdx:kernelLastIdx);
-    
-    if(kernelFirstIdx > 1)
-        numCoeff = kernelRadius - ii + 1;
-        mK(ii, 1:numCoeff) = mK(ii, 1:numCoeff) + vK(numCoeff:-1:1);
-    end
-    
-    if(kernelLastIdx < kernelLength)
-        numCoeff = ii + kernelRadius - numElements;
-        mK(ii, numElements - numCoeff + 1:numElements) = mK(ii, numElements - numCoeff + 1:numElements) + vK(end:-1:end - numCoeff + 1);
+kernelRadiusV = floor(numRowsKernel / 2);
+kernelRadiusH = floor(numColsKernel / 2);
+
+pxIdx       = 0;
+elmntIdx    = 0;
+
+for jj = 1:numCols
+    for ii = 1:numRows
+        pxIdx = pxIdx + 1;
+        for ll = -kernelRadiusH:kernelRadiusH
+            for kk = -kernelRadiusV:kernelRadiusV
+                elmntIdx = elmntIdx + 1;
+                
+                pxShift = (ll * numCols) + kk;
+                
+                if(ii + kk > numRows)
+                    pxShift = pxShift - (2 * (ii + kk - numRows) - 1);
+                end
+                
+                if(ii + kk < 1)
+                    pxShift = pxShift + (2 * (1 -(ii + kk)) - 1);
+                end
+                
+                if(jj + ll > numCols)
+                    pxShift = pxShift - ((2 * (jj + ll - numCols) - 1) * numCols);
+                end
+                
+                if(jj + ll < 1)
+                    pxShift = pxShift + ((2 * (1 - (jj + ll)) - 1) * numCols);
+                end
+                
+                vCols(elmntIdx) = pxIdx + pxShift;
+                vVals(elmntIdx) = mH(kk + kernelRadiusV + 1, ll + kernelRadiusH + 1);
+                
+            end
+        end
     end
 end
 
+mK = sparse(vRows, vCols, vVals, numElementsImage, numElementsImage);
+
 
 end
 
 
-function [ mK ] = CreateConvMtxReplicate( vK, numElements )
+function [ mK ] = CreateConvMtxReplicate( mH, numRows, numCols )
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
 
-kernelLength    = length(vK);
-kernelRadius    = floor(kernelLength / 2); %<! Assuming Odd Kernel
-refIdx          = kernelRadius + 1; %<! Assuming Odd Kernel
+numElementsImage    = numRows * numCols;
+numRowsKernel       = size(mH, 1);
+numColsKernel       = size(mH, 2);
+numElementsKernel   = numRowsKernel * numColsKernel;
 
-mK = zeros([numElements, numElements]);
+vRows = reshape(repmat(1:numElementsImage, numElementsKernel, 1), numElementsImage * numElementsKernel, 1);
+vCols = zeros(numElementsImage * numElementsKernel, 1);
+vVals = zeros(numElementsImage * numElementsKernel, 1);
 
-for ii = 1:numElements
-    
-    colFirstIdx  = max(ii - kernelRadius, 1);
-    colLastIdx   = min(ii + kernelRadius, numElements);
-    
-    kernelFirstIdx    = colFirstIdx - ii + refIdx;
-    kernelLastIdx     = colLastIdx - ii + refIdx;
-    
-    mK(ii, colFirstIdx:colLastIdx)   = vK(kernelFirstIdx:kernelLastIdx);
-    
-    if(kernelFirstIdx > 1)
-        mK(ii, 1) = sum(vK(1:kernelFirstIdx));
-    end
-    
-    if(kernelLastIdx < kernelLength)
-        mK(ii, numElements) = sum(vK(kernelLastIdx:kernelLength));
+kernelRadiusV = floor(numRowsKernel / 2);
+kernelRadiusH = floor(numColsKernel / 2);
+
+pxIdx       = 0;
+elmntIdx    = 0;
+
+for jj = 1:numCols
+    for ii = 1:numRows
+        pxIdx = pxIdx + 1;
+        for ll = -kernelRadiusH:kernelRadiusH
+            for kk = -kernelRadiusV:kernelRadiusV
+                elmntIdx = elmntIdx + 1;
+                
+                pxShift = (ll * numCols) + kk;
+                
+                if(ii + kk > numRows)
+                    pxShift = pxShift - (ii + kk - numRows);
+                end
+                
+                if(ii + kk < 1)
+                    pxShift = pxShift + (1 -(ii + kk));
+                end
+                
+                if(jj + ll > numCols)
+                    pxShift = pxShift - ((jj + ll - numCols) * numCols);
+                end
+                
+                if(jj + ll < 1)
+                    pxShift = pxShift + ((1 - (jj + ll)) * numCols);
+                end
+                
+                vCols(elmntIdx) = pxIdx + pxShift;
+                vVals(elmntIdx) = mH(kk + kernelRadiusV + 1, ll + kernelRadiusH + 1);
+                
+            end
+        end
     end
 end
 
+mK = sparse(vRows, vCols, vVals, numElementsImage, numElementsImage);
+
 
 end
 
 
-function [ mK ] = CreateConvMtxCircular( vK, numElements )
+function [ mK ] = CreateConvMtxCircular( mH, numRows, numCols )
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
 
-kernelLength    = length(vK);
-kernelRadius    = floor(kernelLength / 2); %<! Assuming Odd Kernel
-refIdx          = kernelRadius + 1; %<! Assuming Odd Kernel
+numElementsImage    = numRows * numCols;
+numRowsKernel       = size(mH, 1);
+numColsKernel       = size(mH, 2);
+numElementsKernel   = numRowsKernel * numColsKernel;
 
-mK = zeros([numElements, numElements]);
+vRows = reshape(repmat(1:numElementsImage, numElementsKernel, 1), numElementsImage * numElementsKernel, 1);
+vCols = zeros(numElementsImage * numElementsKernel, 1);
+vVals = zeros(numElementsImage * numElementsKernel, 1);
 
-for ii = 1:numElements
-    
-    colFirstIdx  = max(ii - kernelRadius, 1);
-    colLastIdx   = min(ii + kernelRadius, numElements);
-    
-    kernelFirstIdx    = colFirstIdx - ii + refIdx;
-    kernelLastIdx     = colLastIdx - ii + refIdx;
-    
-    mK(ii, colFirstIdx:colLastIdx)   = vK(kernelFirstIdx:kernelLastIdx);
-    
-    if(kernelFirstIdx > 1)
-        numCoeff = kernelRadius - ii + 1;
-        mK(ii, end - numCoeff + 1:end) = vK(1:numCoeff);
-    end
-    
-    if(kernelLastIdx < kernelLength)
-        numCoeff = ii + kernelRadius - numElements;
-        mK(ii, 1:numCoeff) = vK(end - numCoeff + 1:end);
+kernelRadiusV = floor(numRowsKernel / 2);
+kernelRadiusH = floor(numColsKernel / 2);
+
+pxIdx       = 0;
+elmntIdx    = 0;
+
+for jj = 1:numCols
+    for ii = 1:numRows
+        pxIdx = pxIdx + 1;
+        for ll = -kernelRadiusH:kernelRadiusH
+            for kk = -kernelRadiusV:kernelRadiusV
+                elmntIdx = elmntIdx + 1;
+                
+                pxShift = (ll * numCols) + kk;
+                
+                if(ii + kk > numRows)
+                    pxShift = pxShift - numRows;
+                end
+                
+                if(ii + kk < 1)
+                    pxShift = pxShift + numRows;
+                end
+                
+                if(jj + ll > numCols)
+                    pxShift = pxShift - (numCols * numCols);
+                end
+                
+                if(jj + ll < 1)
+                    pxShift = pxShift + (numCols * numCols);
+                end
+                
+                vCols(elmntIdx) = pxIdx + pxShift;
+                vVals(elmntIdx) = mH(kk + kernelRadiusV + 1, ll + kernelRadiusH + 1);
+                
+            end
+        end
     end
 end
+
+mK = sparse(vRows, vCols, vVals, numElementsImage, numElementsImage);
 
 
 end
