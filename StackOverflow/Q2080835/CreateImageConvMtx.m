@@ -1,6 +1,8 @@
-function [ mK ] = CreateConvMtx( vK, numElements, operationMode, convShape )
+function [ mK ] = CreateImageConvMtx( mH, numRows, numCols, operationMode, convShape )
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
+
+% Not Working! Work in Progress.
 
 OPERATION_MODE_CONVOLUTION = 1;
 OPERATION_MODE_CORRELATION = 2;
@@ -11,10 +13,49 @@ CONVOLUTION_SHAPE_VALID        = 3;
 
 switch(operationMode)
     case(OPERATION_MODE_CONVOLUTION)
-        vK = vK(end:-1:1);
+        mH = mH(end:-1:1, end:-1:1);
     case(OPERATION_MODE_CORRELATION)
-        % vK = vK; %<! Default Code is correlation
+        % mH = mH; %<! Default Code is correlation
 end
+
+
+numElementsImage    = numRows * numCols;
+numRowsKernel       = size(mH, 1);
+numColsKernel       = size(mH, 2);
+numElementsKernel   = numRowsKernel * numColsKernel;
+
+
+vRows = zeros(numElementsImage * numElementsKernel, 1);
+vCols = zeros(numElementsImage * numElementsKernel, 1);
+vVals = zeros(numElementsImage * numElementsKernel, 1);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 kernelLength    = length(vK);
 mK = zeros([numElements + kernelLength - 1, numElements]);

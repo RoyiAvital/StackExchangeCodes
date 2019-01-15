@@ -14,7 +14,7 @@ switch(operationMode)
     case(OPERATION_MODE_CONVOLUTION)
         mH = mH(end:-1:1, end:-1:1);
     case(OPERATION_MODE_CORRELATION)
-        mH = mH; %<! Default Code is correlation
+        % mH = mH; %<! Default Code is correlation
 end
 
 switch(boundaryMode)

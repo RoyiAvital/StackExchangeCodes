@@ -1,6 +1,6 @@
 % StackOverflow Q2080835
 % https://stackoverflow.com/questions/2080835
-% Calculating Inverse Filter of Image Convolution Kernel
+% Deriving the Inverse Filter of Image Convolution Kernel
 % References:
 %   1.  A
 % Remarks:
@@ -37,55 +37,73 @@ CONVOLUTION_SHAPE_VALID        = 3;
 operationMode = OPERATION_MODE_CONVOLUTION;
 convShape = CONVOLUTION_SHAPE_VALID;
 
-vPhotoshopValues = randi([0, 100], [6, 1]);
-% vPhotoshopValues = [56; 61; 50; 78; 76; 54];
-vPhotoshopValues = [30; 98; 51; 73; 5; 53]; %<! This is used in Photoshop
+% The Input Kernel - F
+numRowsF = 11;
+numColsF = 7;
 
-% 11 Colors - [H, 1, 0.5] Where H goes in 30% Steps -> [0, 30, 60, ..., 330]
-% Each color is a row.
-mBaseColors = [1, 0, 0; 1, 0.5, 0; 1, 1, 0; 0.5, 1, 0; 0, 1, 0; 0, 1, 0.5; 0, 1, 1; 0, 0.5, 1; 0, 0, 1; 0.5, 0, 1; 1, 0, 1; 1, 0, 0.5];
-cellSize    = 50; %<! Pixels
+% The Inverse Kernel - G
+numRowsG = 201;
+numColsG = 201;
+
+numIteraions    = 50000;
+stepSize        = 5e-5;
 
 
 %% Generate Data
 
-numColors = size(mBaseColors, 1);
+numRowsH = numRowsF + numRowsG - 1;
+numColsH = numColsF + numColsG - 1;
 
-numRows = cellSize;
-numCols = cellSize * numColors;
+mF = rand(numRowsF, numColsF);
+mG = ones(numRowsG, numColsG); %<! Initial condition
 
-mI = zeros(numRows, numCols, 3);
 
-for ii = 1:numColors
-    vCurrColor = mBaseColors(ii, :);
-    firstColIdx = ((ii - 1) * cellSize) + 1;
-    lastColIdx  = ii * cellSize;
-    mI(:, firstColIdx:lastColIdx, :) = repmat(reshape(vCurrColor, [1, 1, 3]), [cellSize, cellSize 1]);
+%% Verify Gradient
+% Using Random h Filter
+
+mH = rand(numRowsH, numColsH);
+
+hObjFun = @(mG) 0.5 * sum((conv2(mF, mG, 'full') - mH) .^ 2, 'all');
+
+mObjFunGrad = conv2(conv2(mF, mG, 'full') - mH, mF(end:-1:1, end:-1:1), 'valid');
+
+mObjFunGradNum = zeros(size(mG));
+mTmp = zeros(size(mObjFunGradNum));
+
+derEps = 5e-6;
+
+% Numeric Gradient
+for ii = 1:numel(mObjFunGradNum)
+    mTmp(ii)            = derEps;
+    mObjFunGradNum(ii)  = (hObjFun(mG + mTmp) - hObjFun(mG)) / derEps;
+    mTmp(ii)            = 0;
 end
 
-% vCoeffValues = [0.5; 0; 0; 0; 0; 0];
-vCoeffValues = (vPhotoshopValues - 50) ./ 50;
-mO = ApplyBlackWhiteFilter(mI, vCoeffValues);
+mE = mObjFunGradNum - mObjFunGrad;
+gradError = max(abs(mE(:)));
 
-% figure;
-% imshow(mI);
-% figure;
-% imshow(mO);
-% 
-% figure;
-% imshow(im2uint8(mO));
 
-if(generateImages == ON)
-    imwrite(im2uint8(mI), 'ReferenceImage.png');
+%% Derive the Inverse
+
+% The Target Kernel - Discrete Delta
+mH = zeros(numRowsH, numColsH);
+mH(ceil(numRowsH / 2), ceil(numColsH / 2)) = 1; %<! Delta
+
+% Gradient Descent (Could improved with Accelerated Gradient Descent)
+for ii = 1:numIteraions
+    mObjFunGrad = conv2(conv2(mF, mG, 'full') - mH, mF(end:-1:1, end:-1:1), 'valid');
+    mG          = mG - (stepSize * mObjFunGrad);
 end
 
+mA = conv2(mG, mF, 'full');
+mE = abs(mA - mH);
+inverseError = max(mE(:));
 
-%% Analysis vs. Photoshop
 
-mORef   = im2single(imread('PhotoshopImage.png'));
-mE      = mORef - mO;
+%% Analysis
 
-maxAbsDev = max(abs(mE(:)));
+disp(['Analytic Gradient vs. Numeric Gradient - Maximum Absolute Deviation - ', num2str(gradError)]);
+disp(['Inverse Filter - Maximum Deviation - ', num2str(inverseError)]);
 
 
 %% Display Results
@@ -93,24 +111,9 @@ maxAbsDev = max(abs(mE(:)));
 figureIdx = figureIdx + 1;
 
 hFigure = figure('Position', figPosLarge);
-hAxes   = subplot(4, 1, 1);
-hImgObj = imshow(mI);
-set(get(hAxes, 'Title'), 'String', {['Reference Image']}, ...
-    'FontSize', fontSizeTitle);
-
-hAxes   = subplot(4, 1, 2);
-hImgObj = imshow(mO);
-set(get(hAxes, 'Title'), 'String', {['MATLAB Output'], ['Black & White Adjustment Layer Input Values - ', num2str(vPhotoshopValues.')]}, ...
-    'FontSize', fontSizeTitle);
-
-hAxes   = subplot(4, 1, 3);
-hImgObj = imshow(mO);
-set(get(hAxes, 'Title'), 'String', {['Photoshop Output'], ['Black & White Adjustment Layer Input Values - ', num2str(vPhotoshopValues.')]}, ...
-    'FontSize', fontSizeTitle);
-
-hAxes   = subplot(4, 1, 4);
-hImgObj = imshow(mO);
-set(get(hAxes, 'Title'), 'String', {['Error Image (Absolute Deviation)'], ['Max Absolute Deviation - ', num2str(maxAbsDev)]}, ...
+hAxes   = axes();
+hImgObj = imshow(mA, []);
+set(get(hAxes, 'Title'), 'String', {['Convolution Result']}, ...
     'FontSize', fontSizeTitle);
 
 if(generateFigures == ON)
