@@ -1,7 +1,8 @@
 function [ mK ] = CreateImageConvMtx( mH, numRows, numCols, convShape )
 % ----------------------------------------------------------------------------------------------- %
-%Generates a Convolution Matrix for the 2D Kernel (The Matrix mH) with
-%support for different convolution shapes (Full / Same / Valid).
+% [ mK ] = CreateImageConvMtx( mH, numRows, numCols, convShape )
+% Generates a Convolution Matrix for the 2D Kernel (The Matrix mH) with
+% support for different convolution shapes (Full / Same / Valid).
 % Input:
 %   - mH                -   Input 2D Convolution Kernel.
 %                           Structure: Matrix.

@@ -1,6 +1,61 @@
 function [ mK ] = CreateImageFilterMtx( mH, numRows, numCols, operationMode, boundaryMode )
-%UNTITLED6 Summary of this function goes here
-%   Detailed explanation goes here
+% ----------------------------------------------------------------------------------------------- %
+% [ mK ] = CreateImageFilterMtx( mH, numRows, numCols, operationMode, boundaryMode )
+% Generates an Image Filtering Matrix for the 2D Kernel (The Matrix mH)
+% with support for different operations modes (Convolution / Correlation)
+% and boundary conditions (Zeros, Symmetric, Replicate, Circular). The
+% function should match the use of MATLAB's 'imfilter()' with the same
+% parameters.
+% Input:
+%   - mH                -   Input 2D Convolution Kernel.
+%                           Structure: Matrix.
+%                           Type: 'Single' / 'Double'.
+%                           Range: (-inf, inf).
+%   - numRows           -   Number of Rows.
+%                           Number of rows in the output convolution
+%                           matrix.
+%                           Structure: Scalar.
+%                           Type: 'Single' / 'Double'.
+%                           Range: {1, 2, 3, ...}.
+%   - numCols           -   Number of Columns.
+%                           Number of columns in the output convolution
+%                           matrix.
+%                           Structure: Scalar.
+%                           Type: 'Single' / 'Double'.
+%                           Range: {1, 2, 3, ...}.
+%   - operationMode     -   Operation Mode.
+%                           Sets whether to use Convolution or Correlation
+%                           for the operation mode.
+%                           Structure: Scalar.
+%                           Type: 'Single' / 'Double'.
+%                           Range: {1, 2}.
+%   - boundaryMode      -   Boundary Condition Mode.
+%                           Sets the boundary condition mode for the
+%                           filtering. The options are - Zeros, Symmetric,
+%                           Replicate and Circular.
+%                           Structure: Scalar.
+%                           Type: 'Single' / 'Double'.
+%                           Range: {1, 2, 3, 4}.
+% Output:
+%   - mK                -   Convolution Matrix.
+%                           The output filtering matrix. Multiplying in
+%                           the column stack form on an image should be
+%                           equivalent to applying 'imfilter()' on the
+%                           image.
+%                           Structure: Matrix (Sparse).
+%                           Type: 'Single' / 'Double'.
+%                           Range: (-inf, inf).
+% References:
+%   1.  MATLAB's 'convmtx2()' - https://www.mathworks.com/help/images/ref/convmtx2.html.
+% Remarks:
+%   1.  B
+% TODO:
+%   1.  Refactor the code to share the common operations of different
+%       boundary modes.
+% Release Notes:
+%   -   1.0.000     16/01/2018  Royi Avital
+%       *   First release version.
+% ----------------------------------------------------------------------------------------------- %
 
 OPERATION_MODE_CONVOLUTION = 1;
 OPERATION_MODE_CORRELATION = 2;
