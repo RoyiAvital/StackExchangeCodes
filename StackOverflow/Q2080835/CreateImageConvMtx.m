@@ -38,12 +38,15 @@ function [ mK ] = CreateImageConvMtx( mH, numRows, numCols, convShape )
 %                           Range: (-inf, inf).
 % References:
 %   1.  MATLAB's 'convmtx2()' - https://www.mathworks.com/help/images/ref/convmtx2.html.
+%   2.  Matt J Maethod - https://www.mathworks.com/matlabcentral/answers/439928#answer_356557.
 % Remarks:
-%   1.  gf
+%   1.  This method builds the Impulse Response per pixel location for the
+%       output matrix. Basically, each column of the 'mK' matrix is the
+%       impulese response to the pixel at the i-th location.
 % TODO:
 %   1.  
 %   Release Notes:
-%   -   1.0.000     dd/mm/yyyy  firstName lastName
+%   -   1.0.000     16/01/2018  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
@@ -66,14 +69,10 @@ end
 mImpulse = zeros(numRows, numCols);
 
 for ii = numel(mImpulse):-1:1
-    
-    mImpulse(ii) = 1;  %Create impulse image corresponding to i-th output matrix column
-    
-    mTmp = sparse(conv2(mImpulse, mH, convShapeString));  %impulse response
-    
-    cColumn{ii} = mTmp(:);
-    
-    mImpulse(ii) = 0;
+    mImpulse(ii)    = 1; %<! Create impulse image corresponding to i-th output matrix column
+    mTmp            = sparse(conv2(mImpulse, mH, convShapeString)); %<! The impulse response
+    cColumn{ii}     = mTmp(:);
+    mImpulse(ii)    = 0;
 end
 
 mK = cell2mat(cColumn);
