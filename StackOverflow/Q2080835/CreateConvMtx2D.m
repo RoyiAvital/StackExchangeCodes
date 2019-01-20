@@ -47,10 +47,10 @@ function [ mK ] = CreateConvMtx2D( mH, numRows, numCols, convShape )
 % TODO:
 %   1.  
 %   Release Notes:
-%   -   1.0.001     17/01/2018  Royi Avital
+%   -   1.0.001     17/01/2019  Royi Avital
 %       *   Faster concatenation of the sparase matrix (Without calling
 %           'struct2mat()').
-%   -   1.0.000     16/01/2018  Royi Avital
+%   -   1.0.000     16/01/2019  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
