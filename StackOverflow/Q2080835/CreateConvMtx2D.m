@@ -1,6 +1,6 @@
-function [ mK ] = CreateImageConvMtx( mH, numRows, numCols, convShape )
+function [ mK ] = CreateConvMtx2D( mH, numRows, numCols, convShape )
 % ----------------------------------------------------------------------------------------------- %
-% [ mK ] = CreateImageConvMtx( mH, numRows, numCols, convShape )
+% [ mK ] = CreateConvMtx2D( mH, numRows, numCols, convShape )
 % Generates a Convolution Matrix for the 2D Kernel (The Matrix mH) with
 % support for different convolution shapes (Full / Same / Valid).
 % Input:
@@ -39,7 +39,7 @@ function [ mK ] = CreateImageConvMtx( mH, numRows, numCols, convShape )
 %                           Range: (-inf, inf).
 % References:
 %   1.  MATLAB's 'convmtx2()' - https://www.mathworks.com/help/images/ref/convmtx2.html.
-%   2.  Matt J Maethod - https://www.mathworks.com/matlabcentral/answers/439928#answer_356557.
+%   2.  Matt J Method - https://www.mathworks.com/matlabcentral/answers/439928#answer_356557.
 % Remarks:
 %   1.  This method builds the Impulse Response per pixel location for the
 %       output matrix. Basically, each column of the 'mK' matrix is the

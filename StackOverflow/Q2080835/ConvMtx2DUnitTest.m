@@ -37,8 +37,8 @@ for numRowsImage = 28:32
                     end
                     
                     mORef   = conv2(mI, mH, convShapeString);
-                    mK      = CreateImageConvMtx(mH, numRowsImage, numColsImage, convShape);
-                    % mK      = CreateImageConvMtxSparse(mH, numRowsImage, numColsImage, convShape);
+                    mK      = CreateConvMtx2D(mH, numRowsImage, numColsImage, convShape);
+                    % mK      = CreateConvMtx2DSparse(mH, numRowsImage, numColsImage, convShape);
                     mO      = reshape(mK * mI(:), numRowsOut, numColsOut);
                     
                     disp([' ']);

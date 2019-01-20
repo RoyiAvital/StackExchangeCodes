@@ -29,7 +29,8 @@ for numElementsSignal = 8:21
             end
             
             vORef   = conv2(vI, vH, convShapeString);
-            mK      = full(CreateConvMtxSparse(vH, numElementsSignal, 1, convShape));
+            % mK      = CreateConvMtxSparse(vH, numElementsSignal, convShape);
+            mK      = CreateConvMtx(vH, numElementsSignal, convShape);
             vO      = reshape(mK * vI, numElementsOut, 1);
             
             disp([' ']);

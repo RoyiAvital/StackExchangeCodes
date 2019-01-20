@@ -1,23 +1,14 @@
-function [ mK ] = CreateConvMtx( vK, numElements, operationMode, convShape )
+function [ mK ] = CreateConvMtx( vK, numElements, convShape )
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
-
-OPERATION_MODE_CONVOLUTION = 1;
-OPERATION_MODE_CORRELATION = 2;
 
 CONVOLUTION_SHAPE_FULL         = 1;
 CONVOLUTION_SHAPE_SAME         = 2;
 CONVOLUTION_SHAPE_VALID        = 3;
 
-switch(operationMode)
-    case(OPERATION_MODE_CONVOLUTION)
-        vK = vK(end:-1:1);
-    case(OPERATION_MODE_CORRELATION)
-        % vK = vK; %<! Default Code is correlation
-end
-
 kernelLength    = length(vK);
-mK = zeros([numElements + kernelLength - 1, numElements]);
+vK              = vK(kernelLength:-1:1); %<! The allocation is written as Correlation
+mK              = zeros([numElements + kernelLength - 1, numElements]);
 
 for ii = 1:numElements + kernelLength - 1
     kernelLastIdx     = min(kernelLength, kernelLength + numElements - ii);
