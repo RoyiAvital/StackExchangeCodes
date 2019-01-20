@@ -30,10 +30,10 @@ $$\begin{align*} g \left[ m ,n \right] = \left( f \ast h \right) \left[ m, n \ri
 
  $$ g = H f $$
 
- Where $ g $ is the Column Stack representation of $ g \left[ m, n \right] $, $ f $ is the column stack represenation of $ f \left[ m, n \right] $ and $ H \in \mathbb{R}^{\left( M + P - 1 \right) \times \left( N + Q - 1 \right)} $ is the 2D Convolution Matrix.
+ Where $ g $ is the Column Stack representation of $ g \left[ m, n \right] $, $ f $ is the column stack representation of $ f \left[ m, n \right] $ and $ H \in \mathbb{R}^{\left( M + P - 1 \right) \times \left( N + Q - 1 \right)} $ is the 2D Convolution Matrix.
 
  In order to understand how to build the matrix $ H $ one could think about the 2D convolution in the following way.  
- Think of the 2D signal $ f \left[ m, n \right] $ as a 2D matrix. the output of the convolution for the $ j $ -th element as the $ i $ -th column is basically the result of $ Q $ 1D convolutions of its adjacant columns. Hence it is expected to see some kind of 1D convolution form in the matrix which is indeed composed as following:
+ Think of the 2D signal $ f \left[ m, n \right] $ as a 2D matrix. the output of the convolution for the $ j $ -th element as the $ i $ -th column is basically the result of $ Q $ 1D convolutions of its adjacent columns. Hence it is expected to see some kind of 1D convolution form in the matrix which is indeed composed as following:
 
  $$ H = \begin{bmatrix}
 {T}_{1} & \boldsymbol{0} & \cdots & \boldsymbol{0} & \boldsymbol{0} \\ 
@@ -53,3 +53,4 @@ The above is Doubly Block Toeptliz Matrix where each matrix $ {T}_{i} $ is a 1D 
 
 ## References
  *  [How to Generate Block Toeplitz Matrix](https://www.mathworks.com/matlabcentral/answers/249061).
+ *  [`FUNC2MAT`- Convert Linear Function into Matrix Form](https://www.mathworks.com/matlabcentral/fileexchange/44669).
