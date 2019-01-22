@@ -37,7 +37,7 @@ for numElementsSignal = 8:21
             
             disp([' ']);
             disp(['Validating solution for the following parameters:']);
-            disp(['Sinal Size - [', num2str(numElementsSignal), ' x 1]']);
+            disp(['Signal Size - [', num2str(numElementsSignal), ' x 1]']);
             disp(['Kernel Size - [', num2str(numElementsKernel), ' x 1]']);
             disp(['Convolution Shape - ', convShapeString]);
             
