@@ -50,6 +50,10 @@ function [ mK ] = CreateConvMtx2DSparse( mH, numRows, numCols, convShape )
 % TODO:
 %   1.  
 %   Release Notes:
+%   -   1.0.001     22/01/2018  Royi Avital
+%       *   Fixed issue with the creatioon of the sparse diagonal matrix.
+%           The vector to initialize the diagonal was much bigger than
+%           needed. Improved performance in the Unit Test by factor of 10.
 %   -   1.0.000     16/01/2018  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
@@ -85,10 +89,11 @@ switch(convShape)
         numRowsKron = numCols - numColsKernel + 1;
 end
 
-mK = kron(spdiags(ones(numel(cBlockMtx{1})), diagIdx, numRowsKron, numCols), cBlockMtx{1});
+vI = ones(min(numRowsKron, numCols), 1);
+mK = kron(spdiags(vI, diagIdx, numRowsKron, numCols), cBlockMtx{1});
 for ii = 2:numBlockMtx
     diagIdx = diagIdx - 1;
-    mK = mK + kron(spdiags(ones(numel(cBlockMtx{1})), diagIdx, numRowsKron, numCols), cBlockMtx{ii});
+    mK = mK + kron(spdiags(vI, diagIdx, numRowsKron, numCols), cBlockMtx{ii});
 end
 
 
