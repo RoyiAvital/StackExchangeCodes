@@ -1,11 +1,13 @@
 
+clear();
+
 CONVOLUTION_SHAPE_FULL  = 1;
 CONVOLUTION_SHAPE_SAME  = 2;
 CONVOLUTION_SHAPE_VALID = 3;
 
 maxThr = 1e-9;
 
-
+tic();
 for numElementsSignal = 8:21
     
     vI = rand(numElementsSignal, 1);
@@ -29,14 +31,14 @@ for numElementsSignal = 8:21
             end
             
             vORef   = conv2(vI, vH, convShapeString);
-            % mK      = CreateConvMtxSparse(vH, numElementsSignal, convShape);
-            mK      = CreateConvMtx(vH, numElementsSignal, convShape);
+            mK      = CreateConvMtxSparse(vH, numElementsSignal, convShape);
+            % mK      = CreateConvMtx(vH, numElementsSignal, convShape);
             vO      = reshape(mK * vI, numElementsOut, 1);
             
             disp([' ']);
             disp(['Validating solution for the following parameters:']);
-            disp(['Image Size - [', num2str(numRowsImage), ' x ', num2str(numColsImage), ']']);
-            disp(['Kernel Size - [', num2str(numElementsKernel), ' x ', num2str(numColsKernel), ']']);
+            disp(['Sinal Size - [', num2str(numElementsSignal), ' x 1]']);
+            disp(['Kernel Size - [', num2str(numElementsKernel), ' x 1]']);
             disp(['Convolution Shape - ', convShapeString]);
             
             vE = vO - vORef;
@@ -52,6 +54,5 @@ for numElementsSignal = 8:21
     end
 end
 
-
-
+toc();
 

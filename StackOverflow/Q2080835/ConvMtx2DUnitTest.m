@@ -1,11 +1,13 @@
 
+clear();
+
 CONVOLUTION_SHAPE_FULL  = 1;
 CONVOLUTION_SHAPE_SAME  = 2;
 CONVOLUTION_SHAPE_VALID = 3;
 
 maxThr = 1e-9;
 
-tic()
+tic();
 for numRowsImage = 28:32
     for numColsImage = 28:32
         
@@ -37,8 +39,8 @@ for numRowsImage = 28:32
                     end
                     
                     mORef   = conv2(mI, mH, convShapeString);
-                    mK      = CreateConvMtx2D(mH, numRowsImage, numColsImage, convShape);
-                    % mK      = CreateConvMtx2DSparse(mH, numRowsImage, numColsImage, convShape);
+                    % mK      = CreateConvMtx2D(mH, numRowsImage, numColsImage, convShape);
+                    mK      = CreateConvMtx2DSparse(mH, numRowsImage, numColsImage, convShape);
                     mO      = reshape(mK * mI(:), numRowsOut, numColsOut);
                     
                     disp([' ']);
