@@ -1,6 +1,6 @@
 % StackExchange Signal Processing Q688
 % https://dsp.stackexchange.com/questions/688
-% What Is the Algorithm Behind Photoshop's “Black and White” Adjustment Layer?
+% What Is the Algorithm Behind Photoshop's ï¿½Black and Whiteï¿½ Adjustment Layer?
 % References:
 %   1.  A
 % Remarks:
@@ -14,7 +14,7 @@
 
 %% General Parameters
 
-subStreamNumberDefault = 0;
+subStreamNumberDefault = 2123;
 
 run('InitScript.m');
 
@@ -34,6 +34,10 @@ vPhotoshopValues = [30; 98; 51; 73; 5; 53]; %<! This is used in Photoshop
 % 11 Colors - [H, 1, 0.5] Where H goes in 30% Steps -> [0, 30, 60, ..., 330]
 % Each color is a row.
 mBaseColors = [1, 0, 0; 1, 0.5, 0; 1, 1, 0; 0.5, 1, 0; 0, 1, 0; 0, 1, 0.5; 0, 1, 1; 0, 0.5, 1; 0, 0, 1; 0.5, 0, 1; 1, 0, 1; 1, 0, 0.5];
+
+mBaseColors = rand(21, 3);
+
+
 cellSize    = 50; %<! Pixels
 
 
@@ -66,13 +70,13 @@ mO = ApplyBlackWhiteFilter(mI, vCoeffValues);
 % imshow(im2uint8(mO));
 
 if(generateImages == ON)
-    imwrite(im2uint8(mI), 'ReferenceImage.png');
+    imwrite(im2uint8(mI), 'ReferenceImage2.png');
 end
 
 
 %% Analysis vs. Photoshop
 
-mORef   = im2single(imread('PhotoshopImage.png'));
+mORef   = im2single(imread('PhotoshopImage2.png'));
 mE      = mORef - mO;
 
 maxAbsDev = max(abs(mE(:)));
@@ -94,12 +98,12 @@ set(get(hAxes, 'Title'), 'String', {['MATLAB Output'], ['Black & White Adjustmen
     'FontSize', fontSizeTitle);
 
 hAxes   = subplot(4, 1, 3);
-hImgObj = imshow(mO);
+hImgObj = imshow(mORef);
 set(get(hAxes, 'Title'), 'String', {['Photoshop Output'], ['Black & White Adjustment Layer Input Values - ', num2str(vPhotoshopValues.')]}, ...
     'FontSize', fontSizeTitle);
 
 hAxes   = subplot(4, 1, 4);
-hImgObj = imshow(mO);
+hImgObj = imshow(mE);
 set(get(hAxes, 'Title'), 'String', {['Error Image (Absolute Deviation)'], ['Max Absolute Deviation - ', num2str(maxAbsDev)]}, ...
     'FontSize', fontSizeTitle);
 
