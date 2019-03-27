@@ -7,24 +7,12 @@ function [ mO ] = ApplyBlackWhiteFilter( mI, vCoeffValues )
 %                       Structure: Image Matrix (Triple Channel)
 %                       Type: 'Single' / 'Double'.
 %                       Range: [0, 1].
-%   - boxRadius     -   Box Radius.
-%                       The radius of the box neighborhood for the
-%                       filtering process.
-%                       Structure: Scalar.
+%   - vCoeffValues  -   Colors Coefficient Values.
+%                       Sets the factor for Reds, Yellows, Greens, Cyans,
+%                       Blues and Magentas.
+%                       Structure: Vector (6 x 1).
 %                       Type: 'Single' / 'Double'.
 %                       Range: {1, 2, ..., }.
-%   - borderType    -   Border Type.
-%                       Sets the border extension mode (Cconstant,
-%                       Circular, Replicate, Symmetric).
-%                       Structure: Scalar.
-%                       Type: 'Single' / 'Double'.
-%                       Range: {1, 2, 3 4}.
-%   - borderValue   -   Border Value.
-%                       Sets the border value in case Border Type is
-%                       Constant.
-%                       Structure: Scalar.
-%                       Type: 'Single' / 'Double'.
-%                       Range: [0, 1].
 % Output:
 %   - mO            -   Output Image.
 %                       Structure: Image Matrix (Single Channel)
@@ -32,16 +20,17 @@ function [ mO ] = ApplyBlackWhiteFilter( mI, vCoeffValues )
 %                       Range: [0, 1].
 % References:
 %   1.  What Is the Algorithm Behind Photoshop's “Black and White” Adjustment Layer? - https://dsp.stackexchange.com/questions/688.
+%   2.  What Is the Algorithm Behind Photoshop's “Black and White” Adjustment Layer? - https://stackoverflow.com/questions/55185251.
 % Remarks:
 %   1.  In order to imitate Photoshop the number of coefficients should be
 %       6 (Reds, Yellows, Greens, Cyans, Blues, Magentas). The Photoshop
-%       range is given in [-200, 300] which should be linearly mapped into
-%       [-5, 5] where 50 is mapped to 0. Basicall vCoeffValues = (vPhotoshopValues - 50) ./ 50.
+%       range is given in [-200, 300] which should be factored by (1 /
+%       100). Basically vCoeffValues = vPhotoshopValues ./ 100.
 %   2.  It doesn't implement the 'Tint' option in Photoshop.
 % TODO:
 %   1.  s
 %   Release Notes:
-%   -   1.0.000     22/12/2018  Royi Avital
+%   -   1.0.000     28/03/2019  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
@@ -51,32 +40,51 @@ TRUE    = 1;
 OFF = 0;
 ON  = 1;
 
+REDS_IDX        = 1;
+YELLOWS_IDX     = 2;
+GREENS_IDX      = 3;
+CYANS_IDX       = 4;
+BLUES_IDX       = 5;
+MAGENTAS_IDX    = 6;
+
 numRows = size(mI, 1);
 numCols = size(mI, 2);
 dataClass = class(mI);
 
-numCoeff    = size(vCoeffValues, 1);
-hueRadius   = 1 / numCoeff;
-vHueVal     = [0:(numCoeff - 1)] * hueRadius;
-
-mHsl = ConvertRgbToHsl(mI);
 mO = zeros(numRows, numCols, dataClass);
-
-vCoeffValues = numCoeff * vCoeffValues;
 
 for jj = 1:numCols
     for ii = 1:numRows
-        hueVal = mHsl(ii, jj, 1);
-        lumCoeff = 0;
+        rPx = mI(ii, jj, 1);
+        gPx = mI(ii, jj, 2);
+        bPx = mI(ii, jj, 3);
         
-        % For kk = 1 we're dealing with circular distance
-        diffVal     = min(abs(vHueVal(1) - hueVal), abs(1 - hueVal));
-        lumCoeff    = lumCoeff + (vCoeffValues(1) * max(0, hueRadius - diffVal));
-        for kk = 2:numCoeff
-            lumCoeff = lumCoeff + (vCoeffValues(kk) * max(0, hueRadius - abs(vHueVal(kk) - hueVal)));
+        grayPx = min(mI(ii, jj, :), [], 3);
+        
+        rPx = rPx - grayPx;
+        gPx = gPx - grayPx;
+        bPx = bPx - grayPx;
+        
+        if(rPx == 0)
+            cyanPx      = min(gPx, bPx);
+            gPx         = gPx - cyanPx;
+            bPx         = bPx - cyanPx;
+            
+            grayPx = grayPx + (vCoeffValues(GREENS_IDX) * gPx) + (vCoeffValues(CYANS_IDX) * cyanPx) + (vCoeffValues(BLUES_IDX) * bPx);
+        elseif(gPx == 0)
+            magentaPx   = min(rPx, bPx);
+            rPx         = rPx - magentaPx;
+            bPx         = bPx - magentaPx;
+            
+            grayPx = grayPx + (vCoeffValues(REDS_IDX) * rPx) + (vCoeffValues(BLUES_IDX) * bPx) + (vCoeffValues(MAGENTAS_IDX) * magentaPx);
+        elseif(bPx == 0)
+            yellowPx    = min(rPx, gPx);
+            rPx         = rPx - yellowPx;
+            gPx         = gPx - yellowPx;
+            
+            grayPx = grayPx + (vCoeffValues(REDS_IDX) * rPx) + (vCoeffValues(YELLOWS_IDX) * yellowPx) + (vCoeffValues(GREENS_IDX) * gPx);
         end
-        
-        mO(ii, jj) = mHsl(ii, jj, 3) * (1 + lumCoeff);
+        mO(ii, jj) = min(max(grayPx, 0), 1);
     end
 end
 

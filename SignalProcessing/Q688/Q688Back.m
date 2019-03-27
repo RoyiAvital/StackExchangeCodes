@@ -28,9 +28,16 @@ generateImages  = OFF;
 
 %% Simulation Parameters
 
-vPhotoshopValues = [30; 98; 81; 73; -5; 23]; %<! This is used in Photoshop
+vPhotoshopValues = randi([0, 100], [6, 1]);
+% vPhotoshopValues = [56; 61; 50; 78; 76; 54];
+vPhotoshopValues = [30; 98; 51; 73; 5; 53]; %<! This is used in Photoshop
 
-mBaseColors = rand(51, 3);
+% 11 Colors - [H, 1, 0.5] Where H goes in 30% Steps -> [0, 30, 60, ..., 330]
+% Each color is a row.
+mBaseColors = [1, 0, 0; 1, 0.5, 0; 1, 1, 0; 0.5, 1, 0; 0, 1, 0; 0, 1, 0.5; 0, 1, 1; 0, 0.5, 1; 0, 0, 1; 0.5, 0, 1; 1, 0, 1; 1, 0, 0.5];
+
+mBaseColors = rand(21, 3);
+
 
 cellSize    = 50; %<! Pixels
 
@@ -52,7 +59,7 @@ for ii = 1:numColors
 end
 
 % vCoeffValues = [0.5; 0; 0; 0; 0; 0];
-vCoeffValues = vPhotoshopValues ./ 100;
+vCoeffValues = (vPhotoshopValues - 50) ./ 50;
 mO = ApplyBlackWhiteFilter(mI, vCoeffValues);
 
 % figure;
@@ -64,13 +71,13 @@ mO = ApplyBlackWhiteFilter(mI, vCoeffValues);
 % imshow(im2uint8(mO));
 
 if(generateImages == ON)
-    imwrite(im2uint8(mI), 'ReferenceImage.png');
+    imwrite(im2uint8(mI), 'ReferenceImage2.png');
 end
 
 
 %% Analysis vs. Photoshop
 
-mORef   = im2single(imread('PhotoshopImage.png'));
+mORef   = im2single(imread('PhotoshopImage2.png'));
 mE      = mORef - mO;
 
 maxAbsDev = max(abs(mE(:)));
@@ -80,7 +87,7 @@ maxAbsDev = max(abs(mE(:)));
 
 figureIdx = figureIdx + 1;
 
-hFigure = figure('Position', [100, 100, 1500, 500]);
+hFigure = figure('Position', figPosLarge);
 hAxes   = subplot(4, 1, 1);
 hImgObj = imshow(mI);
 set(get(hAxes, 'Title'), 'String', {['Reference Image']}, ...
