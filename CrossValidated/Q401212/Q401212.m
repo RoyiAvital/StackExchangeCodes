@@ -19,10 +19,10 @@ subStreamNumberDefault = 2103;
 
 run('InitScript.m');
 
-figureIdx           = 0; %<! Continue from Question 1
+figureIdx           = 0;
 figureCounterSpec   = '%04d';
 
-generateFigures = ON;
+generateFigures = OFF;
 verifyCvx       = OFF;
 
 
@@ -34,6 +34,8 @@ numCols = 4;
 paramTMinVal    = 0.1;
 paramTMaxVal    = 200;
 numSamples      = 2000;
+
+numIterations = 25; %<! Iterations of the Newton Method (Requires at least 20 in the above case)
 
 
 %% Generate Data
@@ -51,7 +53,7 @@ vParamLambda    = zeros(numSamples, 1);
 for ii = 1:numSamples
     
     paramT = vParamT(ii);
-    [vX, paramLambda] = SolveLsNormSquaredConst(mA, vB, paramT, 25);
+    [vX, paramLambda] = SolveLsNormSquaredConst(mA, vB, paramT, numIterations);
     
     vParamLambda(ii)    = paramLambda;
     mVX(:, ii)          = vX;
@@ -95,6 +97,8 @@ end
 
 %% Display Results
 
+figureIdx = figureIdx + 1;
+
 hFigure     = figure('Position', figPosLarge);
 hAxes       = axes();
 hLineObject = line(vParamT, vParamLambda);
@@ -105,6 +109,10 @@ set(get(hAxes, 'XLabel'), 'String', 't', ...
     'FontSize', fontSizeAxis);
 set(get(hAxes, 'YLabel'), 'String', '\lambda', ...
     'FontSize', fontSizeAxis);
+
+if(generateFigures == ON)
+    saveas(hFigure, ['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
+end
 
 
 %% Restore Defaults

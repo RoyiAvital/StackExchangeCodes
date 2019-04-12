@@ -124,7 +124,7 @@ set(get(hAxes, 'YLabel'), 'String', {['Sample Value']}, ...
 % hLegend = ClickableLegend({['DFT'], ['FFT']});
 
 if(generateFigures == ON)
-    saveas(hFigure,['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
+    saveas(hFigure, ['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
 end
 
 
