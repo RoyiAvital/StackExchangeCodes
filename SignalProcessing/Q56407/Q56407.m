@@ -19,7 +19,7 @@ subStreamNumberDefault = 79;
 
 run('InitScript.m');
 
-figureIdx           = 0; %<! Continue from Question 1
+figureIdx           = 0;
 figureCounterSpec   = '%04d';
 
 generateFigures = ON;
