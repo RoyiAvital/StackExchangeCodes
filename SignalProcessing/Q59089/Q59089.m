@@ -1,9 +1,8 @@
 % StackExchange Signal Processing Q59089
 % https://dsp.stackexchange.com/questions/59089
-% The Gradient of 2D Image Convolution
+% The Gradient of Least Squares of 2D Image Convolution
 % References:
-%   1.  See Applying Low Pass and Laplace of Gaussian Filter in Frequency Domain - https://stackoverflow.com/questions/50614085.
-%       Under my solution, the script 'FreqDomainConv.m'.
+%   1.  A
 % Remarks:
 %   1.  B
 % TODO:
@@ -24,8 +23,8 @@ figureCounterSpec   = '%04d';
 
 generateFigures = OFF;
 
-CONVOLUTION_MODE_FULL   = 'full';
-CONVOLUTION_MODE_VALID  = 'valid';
+SHAPE_MODE_FULL   = 'full';
+SHAPE_MODE_VALID  = 'valid';
 
 DIFF_MODE_FORWARD   = 1;
 DIFF_MODE_BACKWARD  = 2;
@@ -52,22 +51,22 @@ mX = randn(numRowsImage, numColsImage);
 mH = randn(numRowsKernel, numColsKernel);
 mY = randn(numRowsImage - numRowsKernel + 1, numColsImage - numColsKernel + 1);
 
-hConvX = @(vX) 0.5 * sum((conv2(reshape(vX, numRowsImage, numColsImage), mH, CONVOLUTION_MODE_VALID) - mY) .^ 2, 'all');
-hConvH = @(vH) 0.5 * sum((conv2(mX, reshape(vH, numRowsKernel, numColsKernel), CONVOLUTION_MODE_VALID) - mY) .^ 2, 'all');
+hConvX = @(vX) 0.5 * sum((conv2(reshape(vX, numRowsImage, numColsImage), mH, SHAPE_MODE_VALID) - mY) .^ 2, 'all');
+hConvH = @(vH) 0.5 * sum((conv2(mX, reshape(vH, numRowsKernel, numColsKernel), SHAPE_MODE_VALID) - mY) .^ 2, 'all');
 
 
 %% Gradient of Convolution
 
 % Gradient with respect to X
 vGNumeric   = CalcFunGrad(mX(:), hConvX, diffMode, epsVal);
-vGAnalytic  = conv2((conv2(mX, mH, CONVOLUTION_MODE_VALID) - mY), mH(end:-1:1, end:-1:1), CONVOLUTION_MODE_FULL); 
-% vGAnalytic = hCorr2D((conv2(mX, mH, CONVOLUTION_MODE_VALID) - mY), mH, CONVOLUTION_MODE_FULL);
+vGAnalytic  = conv2((conv2(mX, mH, SHAPE_MODE_VALID) - mY), mH(end:-1:1, end:-1:1), SHAPE_MODE_FULL); 
+% vGAnalytic = hCorr2D((conv2(mX, mH, SHAPE_MODE_VALID) - mY), mH, SHAPE_MODE_FULL);
 
 max(abs(vGNumeric(:) - vGAnalytic(:)))
 
 % Gradient with respect to H
 vGNumeric   = CalcFunGrad(mH(:), hConvH, diffMode, epsVal);
-vGAnalytic  = conv2(mX(end:-1:1, end:-1:1), (conv2(mX, mH, CONVOLUTION_MODE_VALID) - mY), CONVOLUTION_MODE_VALID);
+vGAnalytic  = conv2(mX(end:-1:1, end:-1:1), (conv2(mX, mH, SHAPE_MODE_VALID) - mY), SHAPE_MODE_VALID);
 
 max(abs(vGNumeric(:) - vGAnalytic(:)))
 
