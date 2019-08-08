@@ -85,6 +85,7 @@ tic();
 cvx_begin('quiet')
     % cvx_precision('best');
     variable mX(numRows, numCols);
+    % For 'norms()' see http://ask.cvxr.com/t/4351 and http://cvxr.com/cvx/doc/funcref.html
     minimize( (0.5 * sum_square(mX(:) - mY(:))) + (paramLambda * sum(norms(mX, 2, 1))) );
 cvx_end
 
