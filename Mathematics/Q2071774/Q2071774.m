@@ -1,6 +1,6 @@
 % Mathematics Q2071774
 % https://math.stackexchange.com/questions/2071774
-% The Proximal Operator of Cubed Euclidean Norm.
+% The Proximal Operator of Cubed Euclidean Norm (Proximal Operator of Norm Composition - Cubic Euclidean Norm).
 % References:
 %   1.  aa
 % Remarks:
@@ -14,29 +14,20 @@
 
 %% General Parameters
 
-subStreamNumberDefault = 0;
+subStreamNumberDefault = 123;
 
 run('InitScript.m');
 
 figureIdx           = 0; %<! Continue from Question 1
 figureCounterSpec   = '%04d';
 
-generateFigures = ON;
-
-DIFF_MODE_FORWARD   = 1;
-DIFF_MODE_BACKWARD  = 2;
-DIFF_MODE_CENTRAL   = 3;
-DIFF_MODE_COMPLEX   = 4;
+generateFigures = OFF;
 
 
 %% Parameters
 
-numElements = 3;
-
-paramLambda = 0.1;
-
-diffMode = DIFF_MODE_COMPLEX;
-epsVal = 1e-6;
+numElements = 50;
+paramLambda = 0.25;
 
 
 %% Load / Generate Data
@@ -44,61 +35,13 @@ epsVal = 1e-6;
 vY = 5 * randn(numElements, 1);
 
 
-%% Projection
+%% CVX Solution
 
 tic();
 
 cvx_begin('quiet')
-    % cvx_precision('best');
+    cvx_precision('best');
     variable vX(numElements);
-    % For 'norms()' see http://ask.cvxr.com/t/4351 and http://cvxr.com/cvx/doc/funcref.html
-    minimize( (0.5 * sum_square(vX - vY)) );
-    subject to
-        pow_pos(norm(vX), 3) <= 1;
-cvx_end
-
-toc();
-
-% disp([' ']);
-% disp(['CVX Solution Summary']);
-% disp(['The CVX Solver Status - ', cvx_status]);
-% disp(['The Optimal Value Is Given By - ', num2str(cvx_optval)]);
-% disp([' ']);
-
-vX
-
-tic();
-
-cvx_begin('quiet')
-    % cvx_precision('best');
-    variable vX(numElements);
-    % For 'norms()' see http://ask.cvxr.com/t/4351 and http://cvxr.com/cvx/doc/funcref.html
-    minimize( (0.5 * sum_square(vX - vY)) );
-    subject to
-        norm(vX) <= 1;
-cvx_end
-
-toc();
-
-% disp([' ']);
-% disp(['CVX Solution Summary']);
-% disp(['The CVX Solver Status - ', cvx_status]);
-% disp(['The Optimal Value Is Given By - ', num2str(cvx_optval)]);
-% disp([' ']);
-
-vX
-
-
-%% The Prox Operator
-
-% Solution by CVX
-
-tic();
-
-cvx_begin('quiet')
-    % cvx_precision('best');
-    variable vX(numElements);
-    % For 'norms()' see http://ask.cvxr.com/t/4351 and http://cvxr.com/cvx/doc/funcref.html
     minimize( (0.5 * sum_square(vX - vY)) + (paramLambda * pow_pos(norm(vX), 3)) );
 cvx_end
 
@@ -110,17 +53,17 @@ disp(['The CVX Solver Status - ', cvx_status]);
 disp(['The Optimal Value Is Given By - ', num2str(cvx_optval)]);
 disp([' ']);
 
-vX
+vXRef = vX;
 
-(1 - (paramLambda / max(norm(vY), paramLambda))) * vY
 
-mXRef = mX;
+%% The Prox Operator - Analytic Solution
 
-% Analytic Solution
+vX = (2 * vY) ./ (1 + sqrt(1 + (12 * paramLambda * norm(vY))));
 
-mX = mY .* (1 - (paramLambda ./ (  max( sqrt(sum(mY .^ 2)), paramLambda ) )));
+%% Analysis
 
-maxAbsDev = max(abs(mX(:) - mXRef(:)));
+vE = vX - vXRef;
+maxAbsDev = max(abs(vE));
 
 disp(['The Maximum Absolute Deviation - ', num2str(maxAbsDev)]);
 
