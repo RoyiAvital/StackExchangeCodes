@@ -43,3 +43,6 @@
 # Jupyter Files
 # See https://www.atlassian.com/git/tutorials/saving-changes/gitignore, https://stackoverflow.com/questions/8783093 and https://stackoverflow.com/a/36918878/195787
 **/.ipynb_checkpoints/
+
+# Output Figures Files
+Figure*.png
