@@ -28,7 +28,7 @@ generateFigures = ON;
 
 inputImageFileName  = 'InputImage.png';
 
-vNumRealizations    = 2:50;
+vNumRealizations    = 2:60;
 noiseStd            = 0.1;
 
 
@@ -51,8 +51,8 @@ for ii = 1:length(vNumRealizations)
     tN(:, :, 1:numRealizations) = tI(:, :, 1:numRealizations) - mMeanImage;
     numNoiseSamples             = numRows * numCols * numRealizations;
     vN(1:numNoiseSamples)       = reshape(tN(:, :, 1:numRealizations), numNoiseSamples, 1); %<! In MATLAB R2018b and above can use 'all' to skip this
-    vEstNoiseStd(ii, 1)         = sqrt(mean(vN(1:numNoiseSamples) .^ 2)); % std(vN);
-    vEstNoiseStd(ii, 2)         = mean(reshape(std(tI(:, :, 1:numRealizations), 0, 3), numRows * numCols, 1));
+    mEstNoiseStd(ii, 1)         = sqrt(mean(vN(1:numNoiseSamples) .^ 2)); % std(vN);
+    mEstNoiseStd(ii, 2)         = mean(reshape(std(tI(:, :, 1:numRealizations), 0, 3), numRows * numCols, 1));
 end
 
 
@@ -62,7 +62,7 @@ figureIdx = figureIdx + 1;
 
 hFigure     = figure('Position', figPosLarge);
 hAxes       = axes();
-hLineObj    = line(vNumRealizations, [vEstNoiseStd, noiseStd * ones(length(vNumRealizations), 1)]);
+hLineObj    = line(vNumRealizations, [mEstNoiseStd, noiseStd * ones(length(vNumRealizations), 1)]);
 set(hLineObj, 'LineWidth', lineWidthNormal);
 set(hLineObj(end), 'LineStyle', ':');
 set(get(hAxes, 'Title'), 'String', {['Estimation of the Noise STD as a Function of Number of Realizations']}, ...
@@ -71,7 +71,7 @@ set(get(hAxes, 'XLabel'), 'String', {['Number of Realizations']}, ...
     'FontSize', fontSizeAxis);
 set(get(hAxes, 'YLabel'), 'String', {['STD']}, ...
     'FontSize', fontSizeAxis);
-hLegend = ClickableLegend({['Estimated STD - Method 1'], ['Estimated STD - Method 2'], ['Gorund Truth']});
+hLegend = ClickableLegend({['Estimated STD - Method 1'], ['Estimated STD - Method 2'], ['Ground Truth']});
 
 if(generateFigures == ON)
     saveas(hFigure,['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
