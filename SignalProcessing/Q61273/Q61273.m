@@ -14,7 +14,7 @@
 
 %% General Parameters
 
-subStreamNumberDefault = 179;
+subStreamNumberDefault = 12;
 
 run('InitScript.m');
 
@@ -53,6 +53,7 @@ for ii = 1:length(vNumRealizations)
     vN(1:numNoiseSamples)       = reshape(tN(:, :, 1:numRealizations), numNoiseSamples, 1); %<! In MATLAB R2018b and above can use 'all' to skip this
     mEstNoiseStd(ii, 1)         = sqrt(mean(vN(1:numNoiseSamples) .^ 2)); % std(vN);
     mEstNoiseStd(ii, 2)         = mean(reshape(std(tI(:, :, 1:numRealizations), 0, 3), numRows * numCols, 1));
+    mEstNoiseStd(ii, 3)         = sqrt(mean(reshape(var(tI(:, :, 1:numRealizations), 0, 3), numRows * numCols, 1)));
 end
 
 
@@ -71,7 +72,7 @@ set(get(hAxes, 'XLabel'), 'String', {['Number of Realizations']}, ...
     'FontSize', fontSizeAxis);
 set(get(hAxes, 'YLabel'), 'String', {['STD']}, ...
     'FontSize', fontSizeAxis);
-hLegend = ClickableLegend({['Estimated STD - Method 1'], ['Estimated STD - Method 2'], ['Ground Truth']});
+hLegend = ClickableLegend({['Estimated STD - Method 1'], ['Estimated STD - Method 2'], ['Estimated STD - Method 3'], ['Ground Truth']});
 
 if(generateFigures == ON)
     saveas(hFigure,['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
