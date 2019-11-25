@@ -8,3 +8,4 @@ Codes related to answers on StackExchange Network.
  *	[The Kernel in the Guided Image Filter](https://dsp.stackexchange.com/questions/42415).  
 	Try again using the equations in [Guided Image Filtering](https://www.scribd.com/document/421510148/Guided-Image-Filtering).
  *	[AR Model Estimation Using LMS](https://dsp.stackexchange.com/questions/59325).
+ *	[Proximal Gradient Method (PGM) for a Function Model with More than 2 Functions (Sum of Functions)](https://dsp.stackexchange.com/questions/62024).
