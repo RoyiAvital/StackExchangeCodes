@@ -8,6 +8,7 @@ function [ mK ] = CreateImageFilterMtx( mH, numRows, numCols, operationMode, bou
 % parameters.
 % Input:
 %   - mH                -   Input 2D Convolution Kernel.
+%                           Assumed to have odd dimensions.
 %                           Structure: Matrix.
 %                           Type: 'Single' / 'Double'.
 %                           Range: (-inf, inf).
@@ -48,11 +49,18 @@ function [ mK ] = CreateImageFilterMtx( mH, numRows, numCols, operationMode, bou
 % References:
 %   1.  MATLAB's 'convmtx2()' - https://www.mathworks.com/help/images/ref/convmtx2.html.
 % Remarks:
-%   1.  B
+%   1.  The height and width of 'mH' are assumed to be odd number. In case
+%       either or both are even the user should pad the kernel with zeros
+%       (Either a row, column or both). according to the anchor of the
+%       kernel the user do the padding pre or post the kernel.
 % TODO:
 %   1.  Refactor the code to share the common operations of different
 %       boundary modes.
 % Release Notes:
+%   -   1.0.001     30/12/2019  Royi Avital
+%       *   Fixed some bugs related to using 'numCols' instead of 'numRows'
+%           in the calculation of 'pixelShift' for the cases 'jj + ll >
+%           numCols' and 'jj + ll < 1'.
 %   -   1.0.000     16/01/2018  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
@@ -113,7 +121,9 @@ for jj = 1:numCols
             for kk = -kernelRadiusV:kernelRadiusV
                 elmntIdx = elmntIdx + 1;
                 
-                pxShift = (ll * numCols) + kk;
+                % Pixel Index Shift such that pxIdx + pxShift is the linear
+                % index of the pixel in the image
+                pxShift = (ll * numRows) + kk;
                 
                 if((ii + kk <= numRows) && (ii + kk >= 1) && (jj + ll <= numCols) && (jj + ll >= 1))
                     vCols(elmntIdx) = pxIdx + pxShift;
@@ -159,7 +169,9 @@ for jj = 1:numCols
             for kk = -kernelRadiusV:kernelRadiusV
                 elmntIdx = elmntIdx + 1;
                 
-                pxShift = (ll * numCols) + kk;
+                % Pixel Index Shift such that pxIdx + pxShift is the linear
+                % index of the pixel in the image
+                pxShift = (ll * numRows) + kk;
                 
                 if(ii + kk > numRows)
                     pxShift = pxShift - (2 * (ii + kk - numRows) - 1);
@@ -170,11 +182,11 @@ for jj = 1:numCols
                 end
                 
                 if(jj + ll > numCols)
-                    pxShift = pxShift - ((2 * (jj + ll - numCols) - 1) * numCols);
+                    pxShift = pxShift - ((2 * (jj + ll - numCols) - 1) * numRows);
                 end
                 
                 if(jj + ll < 1)
-                    pxShift = pxShift + ((2 * (1 - (jj + ll)) - 1) * numCols);
+                    pxShift = pxShift + ((2 * (1 - (jj + ll)) - 1) * numRows);
                 end
                 
                 vCols(elmntIdx) = pxIdx + pxShift;
@@ -217,22 +229,24 @@ for jj = 1:numCols
             for kk = -kernelRadiusV:kernelRadiusV
                 elmntIdx = elmntIdx + 1;
                 
-                pxShift = (ll * numCols) + kk;
+                % Pixel Index Shift such that pxIdx + pxShift is the linear
+                % index of the pixel in the image
+                pxShift = (ll * numRows) + kk;
                 
                 if(ii + kk > numRows)
                     pxShift = pxShift - (ii + kk - numRows);
                 end
                 
                 if(ii + kk < 1)
-                    pxShift = pxShift + (1 -(ii + kk));
+                    pxShift = pxShift + (1 - (ii + kk));
                 end
                 
                 if(jj + ll > numCols)
-                    pxShift = pxShift - ((jj + ll - numCols) * numCols);
+                    pxShift = pxShift - ((jj + ll - numCols) * numRows);
                 end
                 
                 if(jj + ll < 1)
-                    pxShift = pxShift + ((1 - (jj + ll)) * numCols);
+                    pxShift = pxShift + ((1 - (jj + ll)) * numRows);
                 end
                 
                 vCols(elmntIdx) = pxIdx + pxShift;
@@ -275,7 +289,9 @@ for jj = 1:numCols
             for kk = -kernelRadiusV:kernelRadiusV
                 elmntIdx = elmntIdx + 1;
                 
-                pxShift = (ll * numCols) + kk;
+                % Pixel Index Shift such that pxIdx + pxShift is the linear
+                % index of the pixel in the image
+                pxShift = (ll * numRows) + kk;
                 
                 if(ii + kk > numRows)
                     pxShift = pxShift - numRows;
@@ -286,11 +302,11 @@ for jj = 1:numCols
                 end
                 
                 if(jj + ll > numCols)
-                    pxShift = pxShift - (numCols * numCols);
+                    pxShift = pxShift - (numCols * numRows);
                 end
                 
                 if(jj + ll < 1)
-                    pxShift = pxShift + (numCols * numCols);
+                    pxShift = pxShift + (numCols * numRows);
                 end
                 
                 vCols(elmntIdx) = pxIdx + pxShift;
