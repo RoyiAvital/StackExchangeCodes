@@ -1,6 +1,8 @@
 # Folders
 **/MPCACodes
 **/UMPCACodes
+# Ignore Work in Progress
+**/*WIP
 
 # Media Files
 # *.png
