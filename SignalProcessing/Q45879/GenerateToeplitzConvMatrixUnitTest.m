@@ -1,7 +1,4 @@
-% StackExchange Signal Processing Q45879
-% https://dsp.stackexchange.com/questions/45879
-% Estimate Filter Coefficients from the Result of Linear Convolution with a
-% Known Signal
+% Generate Toeplitz Conv Matrix Unit Test
 % References:
 %   1.  aa
 % Remarks:
@@ -9,7 +6,7 @@
 % TODO:
 % 	1.  ds
 % Release Notes
-% - 1.0.000     11/01/2020
+% - 1.0.000     17/01/2020
 %   *   First release.
 
 
@@ -31,7 +28,7 @@ CONVOLUTION_SHAPE_VALID        = 3;
 
 %% Simulation Parameters
 
-numTaps     = 4; %<! Filter Coefficients
+numTaps     = 9; %<! Filter Coefficients
 numSamples  = 25; %<! Data Samples
 convolutionShape = CONVOLUTION_SHAPE_FULL;
 

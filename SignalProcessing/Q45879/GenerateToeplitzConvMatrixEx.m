@@ -32,11 +32,9 @@ function [ mH ] = GenerateToeplitzConvMatrix( vH, numElementsData, convShape )
 % Known Issues:
 %   1.  C
 % TODO:
-%   1.  D
+%   1.  Look for direct methods to calculate the matrix of the convolution
+%       shape same.
 % Release Notes:
-%   -   1.0.001     17/01/2020  Royi Avital
-%       *   Direct use of 'toeplitz()' to create the
-%           'CONVOLUTION_SHAPE_SAME' case.
 %   -   1.0.000     11/01/2020  Royi Avital
 %       *   First realease version.
 % ----------------------------------------------------------------------------------------------- %
@@ -52,17 +50,19 @@ switch(convShape)
         vR = [vH(1); zeros(numElementsData - 1, 1)];
         vC = [vH(:); zeros(numElementsData - 1, 1)];
     case(CONVOLUTION_SHAPE_SAME)
-        sepIdx = ceil((numTaps + 1) / 2);
-        vC = zeros(numElementsData, 1);
-        vR = zeros(numElementsData, 1);
-        vC(1:numTaps - sepIdx + 1) = vH(sepIdx:numTaps);
-        vR(1:sepIdx) = vH(sepIdx:-1:1);
+        vR = [vH(1); zeros(numElementsData - 1, 1)];
+        vC = [vH(:); zeros(numElementsData - 1, 1)];
     case(CONVOLUTION_SHAPE_VALID)
         vR = [flip(vH(:), 1); zeros(numElementsData - numTaps, 1)];
         vC = [vH(end); zeros(numElementsData - numTaps, 1)];
 end
 
 mH = toeplitz(vC, vR);
+
+if(convShape == CONVOLUTION_SHAPE_SAME)
+    firstIdx = ceil((numTaps + 1)/ 2);
+    mH = mH(firstIdx:(firstIdx + numElementsData - 1), :);
+end
 
 
 end
