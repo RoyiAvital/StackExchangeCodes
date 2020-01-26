@@ -34,6 +34,10 @@ imageFileName   = 'Lenna256.png';
 kernelRadius    = 1;
 convShape       = CONVOLUTION_SHAPE_VALID;
 
+paramLambda = 0.005;
+
+maxSize = 64;
+
 
 %% Generate Data
 
@@ -41,7 +45,12 @@ mA = im2double(imread(imageFileName));
 numRows = size(mA, 1);
 numCols = size(mA, 2);
 
+imgSize = min(numRows, numCols);
+mA = mA(1:imgSize, 1:imgSize, :);
+mA = imresize(mA, [maxSize, maxSize]);
+
 mK = ones((2 * kernelRadius) + 1);
+% mK = rand((2 * kernelRadius) + 1);
 mK = mK / sum(mK(:));
 
 switch(convShape)
@@ -70,10 +79,15 @@ set(get(hAxes, 'Title'), 'String', {['Sensor Image - Lenna']}, ...
 
 %% Solution by Linear Algebra
 
-mKK = CreateConvMtx2D(mK, numRows, numCols, convShape);
+mKK = CreateConvMtx2D(mK, maxSize, maxSize, convShape);
+% Basically:
+% vB = mKK * mA(:);
 vA = mKK \ mB(:);
+% vA = pinv(full(mKK)) * mB(:);
 
-mAA = reshape(mA, numRows, numCols); %<! Restored Image
+vA = ((mKK.' * mKK) + (paramLambda * speye(maxSize * maxSize))) \ (mKK.' * mB(:));
+
+mAA = reshape(vA, maxSize, maxSize); %<! Restored Image
 
 hFigure     = figure();
 hAxes       = axes();
