@@ -36,7 +36,7 @@ convShape       = CONVOLUTION_SHAPE_VALID;
 
 paramLambda = 0.005;
 
-maxSize = 64;
+maxSize = 256;
 
 
 %% Generate Data
@@ -46,6 +46,7 @@ numRows = size(mA, 1);
 numCols = size(mA, 2);
 
 imgSize = min(numRows, numCols);
+maxSize = min(imgSize, maxSize);
 mA = mA(1:imgSize, 1:imgSize, :);
 mA = imresize(mA, [maxSize, maxSize]);
 
