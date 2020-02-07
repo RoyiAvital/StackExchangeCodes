@@ -79,7 +79,7 @@ set(hAxes, 'LooseInset', [0.05, 0.05, 0.05, 0.05]);
 hFigure     = figure('Position', [100, 100, 280, 320]); %<! [x, y, width, height]
 hAxes       = axes('Units', 'pixels', 'Position', [17, 10, 256, 256]); %<! [x, y, width, height]
 hImageObj   = imagesc(mB);
-set(get(hAxes, 'Title'), 'String', {['Input Image A'], ['Objective Value - ', num2str(objValB)]}, ...
+set(get(hAxes, 'Title'), 'String', {['Input Image B'], ['Objective Value - ', num2str(objValB)]}, ...
     'FontSize', fontSizeTitle);
 set(hAxes, 'DataAspectRatio', [1, 1, 1]);
 set(hAxes, 'XTick', [], 'YTick', [], 'XTickLabel', [], 'YTickLabel', []);
