@@ -75,10 +75,10 @@ sCvxSol.vXCvx     = vXCvx;
 sCvxSol.cvxOptVal = cvx_optval;
 
 
-%% Solution by Projected Sub Gradient Method
+%% Solution by Projected Gradient Method
 
 solverIdx                   = solverIdx + 1;
-cLegendString{solverIdx}    = ['Projected Sub Gradient Method'];
+cLegendString{solverIdx}    = ['Projected Gradient Method'];
 
 [vX, mX] = SolveLsBoxConstraints(mA, vB, vC, vD, vX0, numIterations, stopTol);
 
@@ -93,10 +93,10 @@ disp([' ']);
 [mObjFunVal, mSolErrNorm] = UpdateAnalysisData(mObjFunVal, mSolErrNorm, mX, hObjFun, sCvxSol, solverIdx);
 
 
-%% Solution by Accelerated Projected Sub Gradient Method
+%% Solution by Accelerated Projected Gradient Method
 
 solverIdx                   = solverIdx + 1;
-cLegendString{solverIdx}    = ['Accelerated Projected Sub Gradient Method'];
+cLegendString{solverIdx}    = ['Accelerated Projected Gradient Method'];
 
 [vX, mX] = SolveLsBoxConstraintsAccel(mA, vB, vC, vD, vX0, numIterations, stopTol);
 
