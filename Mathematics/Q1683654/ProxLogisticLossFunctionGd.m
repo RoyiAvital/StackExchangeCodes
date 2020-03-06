@@ -1,7 +1,7 @@
-function [ vX ] = ProxLogisticLossFunction( vX, vY, vC, paramLambda, numIterations, stopThr )
+function [ vX ] = ProxLogisticLossFunctionGd( vX, vY, vC, paramLambda, numIterations, stopThr )
 % ----------------------------------------------------------------------------------------------- %
 % [ vX ] = ProxLogisticLossFunction( vX, vY, vC, paramLambda, numIterations, stopThr )
-%   Calculates the Prox of the Logistic Cost Function using Fixed Point Iteration.
+%   Calculates the Prox of the Logistic Cost Function using Gradient Descent.
 % Input:
 %   - vX            -   Input Vector.
 %                       Starting point for the iterative procedure.
@@ -58,21 +58,28 @@ OFF     = 0;
 ON      = 1;
 
 vXPrev = vX;
+vG = zeros(size(vX, 1), 1);
 
-for ii = 1:numIterations
+hObjFun = @(vX) 0.5 * sum((vX - vY) .^ 2) + (paramLambda * log(1 + exp(-vC.' * vX)));
+stepSizeMax = 2;
+sSolverOptions = optimset('fminbnd');
+sSolverOptions = optimset(sSolverOptions, 'Display', 'off');
+
+for ii = 1: numIterations
     vXPrev(:) = vX;
     
     valExp  = exp(-vC.' * vX);
-    vX(:)   = vY + (paramLambda * (valExp / (1 + valExp)) * vC);
+    vG(:) = vX - vY - (paramLambda * (valExp / (1 + valExp)) * vC);
+    
+    hStepSizeFun    = @(stepSize) hObjFun(vX - (stepSize * vG));
+    stepSize        = fminbnd(hStepSizeFun, 0, stepSizeMax, sSolverOptions);
+    
+    vX(:) = vX - (stepSize * vG);
     
     if(max(abs(vX - vXPrev)) < stopThr)
         break;
     end
 end
-
-% Fails when the above fails
-% hObjFun = @(vX) vX - (vY + (paramLambda * (valExp / (1 + valExp)) * vC));
-% vX = fsolve(hObjFun, zeros(size(vX, 1), 1));
 
 
 end

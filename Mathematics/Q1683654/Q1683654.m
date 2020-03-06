@@ -14,7 +14,8 @@
 
 %% General Parameters
 
-subStreamNumberDefault = 0;% 2084; %<! Set to 0 for Random
+% subStreamNumber which fails: 2084, 2122
+subStreamNumberDefault = 0; %<! Set to 0 for Random
 
 run('InitScript.m');
 
@@ -39,6 +40,7 @@ hObjFun = @(vX) 0.5 * sum((vX - vY) .^ 2) + (paramLambda * log(1 + exp(-vC.' * v
 
 numIterations   = 100;
 stopThr         = 1e-6;
+setpSize        = 1e-4;
 vX0             = zeros(numElements, 1);
 
 
@@ -87,6 +89,21 @@ solverString = 'Newton Method';
 sSolverOptions = optimoptions('fminunc', 'Display', 'off');
 tic()
 vX = fminunc(hObjFun, vX0, sSolverOptions);
+toc()
+
+disp([' ']);
+disp([solverString, ' Solution Summary']);
+disp(['The Optimal Value Is Given By - ', num2str(hObjFun(vX))]);
+disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
+disp([' ']);
+
+
+%% Solution by Gradient Descent
+
+solverString = 'Gradient Descent';
+
+tic()
+vX = ProxLogisticLossFunctionGd(vX0, vY, vC, paramLambda, 100 * numIterations, stopThr);
 toc()
 
 disp([' ']);
