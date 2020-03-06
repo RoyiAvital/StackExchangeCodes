@@ -1,5 +1,5 @@
 % Mathematics Q1683654
-% https://math.stackexchange.com/questions/2824418
+% https://math.stackexchange.com/questions/1683654
 % Proximal / Prox Operator for the Logistic Function
 % References:
 %   1.  aa
