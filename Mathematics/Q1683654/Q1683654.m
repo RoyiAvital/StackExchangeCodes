@@ -68,6 +68,7 @@ disp([' ']);
 
 
 %% Solution by Fixed Point Iteration
+% See https://math.stackexchange.com/a/3572332/33
 
 solverString = 'Fixed Point Iteration';
 
