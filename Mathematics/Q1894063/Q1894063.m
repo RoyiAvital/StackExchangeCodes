@@ -32,10 +32,10 @@ DIFF_MODE_COMPLEX   = 4;
 
 %% Parameters
 
-paramLambda = 5 * rand(1);
-valX = randn(1);
-valY = 3 * randn(1);
-paramA = 5 * rand(1);
+paramLambda = 3 * rand(1);
+valX        = randn(1);
+valY        = 3 * randn(1);
+paramA      = 5 * rand(1);
 
 diffMode = DIFF_MODE_COMPLEX;
 epsVal = 1e-6;
@@ -57,9 +57,7 @@ valG = CalcFunGrad(valX, hProxFun, diffMode, epsVal)
 valG = (valX - valY) + (paramLambda * (valX) / (sqrt((valX ^ 2) + (paramA ^ 2))))
 
 
-%% Optimization
-
-% Solution by CVX
+%% Solution by CVX
 
 % tic();
 % 
@@ -77,7 +75,7 @@ valG = (valX - valY) + (paramLambda * (valX) / (sqrt((valX ^ 2) + (paramA ^ 2)))
 % disp(['The Optimal Value Is Given By - ', num2str(cvx_optval)]);
 % disp([' ']);
 
-% Solution by Gradient Descent
+%% Solution by Gradient Descent
 
 valX = valY;
 
@@ -92,7 +90,7 @@ disp(['Prox Function Value = ', num2str(hProxFun(valX))]);
 valXRef = valX;
 
 
-% Analytic Solution
+%% Analytic Solution
 % Quartic Function Coefficients
 vC = [1, -2 * valY, ((paramA  ^ 2) + (valY ^ 2) - (paramLambda ^ 2)), -2 * (paramA ^ 2) * valY, (paramA ^ 2) * (valY ^ 2)];
 % Polynomial Roots
@@ -111,6 +109,25 @@ for ii = 1:length(vRealIdx)
 end
 
 valX = vR(solIdx);
+
+disp(['valX = ', num2str(valX)]);
+disp(['Prox Function Value = ', num2str(hProxFun(valX))]);
+
+disp(['abs(valXRef - valX) = ', num2str(abs(valXRef - valX))]);
+
+
+%% Solution by Fixed Point Iteration
+
+hF = @(valIn) valY - (paramLambda * ( valIn / sqrt( (valIn * valIn) + (paramA * paramA) ) ));
+
+valX = valY;
+for ii = 1:1000
+    valX = hF(valX);
+end
+
+if(abs(paramLambda / paramA) >= 1)
+    disp(['Fixed Point Iteration Isn''t Guaranteed to Converge']);
+end
 
 disp(['valX = ', num2str(valX)]);
 disp(['Prox Function Value = ', num2str(hProxFun(valX))]);
