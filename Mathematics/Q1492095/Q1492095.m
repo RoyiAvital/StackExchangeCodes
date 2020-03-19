@@ -2,7 +2,7 @@
 % https://math.stackexchange.com/questions/1492095
 % Orthogonal Projection on Intersection of Convex Sets
 % References:
-%   1.  aa
+%   1.  TFOCS - Demo: Alternating Projections - http://cvxr.com/tfocs/demos/alternating.
 % Remarks:
 %   1.  sa
 % TODO:
