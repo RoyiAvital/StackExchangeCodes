@@ -15,7 +15,6 @@
 
 %% General Parameters
 
-% 2140
 subStreamNumberDefault = 0; %<! Set to 0 for Random
 
 run('InitScript.m');
