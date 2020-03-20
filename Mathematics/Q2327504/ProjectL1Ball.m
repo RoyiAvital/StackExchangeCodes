@@ -36,6 +36,8 @@ function [ vX ] = ProjectL1Ball( vY, ballRadius, stopThr )
 % TODO:
 %   1.  U.
 % Release Notes:
+%   -   1.0.002     20/03/2020  Royi Avital
+%       *   Added case to handle || vY ||_1 <= ballRadius.
 %   -   1.0.001     29/06/2017  Royi Avital
 %       *   Enforcing Lambda to be non negative (Dealing with the case 'vY'
 %           is obeying || vY ||_1 <= ballRadius).
@@ -48,6 +50,11 @@ TRUE    = 1;
 
 OFF     = 0;
 ON      = 1;
+
+if(sum(abs(vY)) <= ballRadius)
+    vX = vY;
+    return;
+end
 
 paramLambda     = 0;
 % The objective functions which its root (The 'paramLambda' which makes it
