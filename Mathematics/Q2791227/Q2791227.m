@@ -83,8 +83,6 @@ toc();
 
 disp([' ']);
 disp([solverString, ' Solution Summary']);
-% disp(['The ', solverString, ' Solver Status - ', cvx_status]);
-% disp(['The Optimal Value Is Given By - ', num2str(cvx_optval)]);
 disp(['The Optimal Value Is Given By - ', num2str(hObjFun(vX))]);
 disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
 disp([' ']);
@@ -103,8 +101,6 @@ toc();
 
 disp([' ']);
 disp([solverString, ' Solution Summary']);
-% disp(['The ', solverString, ' Solver Status - ', cvx_status]);
-% disp(['The Optimal Value Is Given By - ', num2str(cvx_optval)]);
 disp(['The Optimal Value Is Given By - ', num2str(hObjFun(vX))]);
 disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
 disp([' ']);

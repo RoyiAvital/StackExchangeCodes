@@ -4,10 +4,10 @@
 %       it will be used to set the SubStream of the Random Number
 %       Generator.
 % TODO:
-% 	1.  ds
+% 	1.  A
 % Release Notes
 % - 1.0.005     02/08/2019  Royi Avital
-%   *   Added Octave Comptability.
+%   *   Added Octave Compatibility.
 % - 1.0.004     05/07/2018  Royi Avital
 %   *   Added case for 'subStreamNumberDefault = 0'.
 % - 1.0.003     29/06/2018  Royi Avital
@@ -67,16 +67,14 @@ markerSizeLarge     = 10;
 mColorOrder = get(groot, 'DefaultAxesColorOrder');
 
 if(isOctave == FALSE)
-randomNumberStream  = RandStream('mlfg6331_64', 'NormalTransform', 'Ziggurat');
-
-if(exist('subStreamNumberDefault', 'var') && (subStreamNumberDefault ~= 0))
-    subStreamNumber = subStreamNumberDefault;
-else
-    subStreamNumber = round(sum(clock()));
+    randomNumberStream  = RandStream('mlfg6331_64', 'NormalTransform', 'Ziggurat');
+    
+    if(exist('subStreamNumberDefault', 'var') && (subStreamNumberDefault ~= 0))
+        subStreamNumber = subStreamNumberDefault;
+    else
+        subStreamNumber = round(sum(clock()));
+    end
+    set(randomNumberStream, 'Substream', subStreamNumber);
+    RandStream.setGlobalStream(randomNumberStream);
 end
-set(randomNumberStream, 'Substream', subStreamNumber);
-RandStream.setGlobalStream(randomNumberStream);
-end
-
-
 

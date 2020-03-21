@@ -3,6 +3,9 @@
 % Orthogonal Projection on Intersection of Convex Sets
 % References:
 %   1.  TFOCS - Demo: Alternating Projections - http://cvxr.com/tfocs/demos/alternating.
+%   2.  See Isao Yamada Work:
+%   https://scholar.google.com/citations?hl=en&user=InhJcBIAAAAJ,
+%   https://ieeexplore.ieee.org/author/37085574318, https://ieeexplore.ieee.org/author/37282458700
 % Remarks:
 %   1.  sa
 % TODO:
@@ -23,10 +26,13 @@ figureCounterSpec   = '%04d';
 
 generateFigures = ON;
 
+COMP_METHOD_A = 1;
+COMP_METHOD_B = 2;
+
 
 %% Parameters
 
-outOfSetThr     = 1e-6;
+outOfSetThr     = 1e-5;
 outOfSetCost    = 1e9;
 
 mA = [-1, 1; 1, 0; 0, -1];
@@ -35,7 +41,7 @@ vB = [0; 2; 0];
 ballRadius = 1;
 
 numIterations   = 10;
-stopThr         = 1e-6;
+stopThr         = outOfSetThr * outOfSetThr;
 
 
 %% Load / Generate Data
@@ -118,6 +124,48 @@ solverString = 'Dykstra''s Projection Algorithm';
 
 tic();
 vX = OrthogonalProjectionOntoConvexSets(cProjFun, vY, numIterations, stopThr);
+toc();
+
+disp([' ']);
+disp([solverString, ' Solution Summary']);
+disp(['The Optimal Value Is Given By - ', num2str(hObjFun(vX))]);
+disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
+disp([' ']);
+
+% It doesn't work
+mW(:, 1) = OrthogonalProjectionOntoConvexSets(cProjFun, vY, 1, 0);
+for ii = 2:numIterations
+    mW(:, ii) = OrthogonalProjectionOntoConvexSets(cProjFun, mW(:, ii - 1), 1, 0);
+end
+
+
+%% Solution by Hybrid Projection Algorithm - Method A
+
+solverString = 'Hybrid Projection Algorithm A';
+
+tic();
+vX = HybridOrthogonalProjectionOntoConvexSets(cProjFun, vY, 1e6, stopThr, COMP_METHOD_A);
+toc();
+
+disp([' ']);
+disp([solverString, ' Solution Summary']);
+disp(['The Optimal Value Is Given By - ', num2str(hObjFun(vX))]);
+disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
+disp([' ']);
+
+% It doesn't work
+mW(:, 1) = OrthogonalProjectionOntoConvexSets(cProjFun, vY, 1, 0);
+for ii = 2:numIterations
+    mW(:, ii) = OrthogonalProjectionOntoConvexSets(cProjFun, mW(:, ii - 1), 1, 0);
+end
+
+
+%% Solution by Hybrid Projection Algorithm - Method B
+
+solverString = 'Hybrid Projection Algorithm B';
+
+tic();
+vX = HybridOrthogonalProjectionOntoConvexSets(cProjFun, vY, 1e6, stopThr, COMP_METHOD_B);
 toc();
 
 disp([' ']);

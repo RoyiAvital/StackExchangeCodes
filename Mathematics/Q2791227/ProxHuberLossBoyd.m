@@ -32,7 +32,7 @@ function [ vX ] = ProxHuberLossBoyd( vY, paramDelta, paramLambda )
 %   3.  Proximal Operator of the Huber Loss Function - https://math.stackexchange.com/questions/3589025.
 % Remarks:
 %   1.  In the reference by Boyd they use the $ \rho = 1 / \lambda $ form of
-%       the Proximal Opertaor. Hence the adaption of the scaling. Also the
+%       the Proximal Operator. Hence the adoption of the scaling. Also the
 %       book use Huber Loss Function with $ \delta = 1 $. 
 % TODO:
 %   1.  U.

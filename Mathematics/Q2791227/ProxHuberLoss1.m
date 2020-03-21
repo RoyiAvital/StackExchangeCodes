@@ -28,8 +28,8 @@ function [ vX ] = ProxHuberLoss1( vY, paramLambda )
 %   1.  This is the Proximal Operator of the Huber Loss Function for the
 %       case \delta = 1.
 %   2.  In the reference by Boyd they use $ \rho = 1 / \lambda $. Hence I
-%       kept the refernce as is to show the code implements for the $
-%       \lambda $ form of the Proximal Opertaor.
+%       kept the reference as is to show the code implements for the $
+%       \lambda $ form of the Proximal Operator.
 % TODO:
 %   1.  U.
 % Release Notes:
