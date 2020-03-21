@@ -1,9 +1,9 @@
-function [ vX ] = ProxHuberLoss( vY, paramDelta, paramLambda )
+function [ vX ] = ProxHuberLossBoyd( vY, paramDelta, paramLambda )
 % ----------------------------------------------------------------------------------------------- %
-% [ vX ] = ProxHuberLoss( vY, paramDelta, paramLambda )
+% [ vX ] = ProxHuberLossBoyd( vY, paramDelta, paramLambda )
 %   Solves the Proximal Operator of the Huber Loss Function:
 %   $$ \arg \min_{x} \frac{1}{2} {\left| x - y \right\|}_{2}^{2} + \lambda {H}_{\delta} \left( x \right) $$
-%   Where $ {H}_{\delta} \left( x \right) $ is the Huber Loss Function.
+%   Where {H}_{\delta} \left( x \right) is the Huber Loss Function.
 % Input:
 %   - vY            -   Input Vector.
 %                       Structure: Vector (Column).
@@ -28,9 +28,12 @@ function [ vX ] = ProxHuberLoss( vY, paramDelta, paramLambda )
 %                       Range: (-inf, inf).
 % References
 %   1.  Huber Loss (Wikipedia) - https://en.wikipedia.org/wiki/Huber_loss.
-%   1.  Proximal Operator / Proximal Mapping of the Huber Loss Function - https://math.stackexchange.com/questions/3589025.
+%   2.  Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers (See Huber Fitting).
+%   3.  Proximal Operator of the Huber Loss Function - https://math.stackexchange.com/questions/3589025.
 % Remarks:
-%   1.  a
+%   1.  In the reference by Boyd they use the $ \rho = 1 / \lambda $ form of
+%       the Proximal Opertaor. Hence the adaption of the scaling. Also the
+%       book use Huber Loss Function with $ \delta = 1 $. 
 % TODO:
 %   1.  U.
 % Release Notes:
@@ -44,7 +47,8 @@ TRUE    = 1;
 OFF     = 0;
 ON      = 1;
 
-vX = vY - ((paramLambda * vY) ./ (max(abs(vY / paramDelta), paramLambda + 1)));
+hProxL1 = @(vX, paramLambda) sign(vX) .* max(abs(vX) - paramLambda, 0);
+vX = ((1 / (1 + paramLambda)) * vY) + (paramDelta * (paramLambda / (1 + paramLambda)) * hProxL1((vY / paramDelta), 1 + paramLambda));
 
 
 end

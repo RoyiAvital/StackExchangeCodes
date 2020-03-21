@@ -32,7 +32,7 @@ outOfSetThr     = 1e-6;
 outOfSetCost    = 1e9;
 
 paramLambda = rand(1);
-paramDelta = 1;
+paramDelta = 3;
 
 
 %% Load / Generate Data
@@ -40,7 +40,11 @@ paramDelta = 1;
 vY      = 2 * randn(numElements, 1);
 hObjFun = @(vX) 0.5 * sum((vX - vY) .^ 2) + (paramLambda * HuberLoss(vX, paramDelta));
 % From https://math.stackexchange.com/a/1650535
-hProxHuberLoss = @(vX, paramLambda) vX - ((paramLambda * vX) ./ (max(abs(vX), paramLambda + 1)));
+% This is the Proximal Operator for the case paramDelta = 1.
+hProxHuberLoss1 = @(vX, paramLambda) vX - ((paramLambda * vX) ./ (max(abs(vX), paramLambda + 1)));
+% Supporting any Huber Loss Function by Scaling of the Prox
+% HuberLoss(vY, paramDelta) = paramDelta * paramDelta * HuberLoss(vY / paramDelta, 1)
+hProxHuberLoss = @(vX, paramDelta, paramLambda) paramDelta * hProxHuberLoss1(vX / paramDelta, paramLambda);
 
 
 %% Solution by CVX
@@ -73,7 +77,7 @@ solverString = 'Analytic';
 tic();
 
 % From https://math.stackexchange.com/a/1650535/33
-vX = hProxHuberLoss(vY, paramLambda);
+vX = hProxHuberLoss(vY, paramDelta, paramLambda);
 
 toc();
 
@@ -93,7 +97,7 @@ solverString = 'Analytic';
 tic();
 
 % By Boyd's Book
-vX = ProxHuberLoss(vY, paramLambda);
+vX = ProxHuberLossBoyd(vY, paramDelta, paramLambda);
 
 toc();
 
