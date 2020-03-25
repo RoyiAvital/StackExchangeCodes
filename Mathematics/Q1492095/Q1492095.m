@@ -181,6 +181,30 @@ for ii = 2:numIterations
 end
 
 
+%% Solution by Consensus Admm
+
+solverString = 'Consensus Admm';
+
+paramRho = 1;
+cProxFun = cell(numSets + 1, 1);
+
+cProxFun{1} = @(vV, paramRho) (vV + vY) / (1 + paramRho);
+
+for ii = 2:numSets + 1
+    cProxFun{ii} = @(vV, paramRho) cProjFun{ii - 1}(vV);
+end
+
+tic();
+vX = ConsensusAdmm(cProxFun, numCols, paramRho, 100, stopThr);
+toc();
+
+disp([' ']);
+disp([solverString, ' Solution Summary']);
+disp(['The Optimal Value Is Given By - ', num2str(hObjFun(vX))]);
+disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);
+disp([' ']);
+
+
 %%
 
 axisRadius = 5;
