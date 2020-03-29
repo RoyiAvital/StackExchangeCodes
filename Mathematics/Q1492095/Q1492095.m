@@ -26,7 +26,7 @@ figureCounterSpec   = '%04d';
 
 generateFigures = ON;
 
-COMP_METHOD_A = 1;
+COMP_METHOD_A = 1; %<! Faster Method
 COMP_METHOD_B = 2;
 
 
@@ -181,9 +181,9 @@ for ii = 2:numIterations
 end
 
 
-%% Solution by Consensus Admm
+%% Solution by Consensus ADMM
 
-solverString = 'Consensus Admm';
+solverString = 'Consensus ADMM';
 
 paramRho = 1;
 cProxFun = cell(numSets + 1, 1);
