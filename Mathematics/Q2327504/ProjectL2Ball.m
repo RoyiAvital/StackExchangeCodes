@@ -1,7 +1,7 @@
 function [ vX ] = ProjectL2Ball( vY, ballRadius )
 % ----------------------------------------------------------------------------------------------- %
 % [ vX ] = ProjectL2Ball( vY, ballRadius, stopThr )
-%   Solving the Orthoginal Porjection Problem of the input vector onto the
+%   Solving the Orthogonal Projection Problem of the input vector onto the
 %   L2 Ball.
 % Input:
 %   - vY            -   Input Vector.

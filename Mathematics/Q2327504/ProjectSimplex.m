@@ -1,7 +1,7 @@
 function [ vX ] = ProjectSimplex( vY, ballRadius, stopThr )
 % ----------------------------------------------------------------------------------------------- %
 % [ vX ] = ProjectSimplex( vY, ballRadius, stopThr )
-%   Solving the Orthoginal Porjection Problem of the input vector onto the
+%   Solving the Orthogonal Projection Problem of the input vector onto the
 %   Simplex Ball using Dual Function and Newton Iteration.
 % Input:
 %   - vY            -   Input Vector.

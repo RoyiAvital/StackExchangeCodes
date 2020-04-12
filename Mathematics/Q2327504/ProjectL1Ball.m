@@ -1,7 +1,7 @@
 function [ vX ] = ProjectL1Ball( vY, ballRadius, stopThr )
 % ----------------------------------------------------------------------------------------------- %
 % [ vX ] = ProjectL1Ball( vY, ballRadius, stopThr )
-%   Solving the Orthoginal Porjection Problem of the input vector onto the
+%   Solving the Orthogonal Projection Problem of the input vector onto the
 %   L1 Ball using Dual Function and Newton Iteration.
 % Input:
 %   - vY            -   Input Vector.

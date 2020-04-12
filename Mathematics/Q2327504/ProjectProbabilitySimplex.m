@@ -1,34 +1,30 @@
-function [ vX ] = ProjectLInfBall( vY, ballRadius )
+function [ vX ] = ProjectProbabilitySimplex( vY )
 % ----------------------------------------------------------------------------------------------- %
-% [ vX ] = ProjectL2Ball( vY, ballRadius, stopThr )
+% [ vX ] = ProjectProbabilitySimplex( vY )
 %   Solving the Orthogonal Projection Problem of the input vector onto the
-%   L Inf Ball.
+%   Probability (Unit) Simplex. This solver returns the analytic exact
+%   solution.
 % Input:
 %   - vY            -   Input Vector.
 %                       Structure: Vector (Column).
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
-%   - ballRadius    -   Ball Radius.
-%                       Sets the Radius of the L Inf Ball. For Unit L Inf 
-%                       Ball set to 1.
-%                       Structure: Scalar.
-%                       Type: 'Single' / 'Double'.
-%                       Range: (0, inf).
 % Output:
 %   - vX            -   Output Vector.
-%                       The projection of the Input Vector onto the L Inf
+%                       The projection of the Input Vector onto the Simplex
 %                       Ball.
 %                       Structure: Vector (Column).
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
 % References
-%   1.  h
+%   1.  Projection Onto A Simplex (https://arxiv.org/abs/1101.6081).
 % Remarks:
-%   1.  a
+%   1.  B
 % TODO:
-%   1.  U.
+%   1.  Explore options to add support for other Radius of the Simplex
+%       (Instead of sum to 1 sum to some other positive number).
 % Release Notes:
-%   -   1.0.000     29/06/2017  Royi Avital
+%   -   1.0.000     13/04/2020  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
@@ -38,7 +34,20 @@ TRUE    = 1;
 OFF     = 0;
 ON      = 1;
 
-vX = sign(vY) .* min(abs(vY), ballRadius);
+numElements = size(vY, 1);
+vYY         = sort(vY, 'ascend'); %<! Sorted values
+
+valT = (sum(vY) - 1) / numElements;
+
+for ii = (numElements - 1):-1:1
+    valTT = (sum(vYY((ii + 1):numElements)) - 1) / (numElements - ii);
+    if( valTT > vYY(ii) )
+        valT = valTT;
+        break;
+    end
+end
+
+vX = max(vY - valT, 0);
 
 
 end
