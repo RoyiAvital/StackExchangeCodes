@@ -13,7 +13,7 @@
 run('InitScript.m');
 
 numRows     = 50;
-ballRadius  = 1; %<! This is only for Unit Simplex
+ballRadius  = 1.5; %<! This is only for Unit Simplex
 
 
 %% Generating Data
@@ -41,7 +41,7 @@ disp([' ']);
 
 %% Solution by Dual Function and Newton Iteration
 
-vX = ProjectUnitSimplex(vY);
+vX = ProjectProbabilitySimplex(vY, ballRadius);
 
 disp([' ']);
 disp(['Dual Function Solution Summary']);
