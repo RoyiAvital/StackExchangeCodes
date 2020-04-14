@@ -1,14 +1,20 @@
 function [ vX ] = ProjectProbabilitySimplex( vY, ballRadius )
 % ----------------------------------------------------------------------------------------------- %
-% [ vX ] = ProjectProbabilitySimplex( vY )
+% [ vX ] = ProjectProbabilitySimplex( vY, ballRadius )
 %   Solving the Orthogonal Projection Problem of the input vector onto the
-%   Probability (Unit) Simplex. This solver returns the analytic exact
+%   scaled Probability Simplex. This solver returns the analytic exact
 %   solution.
 % Input:
 %   - vY            -   Input Vector.
 %                       Structure: Vector (Column).
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
+%   - ballRadius    -   Ball Radius.
+%                       Sets the Radius of the Simplex Ball. For Unit
+%                       Simplex set to 1.
+%                       Structure: Scalar.
+%                       Type: 'Single' / 'Double'.
+%                       Range: (0, inf).
 % Output:
 %   - vX            -   Output Vector.
 %                       The projection of the Input Vector onto the Simplex
@@ -24,7 +30,7 @@ function [ vX ] = ProjectProbabilitySimplex( vY, ballRadius )
 % TODO:
 %   1.  C
 % Release Notes:
-%   -   1.2.000     13/04/2020  Royi Avital
+%   -   1.1.000     14/04/2020  Royi Avital
 %       *   Added support for different Ball Radius. The Probability
 %           Simplex is given by 'ballRadius = 1'.
 %   -   1.0.000     13/04/2020  Royi Avital

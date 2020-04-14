@@ -32,7 +32,8 @@ function [ vX ] = ProjectSimplex( vY, ballRadius, stopThr )
 %   1.  https://math.stackexchange.com/questions/2327504.
 %   2.  https://en.wikipedia.org/wiki/Newton%27s_method.
 % Remarks:
-%   1.  a
+%   1.  The objective function isn't smooth (Piece wise linear). Yet in
+%       practice the Newton Method works well.
 % TODO:
 %   1.  U.
 % Release Notes:
@@ -62,8 +63,8 @@ paramMu = min(vY) - ballRadius;
 objFun      = sum( max(vY - paramMu, 0) ) - ballRadius;
 
 while(abs(objFun) > stopThr)
-    objFun      = sum( max(vY - paramMu, 0) ) - ballRadius;
-    df          = sum(-((vY - paramMu) > 0)); %<! Derivative of 'objVal' with respect to Mu
+    objFun  = sum( max(vY - paramMu, 0) ) - ballRadius;
+    df      = sum(-((vY - paramMu) > 0)); %<! Derivative of 'objVal' with respect to Mu
     paramMu = paramMu - (objFun / df); %<! Newton Iteration
 end
 

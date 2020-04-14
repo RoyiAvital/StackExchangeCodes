@@ -52,6 +52,7 @@ OFF     = 0;
 ON      = 1;
 
 if(sum(abs(vY)) <= ballRadius)
+    % The input is already within the L1 Ball.
     vX = vY;
     return;
 end

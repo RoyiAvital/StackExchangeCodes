@@ -44,6 +44,46 @@ disp([' ']);
 
 vX = ProjectSimplex(vY, ballRadius, stopThr);
 
+%{
+% Analytic way to extract paramMu
+
+numSamples  = 1000;
+vParamMu    = linspace(min(vY) - ballRadius, max(vY) + ballRadius, numSamples);
+vParamMu    = [min(vY) - ballRadius; sort(vY, 'ascend'); max(vY) + ballRadius];
+
+numSamples = size(vParamMu, 1);
+
+hObjFun = @(paramMu) sum( max(vY - paramMu, 0) ) - ballRadius;
+
+vObjVal = zeros(numSamples, 1);
+for ii = 1:numSamples
+	vObjVal(ii) = hObjFun(vParamMu(ii));
+end
+
+figure();
+plot(vParamMu, vObjVal);
+grid('on');
+
+if(any(vObjVal == 0))
+    paramMu = vParamMu(vObjVal == 0);
+else
+    valX1Idx = find(vObjVal > 0, 1, 'last');
+    valX2Idx = find(vObjVal < 0, 1, 'first');
+
+    valX1 = vParamMu(valX1Idx);
+    valX2 = vParamMu(valX2Idx);
+    valY1 = vObjVal(valX1Idx);
+    valY2 = vObjVal(valX2Idx);
+
+    paramA = (valY2 - valY1) / (valX2 - valX1);
+    paramB = valY1 - (paramA * valX1);
+    paramMu = -paramB / paramA;
+end
+
+hObjFun(paramMu); %<! Should be zero
+
+%}
+
 disp([' ']);
 disp(['Dual Function Solution Summary']);
 disp(['The Optimal Argument Is Given By - [ ', num2str(vX.'), ' ]']);

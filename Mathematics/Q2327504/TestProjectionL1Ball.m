@@ -24,7 +24,7 @@ vY = 10 * rand([numRows, 1]) - 5;
 %% Solution by CVX
 
 cvx_begin('quiet')
-    cvx_precision('best');
+    % cvx_precision('best');
     variable vXCvx(numRows)
     minimize( norm(vXCvx - vY) )
     subject to
@@ -41,7 +41,8 @@ disp([' ']);
 
 %% Solution by Dual Function and Newton Iteration
 
-vX = ProjectL1Ball(vY, ballRadius, stopThr);
+% vX = ProjectL1Ball(vY, ballRadius, stopThr);
+vX = ProjectL1BallExact(vY, ballRadius);
 
 disp([' ']);
 disp(['Dual Function Solution Summary']);
@@ -54,7 +55,7 @@ disp([' ']);
 disp([' ']);
 disp(['CVX Solution L1 Norm - ', num2str(norm(vXCvx, 1))]);
 disp(['Dual Function Solution L1 Norm - ', num2str(norm(vX, 1))]);
-disp(['Solutions Difference L1 Norn - ', num2str(norm(vXCvx - vX, 1))]);
+disp(['Solutions Difference L1 Norm - ', num2str(norm(vXCvx - vX, 1))]);
 disp([' ']);
 
 
