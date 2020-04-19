@@ -61,8 +61,9 @@ hObjFun = @(mW) 0.5 * sum((mX * mW(:) - vY) .^ 2);
 %% Solution by CVX
 
 cvx_solver('SDPT3'); %<! Default, Slowest
-% cvx_solver('Mosek'); %<! Fastest, Requires removing 'cvx_precision('best');'
 % cvx_solver('SeDuMi'); %<! Faster than 'SDPT3', yet less accurate
+% cvx_solver('Mosek'); %<! Fastest, Requires removing 'cvx_precision('best');'
+% cvx_solver('Gurobi'); %<! Can't handle this kind of problems
 
 hRunTime = tic();
 
@@ -76,17 +77,13 @@ cvx_begin('quiet')
     minimize( 0.5 * objVal )
 cvx_end
 
-runTime = toc(hRunTime);
-
-% hRunTime = tic();
-% 
-% cvx_begin('quiet')
+% cvx_begin()
 %     % cvx_precision('best');
 %     variable mW(numRows, numRows) semidefinite
 %     minimize( 0.5 * sum_square( mX * vec(mW) - vY ) )
 % cvx_end
-% 
-% runTime = toc(hRunTime);
+
+runTime = toc(hRunTime);
 
 disp([' ']);
 disp(['CVX Solution Summary']);
