@@ -51,9 +51,9 @@ hObjFun = @(vX) sum(((mA * vX) - vB) .^ 2);
 
 solverString = 'CVX';
 
-% cvx_solver('SDPT3'); %<! Default
+cvx_solver('SDPT3'); %<! Default
 % cvx_solver('SeDuMi');
-cvx_solver('Mosek');
+% cvx_solver('Mosek');
 % cvx_solver('Gurobi');
 
 hRunTime = tic();
