@@ -1,53 +1,40 @@
 function [ vO ] = ConvolutionOverlapSave( vS, vK, convShape )
 % ----------------------------------------------------------------------------------------------- %
-% [ mK ] = CreateConvMtx1D( vK, numElements, convShape )
-% Generates a Convolution Matrix for 1D Kernel (The Vector vK) with
-% support for different convolution shapes (Full / Same / Valid). The
-% matrix is build such that for a signal 'vS' with 'numElements = size(vS
-% ,1)' the following are equiavlent: 'mK * vS' and conv(vS, vK,
-% convShapeString);
+% [ vO ] = ConvolutionDft( vS, vK, convShape )
+% Applying 1D Linear Convolution using the Overlap and Save approach. The
+% function calculates the optimal DFT Window.
 % Input:
-%   - vK                -   Input 1D Convolution Kernel.
-%                           Structure: Vector.
+%   - vS                -   Input 1D Convolution Signal.
+%                           Structure: Vector (signalLength, 1).
 %                           Type: 'Single' / 'Double'.
 %                           Range: (-inf, inf).
-%   - numElements       -   Number of Elements.
-%                           Number of elements of the vector to be
-%                           convolved with the matrix. Basically set the
-%                           number of columns of the Convolution Matrix.
-%                           Structure: Scalar.
+%   - vK                -   Input 1D Convolution Kernel.
+%                           Structure: Vector (kernelLength, 1).
 %                           Type: 'Single' / 'Double'.
-%                           Range: {1, 2, 3, ...}.
+%                           Range: (-inf, inf).
 %   - convShape         -   Convolution Shape.
 %                           The shape of the convolution which the output
 %                           convolution matrix should represent. The
-%                           options should match MATLAB's conv2() function
+%                           options should match MATLAB's conv() function
 %                           - Full / Same / Valid.
 %                           Structure: Scalar.
 %                           Type: 'Single' / 'Double'.
 %                           Range: {1, 2, 3}.
 % Output:
-%   - mK                -   Convolution Matrix.
-%                           The output convolution matrix. The product of
-%                           'mK' and a vector 'vS' ('mK * vS') is the
-%                           convolution between 'vK' and 'vS' with the
-%                           corresponding convolution shape.
-%                           Structure: Matrix (Sparse).
+%   - vS                -   Input 1D Convolution Output Vector.
+%                           Structure: Vector (outputLength, 1).
 %                           Type: 'Single' / 'Double'.
 %                           Range: (-inf, inf).
 % References:
-%   1.  MATLAB's 'convmtx()' - https://www.mathworks.com/help/signal/ref/convmtx.html.
+%   1.  MATLAB's 'conv()' - https://www.mathworks.com/help/matlab/ref/conv.html.
+%   2.  Overlap and Save Method (Wikipedia) - https://en.wikipedia.org/wiki/Overlap%E2%80%93save_method.
 % Remarks:
-%   1.  The output matrix is sparse data type in order to make the
-%       multiplication by vectors to more efficient.
-%   2.  In caes the same convolution is applied on many vectors, stacking
-%       them into a matrix (Each signal as a vector) and applying
-%       convolution on each column by matrix multiplication might be more
-%       efficient than applying classic convolution per column.
+%   1.  The signals must be columns signals.
+%   2.  It is assumed that the input signal is not shorter than the kernel.
 % TODO:
-%   1.  
+%   1.  C
 %   Release Notes:
-%   -   1.0.000     20/01/2019  Royi Avital
+%   -   1.0.000     27/04/2020  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
@@ -55,53 +42,39 @@ CONVOLUTION_SHAPE_FULL         = 1;
 CONVOLUTION_SHAPE_SAME         = 2;
 CONVOLUTION_SHAPE_VALID        = 3;
 
-% numSamplesSignal = size(vS, 1);
-% numSamplesKernel = size(vK, 1);
-% 
-% numSamlpesOutput = numSamplesSignal + numSamplesKernel - 1; %<! Linear Convolution, Full
-% 
-% overlapLength = numSamplesKernel - 1;
-% % fftLength = CalcOptimalStepSize(numSamplesSignal, numSamplesKernel);
-% fftLength = numSamplesKernel + 3;
-% 
-% vSS = [vS; zeros(mod(-numSamplesSignal, overlapLength), 1); zeros(overlapLength, 1)];
+signalLength    = size(vS, 1); %<! K
+kernelLength    = size(vK, 1); %<! M
+dftLength       = CalcOptimalDftLength(signalLength, kernelLength); %<! N
+convWinLength   = dftLength - kernelLength + 1; %<! L
 
+paddSignalLength = ceil((signalLength + kernelLength - 1) / convWinLength) * dftLength;
 
-K = size(vS, 1);
-M = size(vK, 1); %<! Filter Length
-N = CalcOptimalDftLength(K, M);
-L = N - M + 1;
+vSS = [zeros(kernelLength - 1, 1); vS; zeros(paddSignalLength - kernelLength - 1 + signalLength, 1)];
 
-P = ceil((K + M - 1) / L) * N;
-
-vSS = [zeros(M - 1, 1); vS; zeros(P - M - 1 + K, 1)];
-
-numSteps    = ceil((K + M - 1) / L);
-vKD         = fft(vK, N);
-vO          = zeros(numSteps * L, 1);
-vOO         = zeros(N, 1);
+numSteps    = ceil((signalLength + kernelLength - 1) / convWinLength);
+vKD         = fft(vK, dftLength);
+vO          = zeros(numSteps * convWinLength, 1);
+vOO         = zeros(dftLength, 1);
 idxPos      = 0;
 for ii = 1:numSteps
     firstIdx = idxPos + 1;
-    lastIdx = idxPos + N;
+    lastIdx = idxPos + dftLength;
     vOO(:) = ifft(fft(vSS(firstIdx:lastIdx)) .* vKD, 'symmetric');
-    lastIdx = idxPos + L;
-    vO(firstIdx:lastIdx) = vOO(M:N);
-    idxPos = idxPos + L;
+    lastIdx = idxPos + convWinLength;
+    vO(firstIdx:lastIdx) = vOO(kernelLength:dftLength);
+    idxPos = idxPos + convWinLength;
 end
-
-
 
 switch(convShape)
     case(CONVOLUTION_SHAPE_FULL)
         idxFirst    = 1;
-        idxLast     = K + M - 1;
+        idxLast     = signalLength + kernelLength - 1;
     case(CONVOLUTION_SHAPE_SAME)
-        idxFirst    = 1 + floor(M / 2);
-        idxLast     = idxFirst + K - 1;
+        idxFirst    = 1 + floor(kernelLength / 2);
+        idxLast     = idxFirst + signalLength - 1;
     case(CONVOLUTION_SHAPE_VALID)
-        idxFirst    = M;
-        idxLast     = (K + M - 1) - M + 1;
+        idxFirst    = kernelLength;
+        idxLast     = (signalLength + kernelLength - 1) - kernelLength + 1;
 end
 
 vO          = vO(idxFirst:idxLast);

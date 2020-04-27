@@ -82,7 +82,7 @@ for jj = 1:numSamplesSteps
                     hF = @() ConvolutionDft(vSS, vKK, convShape);
             end
             
-            mRunTime(ii, jj, kk) = TimeItMin(hF);
+            mRunTime(ii, jj, kk) = timeit(hF);
             
         end
     end
