@@ -71,15 +71,15 @@ for jj = 1:numSamplesSteps
     for ii = jj:numSamplesSteps
         % Signal Length
         numSamplesSignal = vNumSamples(ii);
-        vSS = vS(1:numSamplesKernel);
+        vSS = vS(1:numSamplesSignal);
         for kk = 1:numMethods
             switch(vConvMethod(kk))
                 case(CONVOLUTION_METHOD_DIRECT)
                     hF = @() conv2(vSS, vKK, convString);
                 case(CONVOLUTION_METHOD_OVERLAP_SAVE)
-                    hF = @() ConvolutionOverlapSave(vSS, vKK, CONVOLUTION_SHAPE_FULL);
+                    hF = @() ConvolutionOverlapSave(vSS, vKK, convShape);
                 case(CONVOLUTION_METHOD_DFT)
-                    hF = @() ConvolutionDft(vSS, vKK, CONVOLUTION_SHAPE_FULL);
+                    hF = @() ConvolutionDft(vSS, vKK, convShape);
             end
             
             mRunTime(ii, jj, kk) = TimeItMin(hF);
