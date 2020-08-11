@@ -1,7 +1,7 @@
 function [ vX, mP ] = ApplyUnscentedKalmanFilterIteration( vX, mP, vZ, hF, hH, mQ, mR )
 % ----------------------------------------------------------------------------------------------- %
 % [ vX, mP ] = ApplyUnscentedKalmanFilterIteration( vX, mP, vZ, hF, hH, mQ, mR )
-%   Applies iteration of the Unscented Kalman Filter (Predicition +
+%   Applies iteration of the Unscented Kalman Filter (Prediction +
 %   Update). Supports both Linear and Non Linear Modes.
 % Input:
 %   - vX            -   Input State Vector.
@@ -28,7 +28,7 @@ function [ vX, mP ] = ApplyUnscentedKalmanFilterIteration( vX, mP, vZ, hF, hH, m
 %                       Structure: Matrix.
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
-%   - mR            -   Measuremetn Noise Covariance.
+%   - mR            -   Measurement Noise Covariance.
 %                       Structure: Matrix.
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
@@ -43,7 +43,7 @@ function [ vX, mP ] = ApplyUnscentedKalmanFilterIteration( vX, mP, vZ, hF, hH, m
 %                       Range: (-inf, inf).
 % References
 %   1.  Unscented Kalman Filter (Wikipedia) - https://en.wikipedia.org/wiki/Kalman_filter#Unscented_Kalman_filter.
-%   2.  Unscented Tranform (Wikipedia) - https://en.wikipedia.org/wiki/Unscented_transform.
+%   2.  Unscented Transform (Wikipedia) - https://en.wikipedia.org/wiki/Unscented_transform.
 %   3.  Kalman Filter (Wikipedia) - https://en.wikipedia.org/wiki/Kalman_filter.
 %   4.  Lecture 5: Unscented Kalman Filter and General Gaussian Filtering (Simo Sarkka).
 % Remarks:

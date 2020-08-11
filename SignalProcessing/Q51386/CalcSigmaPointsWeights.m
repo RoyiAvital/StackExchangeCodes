@@ -1,8 +1,8 @@
 function [ vWm, vWc, scalingFactor ] = CalcSigmaPointsWeights( paramAlpha, paramBeta, paramKappa, stateOrder )
 % ----------------------------------------------------------------------------------------------- %
 % [ vWm, vWc, scalingFactor ] = CalcSigmaPointsWeights( paramAlpha, paramBeta, paramKappa, stateOrder )
-%   Calculates the weights for the mean, covariance and scaling sactor of 
-%   the Unsecented Transform.
+%   Calculates the weights for the mean, covariance and scaling factor of 
+%   the Unscented Transform.
 % Input:
 %   - paramAlpha    -   Parameter Alpha.
 %                       Influences how far the Sigma Points are form the
@@ -39,13 +39,13 @@ function [ vWm, vWc, scalingFactor ] = CalcSigmaPointsWeights( paramAlpha, param
 %                       Range: (-inf, inf).
 %   - scalingFctr   -   Scaling Factor.
 %                       Parameter of the Generalized Unscented Transform
-%                       which controlls 
+%                       which controls 
 %                       Equals to 'size(hF(mX(:, 1), 1)'.
 %                       Structure: Scalar.
 %                       Type: 'Single' / 'Double'.
 %                       Range: {1, 2, ...}.
 % References
-%   1.  Unscented Tranform (Wikipedia) - https://en.wikipedia.org/wiki/Unscented_transform.
+%   1.  Unscented Transform (Wikipedia) - https://en.wikipedia.org/wiki/Unscented_transform.
 %   2.  Lecture 5: Unscented Kalman Filter and General Gaussian Filtering (Simo Sarkka).
 %   3.  Robot Mapping - Unscented Kalman Filter (Cyrill Stachniss).
 % Remarks:

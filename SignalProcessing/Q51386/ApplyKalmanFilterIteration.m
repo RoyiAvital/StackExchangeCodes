@@ -1,7 +1,7 @@
 function [ vX, mP ] = ApplyKalmanFilterIteration( vX, mP, vZ, hF, hH, mQ, mR, mF, mH )
 % ----------------------------------------------------------------------------------------------- %
 % [ vX, mP ] = ApplyKalmanFilterIteration( vX, mP, vZ, hF, hH, mQ, mR, mF, mH )
-%   Applies iteration of the Kalman Filter (Predicition + Update). Supports
+%   Applies iteration of the Kalman Filter (Prediction + Update). Supports
 %   both Linear and Non Linear Mode (Extended Kalman Filter).
 % Input:
 %   - vX            -   Input State Vector.
@@ -28,7 +28,7 @@ function [ vX, mP ] = ApplyKalmanFilterIteration( vX, mP, vZ, hF, hH, mQ, mR, mF
 %                       Structure: Matrix.
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
-%   - mR            -   Measuremetn Noise Covariance.
+%   - mR            -   Measurement Noise Covariance.
 %                       Structure: Matrix.
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
@@ -37,7 +37,7 @@ function [ vX, mP ] = ApplyKalmanFilterIteration( vX, mP, vZ, hF, hH, mQ, mR, mF
 %                       Structure: Matrix.
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
-%   - mH            -   Measuremetn Function Jacobian at hF(vX).
+%   - mH            -   Measurement Function Jacobian at hF(vX).
 %                       Optional parameter.
 %                       Structure: Matrix.
 %                       Type: 'Single' / 'Double'.
@@ -102,7 +102,7 @@ mS = (mH * mP * mH.') + mR;
 mK = (mP * mH.') / mS;
 vX = vX + (mK * vY);
 mT = mI - (mK * mH);
-mP = (mT * mP * mT.') + (mK * mR * mK.'); %<! Jospeh Form
+mP = (mT * mP * mT.') + (mK * mR * mK.'); %<! Joseph Form
 
 
 end

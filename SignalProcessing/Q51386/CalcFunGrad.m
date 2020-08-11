@@ -5,7 +5,7 @@ function [ vG ] = CalcFunGrad( vX, hObjFun, difMode, epsVal )
 %   method.
 % Input:
 %   - vX            -   Input Vector.
-%                       The point the gradient is caclaulated at.
+%                       The point the gradient is calculated at.
 %                       Structure: Vector (Column).
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).

@@ -23,7 +23,7 @@ function [ mX ] = GenerateSigmaPts( vX, mP, scalingFctr )
 %                       Range: (-inf, inf).
 %   - scalingFctr   -   Scaling Factor.
 %                       Parameter of the Generalized Unscented Transform
-%                       which controlls 
+%                       which controls 
 %                       Equals to 'size(hF(mX(:, 1), 1)'.
 %                       Structure: Scalar.
 %                       Type: 'Single' / 'Double'.
@@ -54,7 +54,7 @@ function [ mX ] = GenerateSigmaPts( vX, mP, scalingFctr )
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
 % References
-%   1.  Unscented Tranform (Wikipedia) - https://en.wikipedia.org/wiki/Unscented_transform.
+%   1.  Unscented Transform (Wikipedia) - https://en.wikipedia.org/wiki/Unscented_transform.
 %   2.  Lecture 5: Unscented Kalman Filter and General Gaussian Filtering (Simo Sarkka).
 % Remarks:
 %   1.  The function generates 2n + 1 points where n is the dimension of

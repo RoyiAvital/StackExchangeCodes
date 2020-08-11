@@ -135,7 +135,7 @@ set(get(hAxes, 'YLabel'), 'String', {['y [Meters]']}, ...
 hLegend = ClickableLegend({['Ground Truth'], ['Measurement'], ['Estimation']});
 
 if(generateFigures == ON)
-    saveas(hFigure,['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
+    saveas(hFigure, ['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
 end
 
 

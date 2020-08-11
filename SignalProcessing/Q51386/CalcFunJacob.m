@@ -5,7 +5,7 @@ function [ mJ ] = CalcFunJacob( vX, hObjFun, difMode, epsVal )
 %   method.
 % Input:
 %   - vX            -   Input Vector.
-%                       The point the Jacobian is caclaulated at.
+%                       The point the Jacobian is calculated at.
 %                       Structure: Vector (Column).
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
