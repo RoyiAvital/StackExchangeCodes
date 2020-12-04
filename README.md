@@ -1,6 +1,9 @@
 # StackExchangeCodes
 Codes related to answers on StackExchange Network.
 
+**Remark**  
+Please up vote the answers in StackExchange to show support of this work.
+
 ## To Do List
 
  *	[The Kernel in the Guided Image Filter](https://dsp.stackexchange.com/questions/42415).  
