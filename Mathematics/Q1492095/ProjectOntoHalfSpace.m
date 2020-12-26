@@ -1,17 +1,26 @@
 function [ vX ] = ProjectOntoHalfSpace( vY, vA, valB )
 % ----------------------------------------------------------------------------------------------- %
-% [ vX ] = OrthogonalProjectionOntoConvexSets( cProjFun, vY, numIterations, stopThr )
-%   Solves \arg \min_{x} 0.5 || x - y ||, s.t. x \in \bigcap {C}_{i} using
-%   Dykstra's Projection Algorithm.
+% [ vX ] = ProjectOntoHalfSpace( vY, vA, valB )
+%   Projects onto the half space defined by vA.' * vY <= vB. 
 % Input:
-%   - mA            -   Model Matrix.
-%                       Input model matrix.
-%                       Structure: Matrix (m x n).
+%   - vY            -   Input Vector.
+%                       Input vector to be projected.
+%                       Structure: Vector (m x 1).
+%                       Type: 'Single' / 'Double'.
+%                       Range: (-inf, inf).
+%   - vA            -   Half Space Vector.
+%                       The vector which defines the half space.
+%                       Structure: Vector (m x 1).
+%                       Type: 'Single' / 'Double'.
+%                       Range: (-inf, inf).
+%   - valB          -   Half Spave Scalar.
+%                       The scalar which defines the half space.
+%                       Structure: Scalar.
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
 % Output:
 %   - vX            -   Solution Vector.
-%                       The solution to the optimization problem..
+%                       The projected vector.
 %                       Structure: Vector (m x 1).
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).

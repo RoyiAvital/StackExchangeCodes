@@ -24,7 +24,8 @@ function [ vX ] = ConsensusAdmm( cProxFun, numElements, paramRho, numIterations,
 %       of the Prox. Hence the adaptation in the code.
 %   2.  This is ultra efficient way to solve the Orthogonal Projection
 %       Problem in case having projection onto sets which the intersection
-%       is the objective set.
+%       is the objective set. In that case each Prox Function is a
+%       projection function.
 % TODO:
 %   1.  C
 % Release Notes:

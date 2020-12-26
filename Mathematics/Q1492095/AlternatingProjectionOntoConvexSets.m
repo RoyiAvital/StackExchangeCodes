@@ -1,17 +1,37 @@
 function [ vX ] = AlternatingProjectionOntoConvexSets( cProjFun, vY, numIterations, stopThr )
 % ----------------------------------------------------------------------------------------------- %
-% [ vX ] = OrthogonalProjectionOntoConvexSets( cProjFun, vY, numIterations, stopThr )
-%   Solves \arg \min_{x} 0.5 || x - y ||, s.t. x \in \bigcap {C}_{i} using
-%   Dykstra's Projection Algorithm.
+% [ vX ] = AlternatingProjectionOntoConvexSets( cProjFun, vY, numIterations, stopThr )
+%   Solves x \in \bigcap {C}_{i} using Alternating Projections algorithm.
+%   In case all sets to be projected at are sub spaces this matches the
+%   Dykstra's Projection Algorithm. Otherwise it only guarantees to
+%   converge to the intersection of the sets in case it is not empty.
 % Input:
-%   - mA            -   Model Matrix.
-%                       Input model matrix.
-%                       Structure: Matrix (m x n).
+% Input:
+%   - cProjFun      -   Array of Projection Functions.
+%                       Cell array of anonymouse functions which each is a
+%                       projection into a sub space.
+%                       Structure: Cell Array.
+%                       Type: NA.
+%                       Range: NA.
+%   - vY            -   Input Vector.
+%                       Input vector to be projected.
+%                       Structure: Vector (m x 1).
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
+%   - numIterations -   Number of Iterations.
+%                       Sets the number of iterations of the algorithm.
+%                       Structure: Scalar.
+%                       Type: 'Single' / 'Double'.
+%                       Range: {1, 2, ...}.
+%   - stopThr       -   Stopping Threshold.
+%                       Sets the threshold between consecutive iterations
+%                       for stopping the algorithm.
+%                       Structure: Scalar.
+%                       Type: 'Single' / 'Double'.
+%                       Range: (0, inf).
 % Output:
 %   - vX            -   Solution Vector.
-%                       The solution to the optimization problem..
+%                       The solution to the optimization problem.
 %                       Structure: Vector (m x 1).
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
