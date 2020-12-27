@@ -59,7 +59,7 @@ hG = @(vX) (mAA * vX) - vAb + (paramLambda * mD.' * sign(mD * vX)); %<! Gradient
 hP1 = @(vX) vX - (mD.' * mInvDD * (mD * vX)); %<! Projection onto the constraint set
 hP2 = @(vX) max(vX, 0); %<! Projection onto the constraint set
 
-hP = @(vX) OrthogonalProjectionOntoConvexSets({hP1, hP2}, vX, 100, 1e-6);
+hP = @(vX) OrthogonalProjectionOntoConvexSets({hP1; hP2}, vX, 100, 1e-6);
 
 solverIdx       = 0;
 cMethodString   = {};
