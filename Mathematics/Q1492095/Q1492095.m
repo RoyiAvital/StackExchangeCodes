@@ -188,7 +188,7 @@ solverString = 'Consensus ADMM';
 paramRho = 1;
 cProxFun = cell(numSets + 1, 1);
 
-cProxFun{1} = @(vV, paramRho) (vV + vY) / (1 + paramRho);
+cProxFun{1} = @(vV, paramRho) ((paramRho * vV) + vY) / (1 + paramRho); %<! Prox of (rho / 2) * || x - y ||_{2}^{2} + (1 / 2) * || x - v ||
 
 for ii = 2:numSets + 1
     cProxFun{ii} = @(vV, paramRho) cProjFun{ii - 1}(vV);

@@ -13,13 +13,14 @@
 # *.mp4
 
 # Documnets
-*.docx
 *.doc
-*.xlsx
-*.xls
-*.pptx
-*.ppt
+*.docx
 #*.pdf
+*.ppt
+*.pptx
+*.psd
+*.xls
+*.xlsx
 
 ## TeX / LaTeX Files
 *.aux

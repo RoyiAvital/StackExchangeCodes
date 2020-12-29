@@ -1,8 +1,8 @@
-function [ vX ] = OrthogonalProjectionOntoConvexSets( cProjFun, vY, numIterations, stopThr )
+function [ vX ] = OrthogonalProjectionOntoConvexSetsAdmm( cProjFun, vY, numIterations, stopThr )
 % ----------------------------------------------------------------------------------------------- %
-% [ vX ] = OrthogonalProjectionOntoConvexSets( cProjFun, vY, numIterations, stopThr )
+% [ vX ] = OrthogonalProjectionOntoConvexSetsAdmm( cProjFun, vY, numIterations, stopThr )
 %   Solves \arg \min_{x} 0.5 || x - y ||, s.t. x \in \bigcap {C}_{i} using
-%   Dykstra's Projection Algorithm.
+%   ADMM with the consensus optimization trick.
 % Input:
 %   - cProjFun      -   Array of Projection Functions.
 %                       Cell array of anonymous functions which each is a
@@ -33,16 +33,14 @@ function [ vX ] = OrthogonalProjectionOntoConvexSets( cProjFun, vY, numIteration
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
 % References
-%   1.  Dykstra's Projection Algorithm (Wikipedia) - https://en.wikipedia.org/wiki/Dykstra%27s_projection_algorithm.
-%   2.  Ryan J. Tibshirani - Dykstra’s Algorithm, ADMM, and Coordinate Descent: Connections, Insights, and Extensions - https://arxiv.org/abs/1705.04768.
+%   1.  ELE 522 - Large Scale Optimization for Data Science - Alternating Direction Method of Multipliers.
 % Remarks:
-%   1.  B
+%   1.  Uses the consensus trick with the function being the least squares
+%       distance from the input and the rest of the projection functions.
 % TODO:
 %   1.  C
 % Release Notes:
-%   -   1.0.001     28/12/2020  Royi Avital
-%       *   Updated the stopping condition to have better accuracy.
-%   -   1.0.000     19/03/2020  Royi Avital
+%   -   1.0.000     26/12/2020  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
@@ -52,31 +50,18 @@ TRUE    = 1;
 OFF     = 0;
 ON      = 1;
 
-numSets = size(cProjFun, 1);
-numElements = size(vY, 1);
+numSets     = size(cProjFun, 1);
+paramRho    = 0.1;
+numCols     = size(vY, 1);
 
-mZ = zeros(numElements, numSets);
-mU = zeros(numElements, numSets);
-vU = vY;
-vX = vU;
+cProxFun    = cell(numSets + 1, 1);
+cProxFun{1} = @(vV, paramRho) ((paramRho * vV) + vY) / (1 + paramRho); %<! Prox of (rho / 2) * || x - y ||_{2}^{2} + (1 / 2) * || x - v ||
 
-for ii = 1:numIterations
-    for jj = 1:numSets
-        mU(:, jj) = cProjFun{jj}( vU + mZ(:, jj) );
-        mZ(:, jj) = vU + mZ(:, jj) - mU(:, jj);
-        
-        vU(:) = mU(:, jj);
-    end
-    
-    % Calculate the difference from the previous iteration.
-    stopCond = max(abs(vX - mU), [], 'all') < stopThr;
-    
-    vX(:) = vU;
-    
-    if(stopCond)
-        break;
-    end
+for ii = 2:numSets + 1
+    cProxFun{ii} = @(vV, paramRho) cProjFun{ii - 1}(vV);
 end
+
+vX = ConsensusAdmm(cProxFun, numCols, paramRho, numIterations, stopThr);
 
 
 end

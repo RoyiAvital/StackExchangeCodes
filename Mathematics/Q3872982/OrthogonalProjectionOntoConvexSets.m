@@ -5,7 +5,7 @@ function [ vX ] = OrthogonalProjectionOntoConvexSets( cProjFun, vY, numIteration
 %   Dykstra's Projection Algorithm.
 % Input:
 %   - cProjFun      -   Array of Projection Functions.
-%                       Cell array of anonymous functions which each is a
+%                       Cell array of anonymouse functions which each is a
 %                       projection into a sub space.
 %                       Structure: Cell Array.
 %                       Type: NA.
@@ -34,14 +34,12 @@ function [ vX ] = OrthogonalProjectionOntoConvexSets( cProjFun, vY, numIteration
 %                       Range: (-inf, inf).
 % References
 %   1.  Dykstra's Projection Algorithm (Wikipedia) - https://en.wikipedia.org/wiki/Dykstra%27s_projection_algorithm.
-%   2.  Ryan J. Tibshirani - Dykstra’s Algorithm, ADMM, and Coordinate Descent: Connections, Insights, and Extensions - https://arxiv.org/abs/1705.04768.
+%   2.  Ryan J. Tibshirani - Dykstra’s Algorithm, ADMM, and Coordinate Descent: Connections, Insights, and Extensions.
 % Remarks:
 %   1.  B
 % TODO:
 %   1.  C
 % Release Notes:
-%   -   1.0.001     28/12/2020  Royi Avital
-%       *   Updated the stopping condition to have better accuracy.
 %   -   1.0.000     19/03/2020  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
@@ -69,7 +67,7 @@ for ii = 1:numIterations
     end
     
     % Calculate the difference from the previous iteration.
-    stopCond = max(abs(vX - mU), [], 'all') < stopThr;
+    stopCond = max(abs(vX - vU)) < stopThr;
     
     vX(:) = vU;
     

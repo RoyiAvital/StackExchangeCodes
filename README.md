@@ -4,6 +4,12 @@ Codes related to answers on StackExchange Network.
 **Remark**  
 Please up vote the answers in StackExchange to show support of this work.
 
+## Licensing
+
+The codes above are for non commercial use only.  
+They are for educational purposes.
+If you're interested in using them otherwise, please contact me at: ![](EmailAddress.png).
+
 ## To Do List
 
  *	[The Kernel in the Guided Image Filter](https://dsp.stackexchange.com/questions/42415).  
