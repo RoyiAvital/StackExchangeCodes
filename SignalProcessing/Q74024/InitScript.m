@@ -4,14 +4,8 @@
 %       it will be used to set the SubStream of the Random Number
 %       Generator.
 % TODO:
-% 	1.  A
+% 	1.  ds
 % Release Notes
-% - 1.0.007     08/08/2020  Royi Avital
-%   *   Updated the way a random sub stream is calculated.
-% - 1.0.006     02/05/2020  Royi Avital
-%   *   Added 'FILE_SEP' and 'PATH_SEP'.
-% - 1.0.005     02/08/2019  Royi Avital
-%   *   Added Octave Compatibility.
 % - 1.0.004     05/07/2018  Royi Avital
 %   *   Added case for 'subStreamNumberDefault = 0'.
 % - 1.0.003     29/06/2018  Royi Avital
@@ -31,18 +25,6 @@
 close('all');
 clearvars('-except', 'subStreamNumberDefault');
 clc();
-
-FALSE   = 0;
-TRUE    = 1;
-
-OFF     = 0;
-ON      = 1;
-
-FILE_SEP = filesep();
-PATH_SEP = pathsep();
-
-% See https://stackoverflow.com/questions/2246579
-isOctave = (exist('OCTAVE_VERSION', 'builtin') ~= 0);
 
 % set(0, 'DefaultFigureWindowStyle', 'docked');
 % defaultLoosInset = get(0, 'DefaultAxesLooseInset');
@@ -73,15 +55,19 @@ markerSizeLarge     = 10;
 % https://www.mathworks.com/matlabcentral/answers/160332
 mColorOrder = get(groot, 'DefaultAxesColorOrder');
 
-if(isOctave == FALSE)
-    randomNumberStream  = RandStream('mlfg6331_64', 'NormalTransform', 'Ziggurat');
-    
-    if(exist('subStreamNumberDefault', 'var') && (subStreamNumberDefault ~= 0))
-        subStreamNumber = subStreamNumberDefault;
-    else
-        subStreamNumber = round(sum(clock() .* [1, 100, 10, 50, 30, 30]));
-    end
-    set(randomNumberStream, 'Substream', subStreamNumber);
-    RandStream.setGlobalStream(randomNumberStream);
+randomNumberStream  = RandStream('mlfg6331_64', 'NormalTransform', 'Ziggurat');
+
+if(exist('subStreamNumberDefault', 'var') && (subStreamNumberDefault ~= 0))
+    subStreamNumber = subStreamNumberDefault;
+else
+    subStreamNumber = round(sum(clock()));
 end
+set(randomNumberStream, 'Substream', subStreamNumber);
+RandStream.setGlobalStream(randomNumberStream);
+
+FALSE   = 0;
+TRUE    = 1;
+
+OFF     = 0;
+ON      = 1;
 

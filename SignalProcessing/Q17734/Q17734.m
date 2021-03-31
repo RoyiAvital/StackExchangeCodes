@@ -8,15 +8,18 @@
 % TODO:
 % 	1.  ds
 % Release Notes
+% - 1.0.001     17/01/2021  Royi Avital     RoyiAvital@yahoo.com
+%   *   First release.
 % - 1.0.000     20/07/2017
 %   *   First release.
 
 
 %% General Parameters
 
+subStreamNumberDefault = 79;
 run('InitScript.m');
 
-figureIdx           = 0; %<! Continue from Question 1
+figureIdx           = 0;
 figureCounterSpec   = '%04d';
 
 generateFigures = OFF;
@@ -38,9 +41,9 @@ vFilterCoeff = vFilterCoeff / sum(vFilterCoeff);
 vX = randn([numSamples, 1]);
 vX = conv2(vX, vFilterCoeff, 'same');
 
-% Generateing the given data
-vGivenIdx   = sort(randperm(numSamples, numGivenSamples));
-vXX         = vX(vGivenIdx);
+% Generating the given data
+vGivenIdx       = sort(randperm(numSamples, numGivenSamples));
+vXX             = vX(vGivenIdx);
 
 % Generating the DFT Matrix with the respected rows
 % Pay attention to scaling in order to make it Unitary
@@ -49,6 +52,9 @@ mA = mF(:, vGivenIdx);
 
 
 %% Estimation
+
+% This is equivalent to padding with zeros all the samples which are not
+% given.
 
 % vY = (mA * mA') \ (mA * vXX);
 vY = pinv(mA') * vXX;
@@ -74,7 +80,6 @@ set(get(hAxes, 'XLabel'), 'String', 'DFT Sample Index [n]', ...
 set(get(hAxes, 'YLabel'), 'String', 'Amplitude', ...
     'FontSize', fontSizeAxis);
 hLegend = ClickableLegend({['The DFT of the Complete Signal'], ['Estimated DFT from Partial Signal']});
-
 
 
 %% Restore Defaults
