@@ -24,6 +24,9 @@ function [ mO ] = ImageConvFrequencyDomain( mI, mH, convShape )
 % References:
 %   1.  MATLAB's 'conv2()' - https://www.mathworks.com/help/matlab/ref/conv2.html.
 % Remarks:
+%   1.  For the transformation the (0, 0) of the image and the kernel is
+%       the top left corner of teh matrix (i = 1, j = 1). Hence it can be
+%       thought that a shifting is needed (To center the kernel).
 %   1.  The function supports single channel image only.
 % TODO:
 %   1.  
@@ -62,8 +65,6 @@ switch(convShape)
         numColsFft = numCols;
         firstRowIdx = numRowsKernel;
         firstColIdx = numColsKernel;
-        % The Kernel when transformed is shifted (Namely its (0, 0) is top
-        % left not middle).
         lastRowIdx  = numRowsFft;
         lastColdIdx = numColsFft;
 end
