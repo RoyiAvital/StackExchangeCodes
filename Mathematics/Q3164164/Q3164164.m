@@ -134,7 +134,7 @@ set(hAxes, 'YTick', []);
 set(hAxes, 'YTickLabel', []);
 
 if(generateFigures == ON)
-    saveas(hFigure,['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
+    saveas(hFigure, ['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
 end
 
 
