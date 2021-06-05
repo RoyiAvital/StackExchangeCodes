@@ -1,6 +1,6 @@
-% StackExchange Signal Processing Q75231
-% https://dsp.stackexchange.com/questions/75231
-% Image Denoising Using Total Variation (TV) Minimization with ADMM
+% StackExchange Signal Processing Q75471
+% https://dsp.stackexchange.com/questions/75471
+% How to Solve Image Deblurring with Total Variation Prior Using ADMM?
 % References:
 %   1.  
 % Remarks:
@@ -8,7 +8,7 @@
 % TODO:
 % 	1.  C
 % Release Notes
-% - 1.0.000     18/05/2021
+% - 1.0.000     04/06/2021
 %   *   First release.
 
 
@@ -32,20 +32,26 @@ CONV_SHAPE_VALID    = 3;
 
 imageFileName = 'Lena256.png';
 
-paramLambda = 0.025; %<! TV Norm
+paramLambda = 0.0015; %<! TV Norm
 
-numIterations   = 250;
-noiseStd        = 10 / 255;
+numIterations   = 10000;
+blurRadius      = 2; %<! Using Box Blur
+noiseStd        = 3 / 255;
 
 
 %% Generate Data
 
 mI = im2double(imread(imageFileName));
+mH = ones((2 * blurRadius) + 1);
+mH = mH / sum(mH, 'all');
 
 numRows = size(mI, 1);
 numCols = size(mI, 2);
 
-mY = mI + (noiseStd * randn(numRows, numCols));
+% Matrix Form of the Blur Kernel
+mHH = CreateImageFilterMtx(mH, numRows, numCols);
+
+mY = reshape(mHH * mI(:), numRows, numCols) + (noiseStd * randn(numRows, numCols));
 vY = mY(:);
 
 vXInit  = zeros(numRows * numCols, 1);
@@ -53,7 +59,7 @@ vXInit  = zeros(numRows * numCols, 1);
 mD      = CreateGradientOperator(numRows, numCols);
 
 % Objective Function
-hObjFun = @(vX) (0.5 * sum( (vX - vY) .^ 2)) + (paramLambda * sum(abs(mD * vX)));
+hObjFun = @(vX) (0.5 * sum( (mHH * vX - vY) .^ 2)) + (paramLambda * sum(abs(mD * vX)));
 
 % Analysis
 solverIdx       = 0;
@@ -77,10 +83,12 @@ set(hAxes, 'YTick', [], 'YTickLabel', []);
 
 hAxes   = axes(hFigure, 'Units', 'pixels', 'Position', [276, 326, 256, 256]);
 hImgObj = image(repmat(mY, [1, 1, 3]));
-set(get(hAxes, 'Title'), 'String', {['Input Image (Noisy)']}, ...
+set(get(hAxes, 'Title'), 'String', {['Input Image (Blurry + Noisy)']}, ...
     'FontSize', fontSizeTitle);
 set(hAxes, 'XTick', [], 'XTickLabel', []);
 set(hAxes, 'YTick', [], 'YTickLabel', []);
+
+drawnow();
 
 
 %% Solution by CVX
@@ -97,7 +105,7 @@ hRunTime = tic();
 cvx_begin('quiet')
     % cvx_precision('best');
     variable vX(numRows * numCols);
-    minimize( (0.5 * sum_square(vX - vY)) + (paramLambda * norm(mD * vX, 1)) );
+    minimize( (0.5 * sum_square(mHH * vX - vY)) + (paramLambda * norm(mD * vX, 1)) );
 cvx_end
 
 runTime = toc(hRunTime);
@@ -117,6 +125,8 @@ set(get(hAxes, 'Title'), 'String', {['Denoised Image - CVX']}, ...
 set(hAxes, 'XTick', [], 'XTickLabel', []);
 set(hAxes, 'YTick', [], 'YTickLabel', []);
 
+drawnow();
+
 
 %% Solution by ADMM
 %{
@@ -130,7 +140,7 @@ cLegendString{solverIdx}    = ['ADMM'];
 
 hRunTime = tic();
 
-[vX, mX] = SolveProxTvAdmm(vXInit, vY, mD, paramLambda, 'numIterations', numIterations);
+[vX, mX] = SolveLsTvAdmm(vXInit, mHH, vY, mD, paramLambda, 'numIterations', numIterations);
 
 runTime = toc(hRunTime);
 
@@ -143,7 +153,7 @@ DisplayRunSummary(cLegendString{solverIdx}, hObjFun, vX, runTime);
 
 hAxes   = axes(hFigure, 'Units', 'pixels', 'Position', [276, 010, 256, 256]);
 hImgObj = image(repmat(reshape(vX, numRows, numCols), [1, 1, 3]));
-set(get(hAxes, 'Title'), 'String', {['Denoised Image - ADMM']}, ...
+set(get(hAxes, 'Title'), 'String', {['Deblurred Image - ADMM']}, ...
     'FontSize', fontSizeTitle);
 set(hAxes, 'XTick', [], 'XTickLabel', []);
 set(hAxes, 'YTick', [], 'YTickLabel', []);
