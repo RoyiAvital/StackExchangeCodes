@@ -23,4 +23,4 @@ If you're interested in using them otherwise, please contact me at: ![](EmailAdd
 	Check if it works for really low frequencies.
  *	[Sequential Form of the Least Squares Estimator for Linear Least Squares Model](https://dsp.stackexchange.com/questions/54730).  
 	Add derivation for the case of Forgetting Sequential LS and for Weighted Sequential LS. Probably better done in different questions.
- *	
+ *	[How to Solve the Image Dehazing Problem Using ADMM?](https://dsp.stackexchange.com/questions/75787).
