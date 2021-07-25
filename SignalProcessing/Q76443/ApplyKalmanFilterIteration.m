@@ -1,4 +1,4 @@
-function [ vX, mP ] = ApplyKalmanFilterIteration( vX, mP, vZ, hF, hH, mQ, mR, mF, mH )
+function [ vX, mP ] = ApplyKalmanFilterIteration( vX, mP, vZ, hF, hH, hMf, hMh, mQ, mR )
 % ----------------------------------------------------------------------------------------------- %
 % [ vX, mP ] = ApplyKalmanFilterIteration( vX, mP, vZ, hF, hH, mQ, mR, mF, mH )
 %   Applies iteration of the Kalman Filter (Prediction + Update). Supports
@@ -32,16 +32,17 @@ function [ vX, mP ] = ApplyKalmanFilterIteration( vX, mP, vZ, hF, hH, mQ, mR, mF
 %                       Structure: Matrix.
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
-%   - mF            -   Model Function Jacobian at vX.
-%                       Optional parameter.
-%                       Structure: Matrix.
-%                       Type: 'Single' / 'Double'.
-%                       Range: (-inf, inf).
-%   - mH            -   Measurement Function Jacobian at hF(vX).
-%                       Optional parameter.
-%                       Structure: Matrix.
-%                       Type: 'Single' / 'Double'.
-%                       Range: (-inf, inf).
+%   - hMf           -   Model Matrix Function.
+%                       Generates the matrix `mF` from the state vector vX.
+%                       Structure: Function Handler.
+%                       Type: Function Handler.
+%                       Range: NA.
+%   - hMh           -   Measurement Matrix Function.
+%                       Generates the matrix `mH` from the state vector vX.
+%                       The state vector is hF(vX).
+%                       Structure: Function Handler.
+%                       Type: Function Handler.
+%                       Range: NA.
 % Output:
 %   - vX            -   Updated State Vector.
 %                       Structure: Vector (Column).
@@ -59,12 +60,32 @@ function [ vX, mP ] = ApplyKalmanFilterIteration( vX, mP, vZ, hF, hH, mQ, mR, mF
 %       values in order to work. For instance, if the input function is
 %       'norm(vX)' use 'sum(vX .^ 2)' and if the input function is
 %       'sum(abs(vX))' use 'sum(sqrt(vX .^ 2))'.
+%   2.  This implementation use the Joseph Form of the Covariance Update.
+%       While it requires more computational effort it is more stable and
+%       guaranteed to generate PSD matrix.
 % TODO:
 %   1.  U.
 % Release Notes:
+%   -   1.1.000     25/07/2021  Royi Avital
+%       *   Added support for a fnction handle to calculate the matrices mF
+%           and mH.
+%       *   Add `arguments` block.
+%       *   Added a step to ensure symmetry of mP.
 %   -   1.0.000     22/08/2018  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
+
+arguments
+    vX (:, 1) {mustBeNumeric, mustBeReal}
+    mP (:, :) {mustBeNumeric, mustBeReal, mustBePdMatrix}
+    vZ (:, 1) {mustBeNumeric, mustBeReal}
+    hF (1, 1) {mustBeFunctionHandler}
+    hH (1, 1) {mustBeFunctionHandler}
+    hMf (1, 1) {mustBeFunctionHandler}
+    hMh (1, 1) {mustBeFunctionHandler}
+    mQ (:, :) {mustBeNumeric, mustBeReal, mustBePdMatrix}
+    mR (:, :) {mustBeNumeric, mustBeReal, mustBePdMatrix}
+end
 
 FALSE   = 0;
 TRUE    = 1;
@@ -72,35 +93,50 @@ TRUE    = 1;
 OFF     = 0;
 ON      = 1;
 
-DIFF_MODE_FORWARD   = 1;
-DIFF_MODE_BACKWARD  = 2;
-DIFF_MODE_CENTRAL   = 3;
-DIFF_MODE_COMPLEX   = 4;
-
-diffMode    = DIFF_MODE_FORWARD;
-epsVal      = 1e-8;
-
-if(~exist('mF', 'var'))
-    mF = CalcFunJacob(vX, hF, diffMode, epsVal);
-end
-
-if(~exist('mH', 'var'))
-    mH = CalcFunJacob(hF(vX), hH, diffMode, epsVal);
-end
-
 mI = eye(size(vX, 1));
 
 % Prediction Step
 vX = hF(vX);
+mF = hMf(vX);
 mP = (mF * mP * mF.') + mQ;
+
+mH = hMh(vX);
 
 % Update Step
 vY = vZ - hH(vX);
 mS = (mH * mP * mH.') + mR;
 mK = (mP * mH.') / mS;
 vX = vX + (mK * vY);
+% Joseph Form of the Covariance Update (Numerically more stable)
 mT = mI - (mK * mH);
 mP = (mT * mP * mT.') + (mK * mR * mK.'); %<! Joseph Form
+mP = (mP.' + mP) / 2; %<! Ensure symmetry
+
+
+end
+
+
+function [ ] = mustBePdMatrix( mX )
+% https://www.mathworks.com/matlabcentral/answers/107552
+if(issymmetric(mX) && (all(eig(mX) > 0)))
+    
+else
+    errorId     = 'mustBePdMatrix:notPositiveDefiniteMatrix';
+    errorMsg    = 'The input must be a Positive Definite Matrix';
+    throwAsCaller(MException(errorId, errorMsg));
+end
+
+
+end
+
+
+function [ ] = mustBeFunctionHandler( hF )
+% https://www.mathworks.com/matlabcentral/answers/107552
+if(~isa(hF, 'function_handle'))
+    errorId     = 'mustBeFunctionHandler:notFunctionHandler';
+    errorMsg    = 'The input must be a Function Handler';
+    throwAsCaller(MException(errorId, errorMsg));
+end
 
 
 end
