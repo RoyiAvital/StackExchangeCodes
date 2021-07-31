@@ -1,0 +1,22 @@
+cff-version: 1.1.0
+message: "If you use this software, please cite it using these metadata."
+abstract: "Code snippets related to answers by Royi Avital on StackExchange Network."
+authors:
+  - family-names: Avital
+    given-names: Royi
+    orcid: https://orcid.org/0000-0001-9316-0369
+title: "Royi Avital's StackExchange Code"
+version: 1.0.0
+doi: 10.5281/zenodo.5122367
+date-released: 2021-07-22
+keywords:
+  - "Machine Learning"
+  - "Signal Processing"
+  - "Image Processing"
+  - "Computer Vision"
+  - Optimization
+  - Estimation
+  - MATLAB
+license: "CC-BY-NC 4.0"
+url: "https://github.com/RoyiAvital/StackExchangeCodes"
+repository-code: "https://github.com/RoyiAvital/StackExchangeCodes"
