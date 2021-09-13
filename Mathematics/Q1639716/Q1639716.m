@@ -1,5 +1,5 @@
 % Mathematics Q1639716
-% https://math.stackexchange.com/questions/2706108
+% https://math.stackexchange.com/questions/1639716
 % How Can L1 Norm Minimization with Linear Equality Constraints (Basis Pursuit / Sparse Representation) Be Formulated as Linear Programming?
 % References:
 %   1.  aa
