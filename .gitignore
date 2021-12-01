@@ -4,6 +4,9 @@
 # Ignore Work in Progress
 **/*WIP
 
+# Archive Files
+*.tar*
+
 # Media Files
 # *.png
 # *.jpg
