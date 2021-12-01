@@ -36,20 +36,22 @@ annotationSetFileName   = 'annotationSet.tar.gz';
 imageSetFolderName  = 'ImageSet';
 maskSetFolderName   = 'MaskSet';
 
+netCheckPointsFolderName = 'NetCheckPoints';
+
 % Network parameters
-numFiltersBase  = 4; %<! 16 In my Keras code
+numFiltersBase  = 16; %<! 16 In my Keras code
 numBlocks       = 3;
 
 % Input Data Parameters
 % Data is with different sizes, resize all to 128x128
-numRows     = 64; %<! 128 in my Keras code
-numCols     = 64; %<! 128 in my Keras code
+numRows     = 128; %<! 128 in my Keras code
+numCols     = 128; %<! 128 in my Keras code
 numChannels = 3;
 
 classNames      = {'Pet', 'Background', 'Border'};
 vPixelLabelId   = [1, 2, 3];
 
-bacthSize = 16; %<! 64 in my Keras code
+bacthSize = 96; %<! 64 in my Keras code
 
 
 %% Generate Data
@@ -68,18 +70,23 @@ end
 if(~exist(maskSetFolderName, 'dir'))
     untar(annotationSetFileName);
     movefile(fullfile('annotations', 'trimaps'), maskSetFolderName); %<! Fiels are in JPG format
-    rmdir('annotations\', 's');
-    sFiles = dir(strcat(maskSetFolderName, '/.*.png'));
+    rmdir('annotations', 's');
+    sFiles = dir(strcat(maskSetFolderName, FILE_SEP, '.*.png'));
 
     for ii = 1:length(sFiles)
         delete(fullfile(sFiles(ii).folder, sFiles(ii).name));
     end
 
-    sFiles = dir(strcat(maskSetFolderName, '/*.mat'));
+    sFiles = dir(strcat(maskSetFolderName, FILE_SEP, '*.mat'));
     for ii = 1:length(sFiles)
         delete(fullfile(sFiles(ii).folder, sFiles(ii).name));
     end
 end
+
+if(~exist(netCheckPointsFolderName, 'dir'))
+    mkdir(netCheckPointsFolderName);
+end
+
 
 %% Build the Net
 
@@ -93,8 +100,12 @@ dlnUnet = addLayers(dlnUnet, [softMaxLayer, classLayer]);
 dlnUnet = connectLayers(dlnUnet, 'InputLayer', dlnUnet.Layers(1).Name);
 dlnUnet = connectLayers(dlnUnet, dlnUnet.Layers(end - 3).Name, dlnUnet.Layers(end - 1).Name);
 
+% Can't use as I couldn't find a way convert LayerGraph into DAGNetwork for
+% prediction but training (assembleNetwork() doesn't work for non
+% initizlied layers).
+% save(strcat(netCheckPointsFolderName, FILE_SEP, 'net_checkpoint__0__', char(datetime('now', 'Format', 'yyyy_MM_dd_HH_mm_ss'))), 'dlnUnet');
 
-dlnUnet = unetLayers([numRows, numCols, numChannels], length(classNames));
+% dlnUnet = unetLayers([numRows, numCols, numChannels], length(classNames));
 
 figure();
 plot(dlnUnet);
@@ -104,10 +115,11 @@ drawnow();
 %% Data Set
 
 imageDataStore  = imageDatastore(imageSetFolderName, 'FileExtensions', '.jpg');
+imageDataStore.ReadFcn = @(x) ResizeImage(x, numRows, numCols);
 maskDataStore   = pixelLabelDatastore(maskSetFolderName, classNames, vPixelLabelId, 'FileExtensions', '.png');
-maskDataStore.ReadFcn = @(x) imresize(imread(x), [numRows, numCols]);
+maskDataStore.ReadFcn = @(x) ResizeMask(x, numRows, numCols);
 
-dsPets = combine(imageDataStore.transform(@(x) imresize(im2single(x), [numRows, numCols])), maskDataStore);
+dsPets = combine(imageDataStore, maskDataStore);
 
 % analyzeNetwork(dlnUnet.removeLayers('ClassificationLayer'), dlarray(rand([numRows, numCols, numChannels, 64]), 'SSCB'), 'TargetUsage', 'dlnetwork');
 % drawnow();
@@ -116,12 +128,30 @@ dsPets = combine(imageDataStore.transform(@(x) imresize(im2single(x), [numRows, 
 %% Training
 
 sTrainingOpt    = trainingOptions('adam', 'InitialLearnRate', 1e-3, ...
-    'MaxEpochs', 20, 'MiniBatchSize', bacthSize, 'ExecutionEnvironment', 'cpu', ...
-    'VerboseFrequency', 1, 'Plots', 'training-progress');
+    'LearnRateSchedule', 'piecewise', 'LearnRateDropPeriod', 2, 'LearnRateDropFactor', 0.96, ...
+    'MaxEpochs', 15, 'MiniBatchSize', bacthSize, 'ExecutionEnvironment', 'gpu', ...
+    'VerboseFrequency', 1, 'Plots', 'training-progress', 'CheckpointPath', netCheckPointsFolderName);
 dlnUnet         = trainNetwork(dsPets, dlnUnet, sTrainingOpt);
 
 
 %% Display Results
+
+% mI = imageDataStore.readimage(1);
+% mC = maskDataStore.readimage(1);
+% mCI = zeros(numRows, numCols);
+% 
+% for ii = 1:length(classNames)
+%     mCI(mC == classNames{ii}) = vPixelLabelId(ii);
+% end
+% 
+% sNetFiles = dir(strcat(netCheckPointsFolderName, FILE_SEP, '*.mat'));
+% for ii = 1:length(sNetFiles)
+%     sNetPred    = load(fullfile(netCheckPointsFolderName, sNetFiles(ii).name));
+%     netPred     = sNetPred.net;
+%     mCPred      = semanticseg(mI, netPred);
+%     figure();
+%     image(mCPred);
+% end
 
 % figureIdx = figureIdx + 1;
 % 
@@ -154,6 +184,29 @@ dlnUnet         = trainNetwork(dsPets, dlnUnet, sTrainingOpt);
 %     % saveas(hFigure, ['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
 %     print(hFigure, ['Figure', num2str(figureIdx, figureCounterSpec), '.png'], '-dpng', '-r0'); %<! Saves as Screen Resolution
 % end
+
+function [ mO ] = ResizeImage( fileName, numRows, numCols )
+
+mO = im2single(imresize(imread(fileName), [numRows, numCols]));
+
+% Some images are 1 channel
+if(size(mO, 3) == 1)
+    mO = repmat(mO, [1, 1, 3]);
+end
+
+
+end
+
+
+function [ mO ] = ResizeMask( fileName, numRows, numCols )
+
+mO = imresize(imread(fileName), [numRows, numCols]);
+if(size(mO, 3) ~= 1)
+    mO = mO(:, :, 1);
+end
+
+
+end
 
 
 %% Restore Defaults
