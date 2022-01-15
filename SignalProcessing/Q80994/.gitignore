@@ -1,0 +1,8 @@
+# Folders
+
+# Archive Files
+
+*.mat
+
+AnnotationSet*
+ImageSet*
