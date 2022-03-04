@@ -40,7 +40,7 @@ sincRadius = 5;
 mX      = GenTest([numRowsI, numColsI], sincRadius);
 mYRef   = GenTest([numRowsO, numColsO], sincRadius);
 
-mY = DFTUpSample2D(mX, [numRowsO, numColsO]);
+mY = DftReSample2D(mX, [numRowsO, numColsO]);
 
 
 %% Analysis

@@ -1,4 +1,4 @@
-function [ mY ] = DFTUpSample2D( mX, vSizeO )
+function [ mY ] = DftReSample2D( mX, vSizeO )
 % ----------------------------------------------------------------------------------------------- %
 % [ mY ] = DFTUpSample2D( mX, vSizeO )
 % Applies Sinc interpolation to the input 2D signal while preserving the
@@ -33,6 +33,9 @@ function [ mY ] = DFTUpSample2D( mX, vSizeO )
 % TODO:
 %   1.  Add support for downsampling.
 %   Release Notes:
+%   -   1.1.000     15/02/2022  Royi Avital
+%       *   Supporting both upsample and downsample. 
+%       *   Changed name into 'DftReSample2D()'.
 %   -   1.0.000     12/02/2022  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
@@ -44,10 +47,6 @@ end
 
 vSizeI      = size(mX);
 dataClass   = class(mX);
-
-if(any(vSizeO < vSizeI))
-    error('The output size must be equal or larger than the input size');
-end
 
 if(vSizeO == vSizeI)
     return;

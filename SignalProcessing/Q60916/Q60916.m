@@ -8,6 +8,8 @@
 % TODO:
 % 	1.  C
 % Release Notes
+% - 1.0.001     02/03/2022
+%   *   Using 'sgtitle()' instead of 'suptitle()' (Requires R2018b and above).
 % - 1.0.000     19/08/2019
 %   *   First release.
 
@@ -125,9 +127,9 @@ for ii = 1:length(vRangeStd)
         set(get(hAxes, 'Title'), 'String', {['Kernel - Frequency']}, ...
             'FontSize', fontSizeTitle);
         
-        suptitle(['Kernel Analysis for rangeStd - ', num2str(rangeStd)]);
-        
     end
+
+    sgtitle(hFigure, ['Kernel Analysis for rangeStd - ', num2str(rangeStd)]);
     
     if(generateFigures == ON)
         saveas(hFigure,['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
