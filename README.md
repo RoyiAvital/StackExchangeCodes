@@ -11,7 +11,7 @@ Codes related to answers by [Royi Avital on StackExchange Network](https://githu
 
 **Remark**  
 Please up vote [the answers in StackExchange](https://dsp.stackexchange.com/users/128/royi?tab=answers) to show support of this work.  
-You may also support my work through [LibrePay](https://liberapay.com/Royi/donate).
+You may also support my work through [LibrePay](https://liberapay.com/Royi/donate) or [KoFi](https://ko-fi.com/royia).
 
 ## Licensing
 
