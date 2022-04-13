@@ -17,6 +17,7 @@
 using LinearAlgebra;
 using DSP;
 using Plots;
+using Printf;
 
 ## Constants
 
@@ -26,7 +27,7 @@ const SPEED_OF_LIGHT_M_S = 3e9;
 
 figureIdx = 0;
 # gr();
-plotlyjs();
+plotlyjs(); #<! Seems to handle the data 
 # inspectdr();
 
 ## Functions
@@ -81,8 +82,6 @@ function CalcUlaPattern!( vH :: Vector{C}, vC :: Vector{C}, vW :: Vector{T}, vA 
 
 end
 
-
-
 ## Parameters
 
 # Array
@@ -99,8 +98,8 @@ targetAmp       = 1;
 targetAzimuth   = 30.0; #<! [Deg]
 
 # Interference
-vIntAmp     = [0; 0; 0];
-vIntAzimuth = [20; -30; 50]; #<! [Deg]
+vIntAmp     = [0.5; 0.3; 0.35];
+vIntAzimuth = [20.0; -35.0; 50.0]; #<! [Deg]
 
 # Noise
 noiseAmp = 0.1; #<! Standard deviation
@@ -112,6 +111,7 @@ stepSize = 5e-4;
 # Analysis
 numAzimuths = 720;
 
+
 ## Generate / Load Data
 
 numSamples = round(Integer, samplingFreq * timeInterval);
@@ -120,24 +120,37 @@ vT = LinRange(0.0, timeInterval, numSamples + 1)[1:numSamples];
 waveLen = SPEED_OF_LIGHT_M_S / sigFreq;
 distElm = distElmFctr * (waveLen / 2.0);
 
-
 vR = sin.(2π .* sigFreq .* vT); #<! Reference signal
+vI = round.(cos.(2π .* sigFreq .* vT));
+vT = zeros(numSamples);
 
 vP = zeros(numElements);
-
-
-CalcPhaseVec!(vP, targetAzimuth, distElm, sigFreq, numElements);
-
 mX = zeros(numSamples, numElements);
+mI = zeros(numSamples, numElements);
+mT = zeros(numSamples, numElements);
 
+# Target Signal
+CalcPhaseVec!(vP, targetAzimuth, distElm, sigFreq, numElements);
 GenSensorsSignal!(mX, vR, vP);
 
+# Interference Signal
+for ii in 1:length(vIntAmp)
+    vT .= vIntAmp[ii] .* vI;
+    CalcPhaseVec!(vP, vIntAzimuth[ii], distElm, sigFreq, numElements);
+    GenSensorsSignal!(mT, vT, vP);
+    mI .+= mT;
+    fill!(mT, 0.0);
+end
+
+mX .+= mI;
+mX .+= (noiseAmp .* randn(numSamples, numElements));
+
 # plot(mX, size = (1050, 700));
+
 
 ## LMS
 
 vWW = copy(vW);
-
 LmsFilter!(vWW, mX, vR, numSamples, stepSize);
 
 
@@ -152,5 +165,8 @@ vC = zeros(ComplexF64, numAzimuths);
 CalcUlaPattern!(vH, vC, vWW, vA, distElm, sigFreq, numElements);
 
 ## Display Results
-
-plot(vA, abs.(vH), proj = :polar, size = (1050, 700));
+figureIdx += 1;
+fileName = @sprintf "Figure%04d.png" figureIdx;
+hP = plot(vA, abs.(vH), proj = :polar, label = "Antena Spatial Gain", size = (1050, 700));
+display(hP);
+png(hP, fileName);
