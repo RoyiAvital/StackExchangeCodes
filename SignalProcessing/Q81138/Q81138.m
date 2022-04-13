@@ -8,7 +8,7 @@
 %   1.  B
 % TODO:
 % 	1.  C
-% Release Notes
+% Release Notes Royi Avital RoyiAvital@yahoo.com
 % - 1.0.000     09/04/2022
 %   *   First release.
 
@@ -54,7 +54,7 @@ noiseAmp = 0.1; %<! Standard deviation
 % Initial Weight Vector
 vW = zeros(numElements, 1);
 
-numAzimuths = 359;
+numAzimuths = 360;
 
 
 %% Generate / Load Data
@@ -73,7 +73,7 @@ vR = sin(2 * pi * sigFreq * vT); %<! Reference signal
 
 vP = CalcPhaseVec(targetAzimuth, distElm, sigFreq, numElements);
 
-mX = AddPhase(vR, vP);
+mX = GenSensorsSignal(vR, vP);
 
 figure();
 plot(mX);
@@ -86,7 +86,11 @@ plot(mX);
 
 vWW = LmsFilter(vW, mX, vR, numSamples, 5e-4, OFF);
 
-norm(mX * vWW - vR)
+
+%% Analysis
+
+recError = norm(mX * vWW - vR);
+disp(['Reconstruction Error:', num2str(recError)]);
 
 vH = CalcUlaPattern(vWW, distElm, sigFreq, numElements, numAzimuths);
 
@@ -104,13 +108,14 @@ function [ vP ] = CalcPhaseVec( aziAngle, distElm, sigFreq, numElements )
 
 SPEED_OF_LIGHT_M_S = 3e9;
 
-vP = ((distElm * sind(aziAngle)) / SPEED_OF_LIGHT_M_S) * sigFreq * (0:(numElements - 1));
+vP = ((distElm * sind(aziAngle)) / SPEED_OF_LIGHT_M_S) * sigFreq * (0:(numElements - 1)); %<! Must be a row vector
 
 end
 
-function [ mX ] = AddPhase( vS, vP )
+function [ mX ] = GenSensorsSignal( vS, vP )
 
-vA = exp(-2j * pi * vP);
+% Adding delay to each signal by adding a phase to the analytic signal
+vA = exp(-2j * pi * vP); %<! vP assumed to be a row vector
 mX = real(hilbert(vS) .* vA);
 
 end
