@@ -51,7 +51,7 @@ end
 
 kernelSize = 3;
 
-uNet        = layerGraph();
+uNet       = layerGraph();
 numFilters = numFiltersBase;
 
 % Encoder
