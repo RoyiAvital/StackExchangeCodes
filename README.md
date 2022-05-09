@@ -32,3 +32,5 @@ If you're interested in using them otherwise, please contact me at: ![](EmailAdd
 	Check if it works for really low frequencies.
  *	[Sequential Form of the Least Squares Estimator for Linear Least Squares Model](https://dsp.stackexchange.com/questions/54730).  
 	Add derivation for the case of Forgetting Sequential LS and for Weighted Sequential LS. Probably better done in different questions.
+ *	[Feature Extraction for Image Classification of Vegetables and Fruits Using Classic Computer Vision Techniques](https://dsp.stackexchange.com/questions/79159).  
+	Create a simple example using MATLAB and some feature extractor.
