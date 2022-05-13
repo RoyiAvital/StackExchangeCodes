@@ -31,8 +31,8 @@ SPEED_OF_LIGHT_M_S = 3e9;
 %% Simulation Parameters
 
 % Array
-numElements = 800;
-distElmFctr = 1; %<! Fector of Lambda / 2
+numElements = 80;
+distElmFctr = 1; %<! Factor of Lambda / 2
 
 % Signals
 timeInterval    = 5;
@@ -78,19 +78,21 @@ for ii = 1:numSig
     mA(:, ii) = exp(-2j * pi * CalcPhaseVec(vSigAzimuth(ii), distElm, sigFreq, numElements));
 end
 
-mX = hilbert(mR) * mA';
+mX = hilbert(mR) * mA'; %<! MATLAB generates the analytic signal itself
 % mX = mR * mA'; %<! Without Hilbert Transform
-mX = mX + (noiseAmp * randn(numSamples, numElements));
+mX = mX + (noiseAmp * (randn(numSamples, numElements) + 1j * randn(numSamples, numElements)));
 
-mR = cov(mX); %<! Covariance Matrix
+mC = cov(mX); %<! Covariance Matrix
 
-[mEigVec, vEigVal] = eig(mR); %<! Eigen Vectors (Spanning space of Signal / Noise)
+[mEigVec, vEigVal] = eig(mC, 'vector'); %<! Eigen Vectors (Spanning space of Signal / Noise)
+[vEigVal, vIdx] = sort(vEigVal, 'ascend'); %<! Signal values at the end (Stronger)
+mEigVec = mEigVec(:, vIdx);
 
-mV = mEigVec(:, 1:(numElements - numSig)); %<! Spanning the Signal (Assuming Signal Eigen Values are larger)
+mV = mEigVec(:, 1:(numElements - numSig)); %<! Spanning the Noise (Assuming Signal Eigen Values are larger)
 
-vTheta = linspace(-90, 90, numGridPts); %<! Grdi for Estimation
+vTheta = linspace(-90, 90, numGridPts); %<! Grid for Estimation
 vS = zeros(numElements, 1);
-vM = zeros(length(vTheta), 1);
+vM = zeros(numGridPts, 1);
 
 % for ii = 1:length(vTheta)
 %     % vS(:) = exp(-2j * pi * 2 * (0:(numElements - 1))' * sind(vTheta(ii)));
@@ -101,15 +103,15 @@ vM = zeros(length(vTheta), 1);
 % Optimized Loop
 
 mVV = mV * mV';
-[mU, mD] = ldl(mVV, 'upper');
-mD = max(mD, 0); %<! mVV must be PSD Matrix -> Lowest Eig must be zero
+% [mU, mD] = ldl(mVV, 'upper');
+% mD = max(mD, 0); %<! mVV must be PSD Matrix -> Lowest Eig must be zero
+% mU = sqrt(mD) * mU; %<! Pseudo Cholesky
+mU = sqrtm(mVV);
 
-mC = sqrt(mD) * mU; %<! Pseudo Cholesky
-
-for ii = 1:length(vTheta)
+for ii = 1:numGridPts
     vS(:) = exp(-2j * pi * CalcPhaseVec(vTheta(ii), distElm, sigFreq, numElements));
-    vS(:) = mC * vS;
-    vM(ii) = abs(1 / (vS' * vS));
+    vS(:) = mU * vS;
+    % vM(ii) = abs(1 / (vS' * vS));
     vM(ii) = 1 / (vS' * vS); %<! From the decomposition and structure should be real!
 end
 

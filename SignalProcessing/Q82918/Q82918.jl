@@ -75,13 +75,11 @@ function CalcCovMat( mA :: Matrix{T} ) where{T <: Complex} #<! Complex{<: Abstra
 
 end
 
-
-
 ## Parameters
 
 # Array
 numElements = 20;
-distElmFctr = 1; #<! Fector of element distance (Units fo Lambda / 2)
+distElmFctr = 1; #<! Factor of element distance (Units fo Lambda / 2)
 
 # Signals
 timeInterval    = 5.0;
@@ -122,10 +120,12 @@ mA = Matrix{ComplexF64}(undef, numElements, numSig);
 CalcSteeringMatrix!(mA, numSig, vSigAzimuth, distElm, sigFreq, numElements);
 
 mX = hilbert(mR) * mA';
-# # mX .+= noiseAmp .* randn(ComplexF64, numSamples, numElements);
+mX .+= noiseAmp .* randn(ComplexF64, numSamples, numElements);
 
 mC = CalcCovMat(mX);
 
+# Julia's Eigen Decomposition is different from MATLAB's.
+# Hence the results are different from MATLAB's code.
 mE = eigvecs(mC, sortby = x -> abs2(x)); #<! Eigen Vectors (Spanning space of Signal / Noise)
 mV = mE[:, 1:(numElements - numSig)]; #<! Spanning the Signal (Assuming Signal Eigen Values are larger)
 
@@ -134,18 +134,8 @@ vS = Vector{ComplexF64}(undef, numElements);
 vB = Vector{ComplexF64}(undef, numElements); #<! Buffer
 vM = Vector{Float64}(undef, numGridPts);
 
-# for ii in 1:numGridPts
-#     for jj in 1:numElements
-#         vS[jj] = exp(-2im * π * CalcPhaseElement(vTheta[ii], jj - 1));
-#     end
-#     vM[ii] = 1 / real(vS' * mV * mV' * vS);
-# end
-
 mVV = Hermitian(mV * mV');
-# mC = cholesky(mVV, Val(true), check = false);
-# mU = mC.U[1:mC.rank, invperm(mC.p)]
 mU = sqrt(mVV);
-
 
 for ii in 1:numGridPts
     for jj in 1:numElements
@@ -156,10 +146,8 @@ for ii in 1:numGridPts
 end
 
 
-
-
-
 ## Display Results
+
 figureIdx += 1;
 fileName = @sprintf "Figure%04d.png" figureIdx;
 hP = plot(vTheta, 10 * log10.(vM));

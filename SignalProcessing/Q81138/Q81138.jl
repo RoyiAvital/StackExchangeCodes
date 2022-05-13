@@ -167,6 +167,6 @@ CalcUlaPattern!(vH, vC, vWW, vA, distElm, sigFreq, numElements);
 ## Display Results
 figureIdx += 1;
 fileName = @sprintf "Figure%04d.png" figureIdx;
-hP = plot(vA, abs.(vH), proj = :polar, label = "Antena Spatial Gain", size = (1050, 700));
+hP = plot(vA, abs.(vH), proj = :polar, label = "Antenna Spatial Gain", size = (1050, 700));
 display(hP);
 png(hP, fileName);
