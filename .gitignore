@@ -3,6 +3,7 @@
 **/UMPCACodes
 # Ignore Work in Progress
 **/*WIP
+**/.vscode/*
 
 # Archive Files
 *.tar*
