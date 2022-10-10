@@ -35,3 +35,11 @@ If you're interested in using them otherwise, please contact me at: ![](EmailAdd
 	Add derivation for the case of Forgetting Sequential LS and for Weighted Sequential LS. Probably better done in different questions.
  *	[Feature Extraction for Image Classification of Vegetables and Fruits Using Classic Computer Vision Techniques](https://dsp.stackexchange.com/questions/79159).  
 	Create a simple example using MATLAB and some feature extractor.
+ *	[What is the relationship between beamforming and Independent Component Analysis (ICA)](https://dsp.stackexchange.com/questions/82978).
+ * 	[Image Processing Pipeline for Segmenting Cell Nuclei](https://dsp.stackexchange.com/questions/83097).
+ * 	[Which Discrete Non Linear, Time Invariant Systems with Memory are Considered "Easy" to Model and Identify](https://dsp.stackexchange.com/questions/60805).
+ *	[How to Calculate Gaussian Kernel for a Small Support Size](https://dsp.stackexchange.com/questions/23460)  
+	Suggest doing it in Frequency Domain with a direct calculation on the frequency domain of the kernel.  
+	Related to [Constructing a Gaussian Kernel in the Frequency Domain](https://dsp.stackexchange.com/questions/73687), [Is the Discrete Gaussian Kernel an Eigenfunction of the DFT](https://dsp.stackexchange.com/questions/10429) and [A Survey of Gaussian Convolution Algorithms](https://www.ipol.im/pub/art/2013/87/).
+ *	[Unscented Kalman Filter for Tracking Amplitude, Frequency and Phase of a Multi Component Signal](https://dsp.stackexchange.com/questions/84361).
+ *	ds
