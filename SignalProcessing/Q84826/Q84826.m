@@ -29,8 +29,6 @@ ENTROPY_MODE_CHANNEL    = 1; %<! Averages per channel calculation
 ENTROPY_VECTOR          = 2; %<! Treats the RGB data as a single vector per pixel
 
 
-
-
 %% Parameters
 
 img001Url = 'https://i.stack.imgur.com/mYxDD.jpg';
