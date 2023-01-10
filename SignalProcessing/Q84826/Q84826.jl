@@ -86,14 +86,46 @@ function CalcEntropy( vI :: Vector{U} ) :: Float64 where{U <: Unsigned}
 
 end
 
-function ConverImagePlanarForm( mI :: Matrix{RGB{N0f8}} ) :: Array{UInt8, 3}
+function ConverImagePlanarForm( mI :: Matrix{<: RGB{T}} ) :: Array{T, 3} where{T <: AbstractFloat}
     # Converts from Julia Images Packed from to Planar form:
     # R1G1B1R2G2B2R3G3B3 -> R1R2R3G1G2G3B1B2B3
-    # TODO: Add support for other formats of Images (UInt16, UInt32, Float32, etc...)
 
-    return permutedims(reinterpret(reshape, UInt8, mI), (2, 3, 1));
+    return permutedims(reinterpret(reshape, T, mI), (2, 3, 1));
 
 end
+
+function ConverImagePlanarForm( mI :: Matrix{<: RGB{<: Normed{U}}} ) :: Array{U, 3} where{U <: Unsigned}
+    # Converts from Julia Images Packed from to Planar form:
+    # R1G1B1R2G2B2R3G3B3 -> R1R2R3G1G2G3B1B2B3
+
+    return permutedims(reinterpret(reshape, U, mI), (2, 3, 1));
+
+end
+
+function ConverImagePlanarForm( mI :: Matrix{<: Gray{T}} ) :: Array{T, 2} where{T <: AbstractFloat}
+    # Converts from Julia Images Packed from to Planar form:
+    # R1G1B1R2G2B2R3G3B3 -> R1R2R3G1G2G3B1B2B3
+
+    return reinterpret(T, mI);
+
+end
+
+# function ConverImagePlanarForm( mI :: Matrix{Gray{T}} ) :: Array{U, 2} where{T <: FixedPoint, U <: Unsigned}
+#     # Converts image into Matrix
+
+#     dataType = FixedPointNumbers.rawtype(eltype(eltype(mI)));
+#     return reinterpret(dataType, mI);
+
+# end
+
+
+# function ConverImagePlanarForm( mI :: Matrix{Gray{T}} ) :: Array{U, 2} where{T <: FixedPoint, U <: Unsigned}
+#     # Converts image into Matrix
+
+#     dataType = FixedPointNumbers.rawtype(eltype(eltype(mI)));
+#     return reinterpret(dataType, mI);
+
+# end
 
 
 ## Parameters
