@@ -1,7 +1,7 @@
 function [ vClusterId, mA ] = InitKMeansClustering( mX, numClusters, initMethod )
 % ----------------------------------------------------------------------------------------------- %
 % [ vClusterId, mA ] = InitKMeansClustering( mX, numClusters, initMethod )
-%   Initialize teh Centroids and ID (Labels) for the K-Means algorithm.
+%   Initialize the Centroids and ID (Labels) for the K-Means algorithm.
 % Input:
 %   - mX            -   Input Data Samples.
 %                       Each column is a data sampled of dimension D and
