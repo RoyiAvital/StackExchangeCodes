@@ -1,6 +1,6 @@
 # StackExchange Signal Processing Q88303
 # https://dsp.stackexchange.com/questions/88303
-# Detect Longest Vertical Lines in an Image
+# Detect Longest Vertical Lines (Edges) in an Image
 # References:
 #   1.  
 # Remarks:
