@@ -1,0 +1,5 @@
+[deps]
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+FreeType = "b38be410-82b0-50bf-ab77-7b57e271db43"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
