@@ -20,6 +20,7 @@
 # Internal
 using Printf;
 # External
+using ColorTypes;
 using FileIO;
 import FreeType;
 using UnicodePlots;
@@ -40,6 +41,103 @@ dUtfSymBool = Dict(false => '🟥', true => '🟩');
 dUtfSymDir  = Dict(Int8(-1) => '↖', Int8(0) => '↑', Int8(1) => '↗');
 
 ## Functions
+
+function ConvertPackedImg(mI :: Matrix{T}) where {T}
+    
+    numRows, numCols = size(mI);
+    numChannels = length(T);
+    dataType = eltype(T).types[1]
+
+    if numChannels > 1
+        mO = Array{dataType, 3}(undef, numRows, numCols, numChannels);
+        for ii ∈ 1:numRows, jj ∈ 1:numCols
+            for kk ∈ 1:numChannels
+                mO[ii, jj, kk] = getfield(getfield(mI[ii, jj], kk), 1); #<! According to ColorTypes data always in order RGBA
+            end
+        end
+    else
+        mO = Matrix{dataType}(undef, numRows, numCols);
+        for ii ∈ 1:numRows, jj ∈ 1:numCols
+            mO[ii, jj] = getfield(mI[ii, jj], 1);
+        end
+    end
+
+    return mO;
+
+end
+
+
+function Test(mI :: Matrix{<: Color{T, N}}) where {T, N}
+    
+    numRows, numCols = size(mI);
+    numChannels = N;
+    dataType = T.types[1];
+
+    mO = Array{dataType, 3}(undef, numRows, numCols, numChannels);
+    for ii ∈ 1:numRows, jj ∈ 1:numCols
+        for kk ∈ 1:numChannels
+            mO[ii, jj, kk] = getfield(getfield(mI[ii, jj], kk), 1); #<! According to ColorTypes data always in order RGBA
+        end
+    end
+
+    return mO;
+
+end
+
+function Test(mI :: Matrix{<: Color{T, 1}}) where {T}
+    
+    numRows, numCols = size(mI);
+    dataType = T.types[1];
+
+    mO = Matrix{dataType}(undef, numRows, numCols);
+    for ii ∈ 1:numRows, jj ∈ 1:numCols
+        mO[ii, jj, kk] = getfield(mI[ii, jj], 1); #<! According to ColorTypes data always in order RGBA
+    end
+
+    return mO;
+
+end
+
+
+function Test1(mI :: Matrix{<: TransparentColor{C, T, N}}) where {C, T, N}
+    
+    numRows, numCols = size(mI);
+    numChannels = N;
+    dataType = T.types[1];
+
+    if numChannels > 1
+        mO = permutedims(reinterpret(reshape, dataType, mI), (2, 3, 1));
+    else
+        mO = reinterpret(reshape, dataType, mI);
+    end
+
+    return mO;
+
+end
+
+function Test(mI :: Matrix{<: TransparentColor{C, T, N}}) where {C, T, N}
+    
+    numRows, numCols = size(mI);
+    numChannels = N;
+    dataType = T.types[1];
+
+    if numChannels > 1
+        mO = Array{dataType, 3}(undef, numRows, numCols, numChannels);
+        for ii ∈ 1:numRows, jj ∈ 1:numCols
+            for kk ∈ 1:numChannels
+                mO[ii, jj, kk] = getfield(getfield(mI[ii, jj], kk), 1); #<! Accordign to ColorTypes data always in order RGBA
+            end
+        end
+    else
+        mO = Matrix{dataType}(undef, numRows, numCols);
+        for ii ∈ 1:numRows, jj ∈ 1:numCols
+            mO[ii, jj] = getfield(mI[ii, jj], 1);
+        end
+    end
+
+    return mO;
+
+end
 
 function PrintMat( mI :: Matrix{T}, dUtfSym :: Dict ) where{T <: Integer}
     
@@ -116,80 +214,85 @@ img003Url = "https://i.stack.imgur.com/6aFTm.png";
 mT = load(download(img001Url));
 tSize = size(mT);
 
-mI = Matrix{UInt8}(undef, tSize[1], tSize[2]);
+# mI = Matrix{UInt8}(undef, tSize[1], tSize[2]);
 
-for ii in 1:tSize[1]
-    for jj in 1:tSize[2]
-        mI[ii, jj] = mT[ii, jj].r.i;
-    end
-end
+# for ii in 1:tSize[1]
+#     for jj in 1:tSize[2]
+#         mI[ii, jj] = mT[ii, jj].r.i;
+#     end
+# end
 
-PrintMat(mI, dUtfSymPx);
+# mI = Test(mT);
 
-hPlot = heatmap(mI, title = "Input Image", array = true, height = tSize[1], width = tSize[2]); #<! Display using UnicodePlots
+# # mI = ConvertPackedImg(mT);
+# mI = mI[:, :, 1]; #<! The actual image is gray
 
-figureIdx += 1;
-if exportFigures
-    fileName = @sprintf "Figure%04i.png" figureIdx
-    savefig(hPlot, fileName);
-end
+# PrintMat(mI, dUtfSymPx);
 
-# Case 0
-mB = mI .== 0;
-mB = Matrix{Bool}(mB); #<! Convert to Bool
+# hPlot = heatmap(mI, title = "Input Image", array = true, height = tSize[1], width = tSize[2]); #<! Display using UnicodePlots
 
-PrintMat(mB, dUtfSymBool);
+# figureIdx += 1;
+# if exportFigures
+#     fileName = @sprintf "Figure%04i.png" figureIdx
+#     savefig(hPlot, fileName);
+# end
 
-hPlot = heatmap(mB, title = "Edges with Value 0", array = true, height = tSize[1], width = tSize[2]); #<! Display using UnicodePlots
+# # Case 0
+# mB = mI .== 0;
+# mB = Matrix{Bool}(mB); #<! Convert to Bool
 
-figureIdx += 1;
-if exportFigures
-    fileName = @sprintf "Figure%04i.png" figureIdx
-    savefig(hPlot, fileName);
-end
+# PrintMat(mB, dUtfSymBool);
 
-mD, mS = FindLongestPath(mB);
+# hPlot = heatmap(mB, title = "Edges with Value 0", array = true, height = tSize[1], width = tSize[2]); #<! Display using UnicodePlots
 
-PrintMat(mD, dUtfSymDir);
+# figureIdx += 1;
+# if exportFigures
+#     fileName = @sprintf "Figure%04i.png" figureIdx
+#     savefig(hPlot, fileName);
+# end
 
-mP = DrawPath(mD, mS);
+# mD, mS = FindLongestPath(mB);
 
-PrintMat(mP, dUtfSymBool);
+# PrintMat(mD, dUtfSymDir);
 
-hPlot = heatmap(mP, title = "Path with Value 0", array = true, height = tSize[1], width = tSize[2]); #<! Display using UnicodePlots
+# mP = DrawPath(mD, mS);
 
-figureIdx += 1;
-if exportFigures
-    fileName = @sprintf "Figure%04i.png" figureIdx
-    savefig(hPlot, fileName);
-end
+# PrintMat(mP, dUtfSymBool);
 
-# Case 1
-mB = mI .== 255;
-mB = Matrix{Bool}(mB); #<! Convert to Bool
+# hPlot = heatmap(mP, title = "Path with Value 0", array = true, height = tSize[1], width = tSize[2]); #<! Display using UnicodePlots
 
-PrintMat(mB, dUtfSymBool);
+# figureIdx += 1;
+# if exportFigures
+#     fileName = @sprintf "Figure%04i.png" figureIdx
+#     savefig(hPlot, fileName);
+# end
 
-hPlot = heatmap(mB, title = "Edges with Value 255", array = true, height = tSize[1], width = tSize[2]); #<! Display using UnicodePlots
+# # Case 1
+# mB = mI .== 255;
+# mB = Matrix{Bool}(mB); #<! Convert to Bool
 
-figureIdx += 1;
-if exportFigures
-    fileName = @sprintf "Figure%04i.png" figureIdx
-    savefig(hPlot, fileName);
-end
+# PrintMat(mB, dUtfSymBool);
 
-mD, mS = FindLongestPath(mB);
+# hPlot = heatmap(mB, title = "Edges with Value 255", array = true, height = tSize[1], width = tSize[2]); #<! Display using UnicodePlots
 
-PrintMat(mD, dUtfSymDir);
+# figureIdx += 1;
+# if exportFigures
+#     fileName = @sprintf "Figure%04i.png" figureIdx
+#     savefig(hPlot, fileName);
+# end
 
-mP = DrawPath(mD, mS);
+# mD, mS = FindLongestPath(mB);
 
-PrintMat(mP, dUtfSymBool);
+# PrintMat(mD, dUtfSymDir);
 
-hPlot = heatmap(mP, title = "Path with Value 255", array = true, height = tSize[1], width = tSize[2]); #<! Display using UnicodePlots
+# mP = DrawPath(mD, mS);
 
-figureIdx += 1;
-if exportFigures
-    fileName = @sprintf "Figure%04i.png" figureIdx
-    savefig(hPlot, fileName);
-end
+# PrintMat(mP, dUtfSymBool);
+
+# hPlot = heatmap(mP, title = "Path with Value 255", array = true, height = tSize[1], width = tSize[2]); #<! Display using UnicodePlots
+
+# figureIdx += 1;
+# if exportFigures
+#     fileName = @sprintf "Figure%04i.png" figureIdx
+#     savefig(hPlot, fileName);
+# end
