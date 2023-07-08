@@ -24,7 +24,12 @@ using DelimitedFiles;
 using FileIO;
 import FreeType;
 using LinearAlgebra;
-using MKL;
+if Sys.iswindows()
+    using MKL;
+end
+if Sys.isapple()
+    using AppleAccelerate;
+end
 using UnicodePlots;
 
 ## Constants & Configuration

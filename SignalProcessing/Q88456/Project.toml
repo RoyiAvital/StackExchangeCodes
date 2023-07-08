@@ -1,9 +1,8 @@
 [deps]
+AppleAccelerate = "13e28ba4-7ad8-5781-acae-3021b1ed3924"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 FreeType = "b38be410-82b0-50bf-ab77-7b57e271db43"
-GR = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
 MKL = "33e6dc65-8f57-5167-99aa-e5a354878fb2"
-MKLSparse = "0c723cd3-b8cd-5d40-b370-ba682dde9aae"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
