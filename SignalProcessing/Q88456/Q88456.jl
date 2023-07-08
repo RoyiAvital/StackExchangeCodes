@@ -51,7 +51,7 @@ hObjFun( mX, mR, mA, mY, λ ) = (0.5 .* sum(abs2, ((mR * mX * mA) .- mY))) + ((0
 function hObjFun!( mX, mR, mA, mY, λ, mXA,  mRXA)
     LinearAlgebra.mul!(mXA, mX, mA);
     LinearAlgebra.mul!(mRXA, mR, mXA);
-    # Traiangular multiplication (Slower)
+    # Triangular multiplication (Slower)
     # mRXA .= mXA;
     # LinearAlgebra.BLAS.trmm!('L', 'L', 'N', 'N', 1.0, mR, mRXA);  
 
