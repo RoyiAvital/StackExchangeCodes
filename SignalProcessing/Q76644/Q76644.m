@@ -31,12 +31,12 @@ generateFigures = ON;
 numSamples      = 100;
 samplingFreq    = 1; %<! The CRLB is for Normalized Frequency
 
-% Sine Signal Parameters
+% Sine Signal Parameters (Non integeres divsiors of N requires much more realizations).
 sineFreq    = 0.25; %<! Do for [0.05, 0.10, 0.25]
 sineAmp     = 10; %<! High value to allow high SNR
 
 % Analysis Parameters
-numRealizations = 5;
+numRealizations = 50;
 % SNR of the Analysis (dB)
 vSnrdB = linspace(-10, 50, 150).';
 

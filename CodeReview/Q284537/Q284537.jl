@@ -151,7 +151,7 @@ function ____Conv1D!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T} ) where 
     
     I = II + K - 1; #<! Output length
 	
-    @turbo for ii in 0:(K - 1) #<! Head
+    @turbo for ii in 1:(K - 1) #<! Head
         sumVal = zero(T);
         for kk in 1:K
             ib0 = (ii >= kk);
@@ -258,16 +258,16 @@ vB = [4, 5, 6];
 vC = [6, 5, 4];
 vO = collect(1:(length(vA) + length(vB) - 1));
 
-numSamplesA = 1000;
-numSamplesB = 3;
+# numSamplesA = 1000;
+# numSamplesB = 3;
 
-vA = rand(numSamplesA);
-vB = rand(numSamplesB);
-vO = rand(numSamplesA + numSamplesB - 1);
+# vA = rand(numSamplesA);
+# vB = rand(numSamplesB);
+# vO = rand(numSamplesA + numSamplesB - 1);
 
 # conv3!(vO, vA, vB);
 
-# ___Conv1D!(vO, vA, vB);
+___Conv1D!(vO, vA, vB);
 
 # vC = view(vB, length(vB):-1:1);
 # vK = Kernel{(0:(length(vB) - 1), )}(@inline vW -> sum(vW .* vC));
@@ -278,10 +278,10 @@ vO = rand(numSamplesA + numSamplesB - 1);
 # map(vK, extend(vA, StaticKernels.ExtensionConstant(0)));
 # map!(vK, vO, extend(vA, StaticKernels.ExtensionConstant(0)));
 
-numElementsPad = length(vA) + (2 * (length(vB) - 1));
-vParnetIdx = (length(vB) - 1) .+ (1:length(vA));
-vAA = PaddedView(0, vA, (1:numElementsPad,), (vParnetIdx,)); #<! View
-vK = Kernel{(0:(length(vB) - 1), )}(@inline vW -> vW[0] * vB[3] + vW[1] * vB[2] + vW[2] * vB[1]);
+# numElementsPad = length(vA) + (2 * (length(vB) - 1));
+# vParnetIdx = (length(vB) - 1) .+ (1:length(vA));
+# vAA = PaddedView(0, vA, (1:numElementsPad,), (vParnetIdx,)); #<! View
+# vK = Kernel{(0:(length(vB) - 1), )}(@inline vW -> vW[0] * vB[3] + vW[1] * vB[2] + vW[2] * vB[1]);
 # vK = Kernel{(0:(length(vB) - 1), )}(@inline vW -> vW[0] * vB[15] + vW[1] * vB[14] + vW[2] * vB[13] + vW[3] * vB[12] + vW[4] * vB[11] + vW[5] * vB[10] + vW[6] * vB[9] + vW[7] * vB[8] + vW[8] * vB[7] + vW[9] * vB[6] + vW[10] * vB[5] + vW[11] * vB[4] + vW[12] * vB[3] + vW[13] * vB[2] + vW[14] * vB[1]);
 # map!(vK, vO, vAA);
 # vO
@@ -292,4 +292,4 @@ vK = Kernel{(0:(length(vB) - 1), )}(@inline vW -> vW[0] * vB[3] + vW[1] * vB[2] 
 # @benchmark ___Conv1D!($vO, $vA, $vB)
 # @benchmark ____Conv1D!($vO, $vA, $vB)
 # @benchmark conv3!($vO, $vA, $vB)
-@benchmark map!($vK, $vO, $vAA)
+# @benchmark map!($vK, $vO, $vAA)
