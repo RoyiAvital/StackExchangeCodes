@@ -39,9 +39,14 @@
 *.vrb
 *eps-converted-to.pdf
 
+# Python Files
+*.npy
+*.npz
+
 # MATLAB Files
 *.asv
 *.m~
+*.mat
 
 # Compilation files:
 *.obj
