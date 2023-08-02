@@ -56,6 +56,12 @@ function ∇²Sigmoid( x :: T; α :: T = 1 ) where {T <: AbstractFloat}
 
 end
 
+function ObjFun( α :: T, ε :: T, vX :: AbstractVector{T} ) where {T <: AbstractFloat}
+
+    return abs2(maximum(∇²Sigmoid.(vX; α = α)) - ε);
+
+end
+
 
 ## Parameters
 
@@ -86,7 +92,7 @@ end
 vαOpt = zeros(numε);
 
 for ii in 1:numε
-    sOptRes = optimize(α -> -maximum(abs.(∇²Sigmoid.(vX, α = α))), 0.001, 100, Brent());
+    sOptRes = optimize(α -> ObjFun(α, vε[ii], vX), 0.001, 100, Brent());
     vαOpt[ii] = q;
 end
 
