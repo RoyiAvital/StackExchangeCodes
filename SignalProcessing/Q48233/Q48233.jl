@@ -69,7 +69,7 @@ numSamples    = 2000;
 supportRadius = 10;
 
 vα = [1.0, 2.0, 3.0];
-vε = [0.05, 0.075];
+vε = [0.5, 0.75];
 
 ## Load / Generate Data
 
@@ -93,7 +93,7 @@ vαOpt = zeros(numε);
 
 for ii in 1:numε
     sOptRes = optimize(α -> ObjFun(α, vε[ii], vX), 0.001, 100, Brent());
-    vαOpt[ii] = q;
+    vαOpt[ii] = sOptRes.minimizer;
 end
 
 ## Display Results
@@ -118,11 +118,13 @@ end
 
 # Display the results of optimization
 vTr = [scatter(;x = vX, y = vY, mode = "lines", name = "Heavy Step")];
-for ii in 1:numσ
-    nameStr = @sprintf "Sigmoid α = %0.2f" vα[ii];
-    push!(vTr, scatter(;x = vX, y = mσ[:, ii], mode = "lines", name = nameStr))
+for ii in 1:numε
+    ε = vε[ii];
+    α = vαOpt[ii];
+    nameStr = @sprintf "Sigmoid α = %0.2f, ε = %0.2f" α ε;
+    push!(vTr, scatter(;x = vX, y = Sigmoid.(vX; α = α), mode = "lines", name = nameStr))
 end
-oLyt = Layout(;title = "Function Variants");
+oLyt = Layout(;title = "Bounded 2nd Derivative");
 hP = plot(vTr, oLyt);
 
 display(hP);
