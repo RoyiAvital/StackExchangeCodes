@@ -32,7 +32,7 @@ Base.show(io::IO, x::T) where {T<:Union{UInt, UInt128, UInt64, UInt32, UInt16, U
 
 figureIdx = 0;
 
-exportFigures = false;
+exportFigures = true;
 
 ## Functions
 
@@ -69,7 +69,7 @@ numSamples    = 2000;
 supportRadius = 10;
 
 vα = [1.0, 2.0, 3.0];
-vε = [0.5, 0.75];
+vε = [0.5, 1.5, 2.5];
 
 ## Load / Generate Data
 
