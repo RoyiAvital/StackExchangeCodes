@@ -11,7 +11,7 @@
 Codes related to answers by [Royi Avital on StackExchange Network](https://github.com/RoyiAvital/StackExchangeCodes).  
 
 **Remark**  
-Please up vote [the answers in StackExchange](https://dsp.stackexchange.com/users/128/royi?tab=answers) to show support of this work.  
+Please up vote [the answers in StackExchange](https://dsp.stackexchange.com/users/128/royi?tab=answers) to show support of this work (Don't mass up vote though).  
 You may also support my work through [LibrePay](https://liberapay.com/Royi/donate) or [KoFi](https://ko-fi.com/royia).
 
 ## Licensing
