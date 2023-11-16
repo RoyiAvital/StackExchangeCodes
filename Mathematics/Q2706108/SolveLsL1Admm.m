@@ -35,7 +35,7 @@ function [ vX, mX ] = SolveLsL1Admm( mA, vB, paramLambda, numIterations )
 %       smoothing.
 %   2.  Matrix Factorization caching according to "Matrix Inversion Lemma"
 %       (See S. Boyd, N. Parikh, E. Chu, B. Peleato, and J. Eckstein -
-%       istributed Optimization and Statistical Learning via the
+%       Distributed Optimization and Statistical Learning via the
 %       Alternating Direction Method of Multipliers Page 28). Basically:
 %       (mA.' * mA + paramRho * I)^(-1) = (1 / paramRho) + (1 / (paramRho * paramRho)) * mA.' * (I + (1 /
 %       paramRho) * mA * mA.')^(-1) * mA
