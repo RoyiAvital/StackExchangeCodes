@@ -14,7 +14,7 @@
 
 %% General Parameters
 
-subStreamNumberDefault = 0; 42; %<! Set to 0 for Random
+subStreamNumberDefault = 42; %<! Set to 0 for Random
 
 run('InitScript.m');
 
@@ -43,7 +43,7 @@ mA = diag(vA);
 vY = randn(numElements, 1);
 
 % Should be paramLambda * max(mA * vX - vY) where mA is diagonal
-hObjFun = @(vX) 0.5 * sum(vX .^ 2) + paramLambda * max(vA .* vX - vY);
+hObjFun = @(vX) 0.5 * sum(vX .^ 2) + paramLambda * max(abs(vA .* vX - vY));
 
 solverIdx       = 0;
 cMethodString   = {};
@@ -86,6 +86,7 @@ cLegendString{solverIdx}    = ['Solution by ADMM'];
 
 hRunTime = tic();
 
+% The question could actually use an optimized solver for the case mA is diagonal.
 [vX, mX] = SolveL2LInfAdmm(zeros(numElements, 1), mA, vY, paramLambda, paramRho, numIterations);
 
 runTime = toc(hRunTime);
@@ -104,6 +105,9 @@ if(generateFigures == ON)
     % saveas(hFigure,['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
     print(hFigure, ['Figure', num2str(figureIdx, figureCounterSpec), '.png'], '-dpng', '-r0'); %<! Saves as Screen Resolution
 end
+
+optVal = sCvxSol.cvxOptVal;
+save('Data.mat', 'vA', 'vY', 'optVal');
 
 
 

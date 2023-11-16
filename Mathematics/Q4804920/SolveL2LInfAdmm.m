@@ -76,8 +76,8 @@ numElements = size(vX, 1);
 % Cahing Factorization
 mC = decomposition(eye(numElements) + paramRho * (mA' * mA), 'chol');
 
-vZ = vX;
-vU = vX;
+vZ = zeros(size(mA, 1), 1);
+vU = zeros(size(mA, 1), 1);
 
 mX = zeros([numElements, numIterations]);
 vX = mX(:, 1);
