@@ -22,13 +22,12 @@
 ## Packages
 
 # Internal
+using LinearAlgebra;
 using Printf;
 using Random;
 # External
 using Convex;
 using MAT;
-using LinearAlgebra;
-using Optim;
 using PlotlyJS;
 using SCS;
 using StableRNGs;
@@ -46,10 +45,6 @@ Base.show(io::IO, x::T) where {T<:Union{UInt, UInt128, UInt64, UInt32, UInt16, U
 figureIdx = 0;
 
 exportFigures = false;
-
-dUtfSymPx   = Dict(UInt8(0) => '🟩', UInt8(128) => '🟦', UInt8(255) => '🟥');
-dUtfSymBool = Dict(false => '🟥', true => '🟩');
-dUtfSymDir  = Dict(Int8(-1) => '↖', Int8(0) => '↑', Int8(1) => '↗');
 
 ## Functions
 
@@ -77,13 +72,17 @@ function PD3O!(mX :: Matrix{T}, vS :: Vector{T}, vX̄ :: Vector{T}, vT :: Vector
     
     for ii ∈ 2:numIterations
         vT .= vX - γ * h∇f(vX); #<! Buffer (vXH)
-        # vS .= vS + δ * mA * vX̄;
-        vS .= vS + mA * vX̄;
+        # This matches the MATLAB Code.
+        # It uses a scaled vS -> μ vS.
+        # vS .= vS + mA * vX̄;
+        # vS .= vS - hProxH(vS, μ); #<! Prox of Conjugate (https://github.com/mingyan08/PD3O/issues/2)
+        # vX = @view mX[:, ii];
+        # vX .= hProxG(vT - λ * mA' * vS, γ);
         
-        # vS .= vS - δ * hProxH(μ * vS, μ);
-        vS .= vS - hProxH(vS, μ); #<! Prox of Conjugate (https://github.com/mingyan08/PD3O/issues/2)
+        vS .= vS + δ * mA * vX̄;
+        vS .= vS - δ * hProxH(μ * vS, μ);
         vX = @view mX[:, ii];
-        vX .= hProxG(vT - λ * mA' * vS, γ);
+        vX .= hProxG(vT - γ * mA' * vS, γ);
         vX̄ .= 2vX - vT - γ * h∇f(vX);
     end
 
@@ -193,13 +192,14 @@ dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
 # g(x) = 0 -> Prox_g(y) = y
 # h(x) = δ(A x) ∈ [a, b] -> Prox_h(y) = clamp(y, a, b)
 # Useful as it doesn't require solving big linear equation.
+# γ - Primal step size, δ - Dual step size.
 
 methodName = "PD3O";
 
 valL = opnorm(mA)
 β = 1 / valL;
-γ = 1.8β;
-λ = 0.9β * β; #<! γ * δ
+γ = 1.8β; #<! γ < 2β (Like a primal step size for Gradient Descent)
+λ = 0.9β * β; #<! γ * δ < β²
 μ = γ / λ; #<! In the paper 1/δ
 δ = λ / γ;
 
