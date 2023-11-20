@@ -1,6 +1,6 @@
 # StackExchange Mathematics Q3042354
 # https://math.stackexchange.com/questions/3042354
-# Linear Least Squares with Norm Equality Constraint.
+# Large Scale Quadratic Form with Linear Box Constraints.
 # References:
 #   1.  
 # Remarks:
@@ -8,7 +8,9 @@
 #       -   Move to folder using `cd(raw"<PathToFolder>");`.
 #       -   Activate the environment using `] activate .`.
 #       -   Instantiate the environment using `] instantiate`.
-#   2.  fd
+#   2.  The condition number impacts the performance of PD3O and Chambolle significantly.
+#       Hence some conditioning is added to the generation of `mA`.
+#   3. 
 # TODO:
 # 	1.  C
 # Release Notes Royi Avital RoyiAvital@yahoo.com
@@ -115,22 +117,20 @@ valTol  = 1e-3;
 loadData = false;
 
 # Solvers
-numIterations = 5000;
+numIterations = 2500;
 
 # ADMM Solver
-ρ = 5.0;
+ρ = 2.5;
 
 # PD3O
-β = 1 / 100;
-γ = 1.9β;
-λ = 3 / 64;
-μ = γ / λ;
+
+# Chamoblle Pock
 
 ## Generate / Load Data
 oRng = StableRNG(1234);
 mA = randn(oRng, numRows, numCols);
 mA = mA' * mA;
-# mA = mA + 0.01I;
+mA = mA + 0.1I; #<! High condition numbers makes convergence slower
 mA = mA + mA';
 
 if (loadData)
@@ -165,6 +165,10 @@ end
 
 
 # ADMM
+# Solves: f(x) + g(z) subject to Px + Qz + r = 0
+# f(x) = 0.5 * x' * A * x -> Prox_f(y) = (λ * A' * A + A) \ (λ * A' * y)
+# g(x) = δ(A x) ∈ [a, b] -> Prox_g(y) = clamp(y, a, b)
+# P = A, Q = -I, r = 0
 methodName = "ADMM";
 
 sEigFac = eigen(mA);
@@ -182,10 +186,11 @@ dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
 
 
 # PD3O
-# f(x) + g(x) + h(A * x)
-# f(x) = x' * A * x
+# Solves: \arg \min_x f(x) + g(x) + h(A * x)
+# f(x) = 0.5 * x' * A * x
 # g(x) = 0 -> Prox_g(y) = y
 # h(x) = δ(A x) ∈ [a, b] -> Prox_h(y) = clamp(y, a, b)
+# Useful as it doesn't require solving big linear equation.
 
 methodName = "PD3O";
 
@@ -209,53 +214,30 @@ PD3O!(mX, vS, vX̄, vT, h∇f, hProxG, hProxH, γ, λ);
 dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
 
 
-# vObjFun[1] = hObjFun(vX);
-
-# for ii ∈ 2:numIterations
-#     vXH = vX - γ * h∇f(vX);
-#     # vSH = vS + δ * mA * vX̄;
-#     vSH = vS + mA * vX̄;
-
-#     # vS .= vSH - δ * hProxH(μ * vSH, μ);
-#     vS .= vSH - hProxH(vSH, μ);
-#     vX .= hProxG(vXH - λ * mA' * vS, γ);
-#     vX̄ .= 2vX - vXH - γ * h∇f(vX);
-
-#     vObjFun[ii] = hObjFun(vX);
-# end
-
 # Dual Prox
 # Solves: arg min_x f(A * x) + g(x)
+# f(A * x) = δ(A x) ∈ [a, b] -> Prox_h(y) = clamp(y, a, b)
+# g(x) = x' * A * x
+# The Prox of g(x) will require solving a Linear System equation.
 
 methodName = "ChambollePock";
 
 valL = opnorm(mA' * mA);
 
-τ = 0.95 * sqrt(1 / valL);
-σ = 0.95 * sqrt(1 / valL);
+τ = sqrt(1 / (1.05 * valL));
+σ = sqrt(1 / (1.05 * valL));
 θ = 1.0;
 
 hProxF( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat} = clamp.(vY, valA, valB);
 hProxF⁺( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat} = vY - λ * hProxF(vY ./ λ, 1 / λ); #<! Prox of conjugate
 hProxG( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat} = (λ * mA + I) \ vY;
 
-vP = mA * mX[:, 1];
-vX̄ = copy(vX);
+vP = mX[:, 1];
+vX̄ = mX[:, 1];
 
 ChamPock!(mX, vP, vX̄, hProxF⁺, hProxG, σ, τ; θ = θ)
 
 dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
-
-# for ii ∈ 2:numIterations
-#     vXP = copy(vX); #<! Previous iteration
-    
-#     vP .= hProxF⁺(vP + (σ * mA * vX̄), σ);
-#     vX .= hProxG(vX - (τ * mA' * vP), τ);
-
-#     vX̄ .= vX + (θ * (vX - vXP));
-
-#     vObjFun[ii] = hObjFun(vX);
-# end
 
 
 ## Display Results

@@ -120,13 +120,13 @@ set(hAxes, 'NextPlot', 'add');
 % set(hLineSeries, 'LineWidth', lineWidthNormal);
 % hLineSeries = plot(1:numIterations, vObjValCp, 'DisplayName', 'Chambolles Pock');
 % set(hLineSeries, 'LineStyle', ':', 'LineWidth', lineWidthNormal);
-hLineSeries = plot(1:numIterations, 20 * log10(abs(vObjValPd - cvx_optval)), 'DisplayName', 'Primal Dual');
+hLineSeries = plot(1:numIterations, 20 * log10(abs(vObjValPd - cvx_optval) / abs(cvx_optval)), 'DisplayName', 'Primal Dual');
 set(hLineSeries, 'LineWidth', lineWidthNormal);
 set(get(hAxes, 'Title'), 'String', ['Quadratic Form'], ...
     'FontSize', fontSizeTitle);
 set(get(hAxes, 'XLabel'), 'String', 'Iteration Index', ...
     'FontSize', fontSizeAxis);
-set(get(hAxes, 'YLabel'), 'String', ['$F \left( {x}_{i} \right) - F \left( {x}^{\star} \right)$ [dB]'], ...
+set(get(hAxes, 'YLabel'), 'String', ['$\frac{\left| F \left( {x}_{i} \right) - F \left( {x}^{\star} \right) \right|}{\left| F \left( {x}^{\star} \right) \right|}$ [dB]'], ...
     'FontSize', fontSizeAxis, 'Interpreter', 'latex');
 hLegend = ClickableLegend();
 set(hAxes, 'LooseInset', [0.07, 0.07, 0.07, 0.07]);
