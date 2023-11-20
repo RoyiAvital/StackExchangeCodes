@@ -1,5 +1,5 @@
 # StackExchange Mathematics Q4804920
-# https://dsp.stackexchange.com/questions/4804920
+# https://math.stackexchange.com/questions/4804920
 # Optimize Summation of L2 Norm and Infinity Norm.
 # References:
 #   1.  
