@@ -16,6 +16,7 @@
 # Release Notes Royi Avital RoyiAvital@yahoo.com
 # - 1.0.001     20/11/2023  Royi Avital
 #   *   Faster linear system solution for CP (Like in ADMM).
+#   *   Plotting the condition number of the `mA`.
 # - 1.0.000     18/11/2023  Royi Avital
 #   *   First release.
 
@@ -108,7 +109,7 @@ end
 ## Parameters
 
 # Data
-numRows = 5;
+numRows = 500;
 numCols = numRows; #<! PSD Matrix
 valA    = 0.23;
 valB    = 1.05;
@@ -118,7 +119,7 @@ valTol  = 1e-3;
 loadData = false;
 
 # Solvers
-numIterations = 2500;
+numIterations = 25000;
 
 # ADMM Solver
 ρ = 2.5;
@@ -131,6 +132,7 @@ numIterations = 2500;
 oRng = StableRNG(1234);
 mA = randn(oRng, numRows, numCols);
 mA = mA' * mA;
+# mA = mA + 0.9I; #<! Low condition numbers makes convergence faster
 mA = mA + 0.1I; #<! High condition numbers makes convergence slower
 mA = mA + mA';
 
@@ -255,7 +257,7 @@ for (ii, methodName) in enumerate(keys(dSolvers))
     vTr[ii] = scatter(x = 1:numIterations, y = 20 * log10.(abs.(dSolvers[methodName] .- optVal) ./ abs(optVal)), 
                mode = "lines", text = methodName, name = methodName, line = attr(width = 3.0))
 end
-oLayout = Layout(title = "Objective Function", width = 600, height = 600, hovermode = "closest",
+oLayout = Layout(title = "Objective Function, Condition Number = $(cond(mA))", width = 600, height = 600, hovermode = "closest",
                  xaxis_title = "Iteration", yaxis_title = raw"$$\frac{ \left| {f}^{\star} - {f}_{i} \right| }{ \left| {f}^{\star} \right| }$ [dB]$");
 
 hP = plot(vTr, oLayout);
