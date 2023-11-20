@@ -14,6 +14,8 @@
 # TODO:
 # 	1.  C
 # Release Notes Royi Avital RoyiAvital@yahoo.com
+# - 1.0.001     20/11/2023  Royi Avital
+#   *   Faster linear system solution for CP (Like in ADMM).
 # - 1.0.000     18/11/2023  Royi Avital
 #   *   First release.
 
@@ -140,6 +142,8 @@ if (loadData)
     numRows, numCols = size(mA);
 end
 
+sEigFac = eigen(mA); #<! Needed for efficient solution of the linear system
+
 mX = zeros(numCols, numIterations);
 vX = vX = mA \ (((valA + valB) / 2) * ones(numCols));
 mX[:, 1] = vX;
@@ -170,8 +174,6 @@ end
 # g(x) = δ(A x) ∈ [a, b] -> Prox_g(y) = clamp(y, a, b)
 # P = A, Q = -I, r = 0
 methodName = "ADMM";
-
-sEigFac = eigen(mA);
 
 hD( λ :: T ) where {T <: AbstractFloat} = (λ .* sEigFac.values) ./ ((λ .* (sEigFac.values .^ 2)) .+ sEigFac.values);
 hProxF( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat} = sEigFac.vectors * (hD(λ) .* (sEigFac.vectors' * vY));
@@ -230,7 +232,9 @@ valL = opnorm(mA' * mA);
 
 hProxF( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat} = clamp.(vY, valA, valB);
 hProxF⁺( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat} = vY - λ * hProxF(vY ./ λ, 1 / λ); #<! Prox of conjugate
-hProxG( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat} = (λ * mA + I) \ vY;
+hD( λ :: T ) where {T <: AbstractFloat} = 1 ./ ((λ .* sEigFac.values) .+ 1);
+hProxG( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat} = sEigFac.vectors * (hD(λ) .* (sEigFac.vectors' * vY));
+# hProxG( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat} = (λ * mA + I) \ vY;
 
 vP = mX[:, 1];
 vX̄ = mX[:, 1];
