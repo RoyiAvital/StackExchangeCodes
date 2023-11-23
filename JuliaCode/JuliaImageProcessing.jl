@@ -284,3 +284,5 @@ function _Conv2DValidSK!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) wh
     map!(mH, mO, mI);
 
 end
+
+

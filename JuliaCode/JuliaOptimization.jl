@@ -19,18 +19,9 @@
 
 ## Constants & Configuration
 
-# Display UIntx numbers as integers
-Base.show(io::IO, x::T) where {T<:Union{UInt, UInt128, UInt64, UInt32, UInt16, UInt8}} = Base.print(io, x)
-
-## General Parameters
-
-figureIdx = 0;
-
-exportFigures = true;
-
 ## Functions
 
-function GradientDescentAccelerated!( mX :: Array{T, D}, numIter :: S, η :: T, mW :: Array{T, D}, mZ :: Array{T, D}, ∇mZ :: Array{T, D}, ∇ObjFun! :: Function, ProjFun! :: Function = identity ) where {T <: AbstractFloat, D <: 2, S <: Integer}
+function GradientDescentAccelerated!( mX :: Array{T, D}, numIter :: S, η :: T, mW :: Array{T, D}, mZ :: Array{T, D}, ∇mZ :: Array{T, D}, ∇ObjFun! :: Function, ProjFun! :: Function = identity ) where {T <: AbstractFloat, D <: AbstractVecOrMat, S <: Integer}
 
     for ii ∈ 1:numIter
         # FISTA (Nesterov) Accelerated

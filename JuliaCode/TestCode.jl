@@ -19,129 +19,59 @@
 # Internal
 using Printf;
 # External
-using DelimitedFiles;
-using FileIO;
-import FreeType;
-using LinearAlgebra;
-if Sys.iswindows()
-    using MKL;
-end
-if Sys.isapple()
-    using AppleAccelerate;
-end
+using BenchmarkTools;
 using UnicodePlots;
 
 ## Constants & Configuration
 
 ## External
-juliaInitPath = joinpath(".", "..", "..", "JuliaCode", "JuliaInit.jl")
-include(juliaInitPath)
+include("JuliaInit.jl");
+include("JuliaImageProcessing.jl");
+include("JuliaOptimization.jl");
+include("JuliaSignalProcessing.jl");
 
 ## General Parameters
 
 figureIdx = 0;
 
-exportFigures = true;
+exportFigures = false;
 
 ## Functions
-
-hObjFun( mX, mR, mA, mY, λ ) = (0.5 .* sum(abs2, ((mR * mX * mA) .- mY))) + ((0.5 * λ) .* sum(abs2, mX));
-∇ObjFun( mX, mRR, mAA, mRYA, λ ) = ((mRR * mX * mAA) .- mRYA .+ (λ .* mX));
-
-function hObjFun!( mX, mR, mA, mY, λ, mXA,  mRXA)
-    LinearAlgebra.mul!(mXA, mX, mA);
-    LinearAlgebra.mul!(mRXA, mR, mXA);
-    # Triangular multiplication (Slower)
-    # mRXA .= mXA;
-    # LinearAlgebra.BLAS.trmm!('L', 'L', 'N', 'N', 1.0, mR, mRXA);  
-
-    mRXA .-= mY;
-    return 0.5 .* (sum(abs2, mRXA) .+ (λ .* sum(abs2, mX)));
-
-end
-
-function ∇ObjFun!( ∇mX, mX, mRR, mAA, mRYA, λ, mXAA, mRRXAA )
-
-    # LinearAlgebra.mul!(mXAA, mX, mAA);
-    # LinearAlgebra.mul!(mRRXAA, mRR, mXAA);
-
-    LinearAlgebra.BLAS.symm!('R', 'L', 1.0, mAA, mX, 0.0, mXAA);
-    LinearAlgebra.BLAS.symm!('L', 'L', 1.0, mRR, mXAA, 0.0, mRRXAA);
-
-    ∇mX .= mRRXAA .- mRYA .+ (λ .* mX);
-
-    return ∇mX;
-
-end
 
 
 ## Parameters
 
 # Data
-mAFileName = "mA.csv";
-mRFileName = "mR.csv";
-mYFileName = "mY.csv";
 
-# Model
-λ = 5;
-η = 0.0000003
-minValThr = 0;
+numRowsA = 1000;
+numColsA = 975;
 
-# Gradient Descent
-numIter = 3_000;
+numRowsK = 5;
+numColsK = 4;
+
+convMode = CONV_MODE_VALID;
+
+
 
 
 ## Load / Generate Data
 
-# mA = readdlm(download("https://github.com/DJDuque/SP_Q/raw/main/A.csv"), ',', Float64);
-# mR = readdlm(download("https://github.com/DJDuque/SP_Q/raw/main/R.csv"), ',', Float64);
-# mY = readdlm(download("https://github.com/DJDuque/SP_Q/raw/main/signals.csv"), ',', Float64);
-mA = readdlm(mAFileName, ',', Float64);
-mR = readdlm(mRFileName, ',', Float64);
-mY = readdlm(mYFileName, ',', Float64);
+mA = rand(numRowsA, numColsA);
+mK = rand(numRowsK, numColsK);
+
+if (convMode == CONV_MODE_FULL)
+    mO = zeros((numRowsA, numColsA) .+ (numRowsK, numColsK) .- 1);
+    hConv2D! = _Conv2D!;
+elseif (convMode == CONV_MODE_VALID)
+    mO = zeros((numRowsA, numColsA) .- (numRowsK, numColsK) .+ 1);
+    hConv2D! = _Conv2DValid!;
+end
 
 
 ## Analysis
 
-mAA  = mA * mA';
-mRYA = mR' * mY * mA';
-mRR  = mR' * mR;
-vObjVal = zeros(numIter);
-
-mX      = zeros(size(mR, 2), size(mA, 1));
-mXPrev  = zeros(size(mR, 2), size(mA, 1));
-mZ      = zeros(size(mR, 2), size(mA, 1));
-∇mZ     = zeros(size(mR, 2), size(mA, 1));
-
-mXA  = zeros(size(mX, 1), size(mA, 2));
-mRXA = zeros(size(mR, 1), size(mXA, 2));
-
-mXAA   = zeros(size(mX, 1), size(mAA, 2));
-mRRXAA = zeros(size(mRR, 1), size(mXAA, 2));
-
-# global tK::Float64 = 1; 
-
-runTime = @elapsed for ii ∈ 1:numIter
-    # FISTA (Nesterov) Accelerated
-    # local ∇mZ = ∇ObjFun(mZ, mRR, mAA, mRYA, λ);
-
-    ∇ObjFun!(∇mZ, mZ, mRR, mAA, mRYA, λ, mXAA, mRRXAA);
-
-    mXPrev .= mX;
-    mX .= mZ .- (η .* ∇mZ);
-    mX .= max.(mZ .- (η .* ∇mZ), minValThr);
-    # vObjVal[ii] = hObjFun(mX, mR, mA, mY, λ);
-    vObjVal[ii] = hObjFun!(mX, mR, mA, mY, λ, mXA, mRXA);
-
-    fistaStepSize = (ii - 1) / (ii + 2);
-
-    mZ .= mX .+ (fistaStepSize .* (mX .- mXPrev))
-end
+@benchmark hConv2D!(mO, mA, mK)
 
 
-display(lineplot(1:numIter, log.(vObjVal)));
-println("Objective Function final value: $(vObjVal[end])");
-println("Total runtime: $(runTime) [Sec]");
-writedlm("mX.csv",  mX, ',');
-
+## Display Results
 
