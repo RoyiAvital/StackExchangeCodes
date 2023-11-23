@@ -15,7 +15,6 @@
 # Internal
 
 # External
-using ColorTypes;
 
 ## Constants & Configuration
 
@@ -23,70 +22,53 @@ include("./JuliaInit.jl");
 
 ## Functions
 
-function PadArray( mA :: Vector{T}, padRadius :: Tuple{N, N}, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Real, N <: Unsigned}
-    # Works on Matrix
-    # TODO: Verify!!!
+function PadArray( vA :: Vector{T}, padRadius :: N, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Real, N <: Signed}
+    # TODO: Support padding larger then the input.
     # TODO: Create non allocating variant.
+    # TODO: Add modes: `pre`, `after`, `both`.
 
-    numRows, numCols = size(mA);
+    numElementsA = length(vA);
+    numElementsB = numElementsA + 2padRadius
+
+    vB = Vector{T}(undef, numElementsB);
     
-    if (padMode == PadMode.CONSTANT)
-        mB = Matrix{T}(undef, numRows + padRadius[1], numCols + padRadius[2]);
-        mB .= padValue;
-        mB[ee, cc] .= mA;
+    if (padMode == PAD_MODE_CONSTANT) 
+        vB .= padValue;
+        vB[(padRadius + 1):(numElementsB - padRadius)] .= vA;
     end
 
-    if (padMode == PadMode.REPLICATE)
-        mB = Matrix{T}(undef, numRows + padRadius[1], numCols + padRadius[2]);
-        for jj in 1:(numCols + padRadius[2])
-            nn = clamp(jj - padRadius[2], 1, numCols);
-            for ii in 1:(numRows + padRadius[1]) 
-                mm = clamp(ii - padRadius[1], 1, numRows);
-                mB[ii, jj] = mA[mm, nn];
-            end
+    if (padMode == PAD_MODE_REPLICATE)
+        for ii in 1:numElementsB
+            jj = clamp(ii - padRadius, 1, numElementsA);
+            vB[ii] = vA[jj];
         end
     end
 
-    if (padMode == PadMode.SYMMETRIC)
-        mB = Matrix{T}(undef, numRows + padRadius[1], numCols + padRadius[2]);
-        for jj in 1:(numCols + padRadius[2])
-            nn = ifelse(jj - padRadius[2] < 1, padRadius[2] - jj + 1, jj);
-            nn = ifelse(jj - padRadius[2] > numCols, 2 * numCols - (jj - (numCols + padRadius[2]) - 1), jj);
-            for ii in 1:(numRows + padRadius[1]) 
-                mm = ifelse(ii - padRadius[1] < 1, padRadius[1] - ii + 1, ii);
-                mm = ifelse(ii - padRadius[1] > numRows, 2 * numRows - (ii - (numRows + padRadius[1]) - 1), ii);
-                mB[ii, jj] = mA[mm, nn];
-            end
+    if (padMode == PAD_MODE_SYMMETRIC)
+        for ii in 1:numElementsB
+            jj = ifelse(ii - padRadius < 1, padRadius - ii + 1, ii - padRadius);
+            jj = ifelse(ii - padRadius > numElementsA, numElementsA - (ii - (numElementsA + padRadius) - 1), jj);
+            vB[ii] = vA[jj];
         end
     end
 
-    if (padMode == PadMode.REFLECT)
-        mB = Matrix{T}(undef, numRows + padRadius[1], numCols + padRadius[2]);
-        for jj in 1:(numCols + padRadius[2])
-            nn = ifelse(jj - padRadius[2] < 1, padRadius[2] - jj + 2, jj);
-            nn = ifelse(jj - padRadius[2] > numCols, 2 * numCols - (jj - (numCols + padRadius[2])), jj);
-            for ii in 1:(numRows + padRadius[1]) 
-                mm = ifelse(ii - padRadius[1] < 1, padRadius[1] - ii + 2, ii);
-                mm = ifelse(ii - padRadius[1] > numRows, 2 * numRows - (ii - (numRows + padRadius[1])), ii);
-                mB[ii, jj] = mA[mm, nn];
-            end
+    if (padMode == PAD_MODE_REFLECT) #<! Mirror  [c, b][a, b, c][b, a]
+        for ii in 1:numElementsB
+            jj = ifelse(ii - padRadius < 1, padRadius - ii + 2, ii - padRadius);
+            jj = ifelse(ii - padRadius > numElementsA, numElementsA - (ii - (numElementsA + padRadius)), jj);
+            vB[ii] = vA[jj];
         end
     end
 
-    if (padMode == PadMode.CIRCULAR)
-        mB = Matrix{T}(undef, numRows + padRadius[1], numCols + padRadius[2]);
-        for jj in 1:(numCols + padRadius[2])
-            nn = ifelse(jj - padRadius[2] < 1, numCols + jj - padRadius[2], jj);
-            nn = ifelse(jj - padRadius[2] > numCols, jj - numCols + padRadius[2], jj);
-            for ii in 1:(numRows + padRadius[1]) 
-                mm = ifelse(ii - padRadius[1] < 1, numRows + ii - padRadius[1], ii);
-                mm = ifelse(ii - padRadius[1] > numRows, ii - numRows + padRadius[1], ii);
-                mB[ii, jj] = mA[mm, nn];
-            end
+    if (padMode == PAD_MODE_CIRCULAR)
+        for ii in 1:numElementsB
+            jj = ifelse(ii - padRadius < 1, numElementsA + ii - padRadius, ii - padRadius);
+            jj = ifelse(ii - padRadius > numElementsA, ii - numElementsA - padRadius, jj);
+            vB[ii] = vA[jj];
         end
     end
 
-    return mB;
+    return vB;
 
 end
 
@@ -227,3 +209,4 @@ function _Conv1DValid!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T} ) wher
     end
 
 end
+
