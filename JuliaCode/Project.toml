@@ -1,0 +1,6 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+StaticKernels = "4c63dfa8-a427-4548-bd2f-4c19e87a7dc7"
+UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"

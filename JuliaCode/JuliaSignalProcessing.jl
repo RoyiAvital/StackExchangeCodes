@@ -23,13 +23,95 @@ include("./JuliaInit.jl");
 
 ## Functions
 
-function Conv1D!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T}; convMode :: ConvMode = FULL ) where {T <: Real}
+function PadArray( mA :: Vector{T}, padRadius :: Tuple{N, N}, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Real, N <: Unsigned}
+    # Works on Matrix
+    # TODO: Verify!!!
+    # TODO: Create non allocating variant.
+
+    numRows, numCols = size(mA);
     
-    if (convMode == FULL)
+    if (padMode == PadMode.CONSTANT)
+        mB = Matrix{T}(undef, numRows + padRadius[1], numCols + padRadius[2]);
+        mB .= padValue;
+        mB[ee, cc] .= mA;
+    end
+
+    if (padMode == PadMode.REPLICATE)
+        mB = Matrix{T}(undef, numRows + padRadius[1], numCols + padRadius[2]);
+        for jj in 1:(numCols + padRadius[2])
+            nn = clamp(jj - padRadius[2], 1, numCols);
+            for ii in 1:(numRows + padRadius[1]) 
+                mm = clamp(ii - padRadius[1], 1, numRows);
+                mB[ii, jj] = mA[mm, nn];
+            end
+        end
+    end
+
+    if (padMode == PadMode.SYMMETRIC)
+        mB = Matrix{T}(undef, numRows + padRadius[1], numCols + padRadius[2]);
+        for jj in 1:(numCols + padRadius[2])
+            nn = ifelse(jj - padRadius[2] < 1, padRadius[2] - jj + 1, jj);
+            nn = ifelse(jj - padRadius[2] > numCols, 2 * numCols - (jj - (numCols + padRadius[2]) - 1), jj);
+            for ii in 1:(numRows + padRadius[1]) 
+                mm = ifelse(ii - padRadius[1] < 1, padRadius[1] - ii + 1, ii);
+                mm = ifelse(ii - padRadius[1] > numRows, 2 * numRows - (ii - (numRows + padRadius[1]) - 1), ii);
+                mB[ii, jj] = mA[mm, nn];
+            end
+        end
+    end
+
+    if (padMode == PadMode.REFLECT)
+        mB = Matrix{T}(undef, numRows + padRadius[1], numCols + padRadius[2]);
+        for jj in 1:(numCols + padRadius[2])
+            nn = ifelse(jj - padRadius[2] < 1, padRadius[2] - jj + 2, jj);
+            nn = ifelse(jj - padRadius[2] > numCols, 2 * numCols - (jj - (numCols + padRadius[2])), jj);
+            for ii in 1:(numRows + padRadius[1]) 
+                mm = ifelse(ii - padRadius[1] < 1, padRadius[1] - ii + 2, ii);
+                mm = ifelse(ii - padRadius[1] > numRows, 2 * numRows - (ii - (numRows + padRadius[1])), ii);
+                mB[ii, jj] = mA[mm, nn];
+            end
+        end
+    end
+
+    if (padMode == PadMode.CIRCULAR)
+        mB = Matrix{T}(undef, numRows + padRadius[1], numCols + padRadius[2]);
+        for jj in 1:(numCols + padRadius[2])
+            nn = ifelse(jj - padRadius[2] < 1, numCols + jj - padRadius[2], jj);
+            nn = ifelse(jj - padRadius[2] > numCols, jj - numCols + padRadius[2], jj);
+            for ii in 1:(numRows + padRadius[1]) 
+                mm = ifelse(ii - padRadius[1] < 1, numRows + ii - padRadius[1], ii);
+                mm = ifelse(ii - padRadius[1] > numRows, ii - numRows + padRadius[1], ii);
+                mB[ii, jj] = mA[mm, nn];
+            end
+        end
+    end
+
+    return mB;
+
+end
+
+function Conv1D( vA :: Vector{T}, vB :: Vector{T}; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: Real}
+    
+    if (convMode == CONV_MODE_FULL)
+        vO = Vector{T}(undef, length(vA) + length(vB) - 1);
+    elseif (convMode == CONV_MODE_SAME)
+        vO = Vector{T}(undef, length(vA));
+    elseif (convMode == CONV_MODE_VALID)
+        vO = Vector{T}(undef, length(vA) - length(vB) + 1);
+    end
+
+    Conv1D!(vO, vA, vB; convMode);
+    return vO;
+
+end
+
+function Conv1D!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T}; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: Real}
+    
+    if (convMode == CONV_MODE_FULL)
         _Conv1D!(vO, vA, vB);
-    elseif (convMode == SAME)
+    elseif (convMode == CONV_MODE_SAME)
         _Conv1DSame!(vO, vA, vB);
-    elseif (convMode == SAME)
+    elseif (convMode == CONV_MODE_VALID)
         _Conv1DValid!(vO, vA, vB);
     end
 
@@ -39,10 +121,9 @@ function _Conv1D!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T} ) where {T 
     # Full convolution.
     # Seems that `@simd` is much worse than `@turbo`.
     # Keeps `@simd` as it does not require dependency.
-    # TODO: Add support for `same` and `valid` modes.
 
     J = length(vA);
-    K  = length(vB); #<! Assumed to be the Kernel
+    K = length(vB); #<! Assumed to be the Kernel
     
     # Optimized for the case the kernel is in vB (Shorter)
     J < K && return _Conv1D!(vO, vB, vA);
@@ -74,11 +155,11 @@ function _Conv1D!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T} ) where {T 
         end
         @inbounds vO[ii] = sumVal;
     end
-	return vO
+
 end
 
 function _Conv1DSame!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T} ) where {T <: Real}
-    # Full convolution.
+    # Same convolution.
     # Seems that `@simd` is much worse than `@turbo`.
     # Keeps `@simd` as it does not require dependency.
     # TODO: Support the case K >= J.
@@ -119,11 +200,11 @@ function _Conv1DSame!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T} ) where
         end
         @inbounds vO[ii] = sumVal;
     end
-	return vO
+
 end
 
 function _Conv1DValid!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T} ) where {T <: Real}
-    # Full convolution.
+    # Valid convolution.
     # Seems that `@simd` is much worse than `@turbo`.
     # Keeps `@simd` as it does not require dependency.
     # TODO: Add support for `same` and `valid` modes.

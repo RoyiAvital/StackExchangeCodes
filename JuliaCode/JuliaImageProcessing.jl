@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  B
 # Release Notes Royi Avital RoyiAvital@yahoo.com
+# - 1.1.000     09/07/2023  Royi Avital
+#   *   Added 2D Convolution.
 # - 1.0.000     09/07/2023  Royi Avital
 #   *   First release.
 
@@ -16,6 +18,8 @@
 
 # External
 using ColorTypes;
+using LoopVectorization;
+using StaticKernels;
 
 ## Constants & Configuration
 
@@ -59,10 +63,10 @@ function ConvertJuliaImgArray(mI :: Matrix{<: Color{T, 1}}) where {T}
 
 end
 
-function PadArray( mA :: Matrix{T}, padRadius :: Tuple{S, S}, padMode :: PadMode, padValue :: T = zero(T) ) where {T}
+function PadArray( mA :: Matrix{T}, padRadius :: Tuple{N, N}, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Real, N <: Unsigned}
     # Works on Matrix
     # TODO: Verify!!!
-    # TODO: Extend ot Array{T, 3}ץ
+    # TODO: Extend ot Array{T, 3}.
     # TODO: Create non allocating variant.
 
     numRows, numCols = size(mA);
@@ -124,5 +128,159 @@ function PadArray( mA :: Matrix{T}, padRadius :: Tuple{S, S}, padMode :: PadMode
     end
 
     return mB;
+
+end
+
+function Conv2D( mI :: Matrix{T}, mK :: Matrix{T}; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: Real}
+    
+    if (convMode == CONV_MODE_FULL)
+        mO = Matrix{T}(undef, size(mA) .+ size(mK) .- (1, 1));
+    elseif (convMode == CONV_MODE_SAME) #<! TODO
+        mO = Matrix{T}(undef, size(mA));
+    elseif (convMode == CONV_MODE_VALID)
+        mO = Matrix{T}(undef, size(mA) .- size(mK) .+ (1, 1));
+    end
+
+    Conv2D!(mO, vA, mK; convMode);
+    return mO;
+
+end
+
+function Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T}; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat}
+
+    if (convMode == CONV_MODE_FULL)
+        _Conv2D!(vO, vA, vB);
+    elseif (convMode == CONV_MODE_SAME) #<! TODO
+        _Conv2DSame!(vO, vA, vB);
+    elseif (convMode == CONV_MODE_VALID)
+        _Conv2DValid!(vO, vA, vB);
+    end
+    
+end
+
+function _Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where {T <: AbstractFloat}
+
+    numRowsI, numColsI = size(mI);
+    numRowsK, numColsK = size(mK);
+
+    for jj ∈ 1:(numColsK - 1), ii ∈ 1:(numRowsK - 1) #<! Top Left
+        sumVal = zero(T);
+        for nn ∈ 1:numColsK, mm ∈ 1:numRowsK
+            ib0 = (jj >= nn) && (ii >= mm);
+            @inbounds oa = ib0 ? mI[ii - mm + 1, jj - nn + 1] : zero(T);
+            @inbounds sumVal += mK[mm, nn] * oa;
+        end
+        mO[ii, jj] = sumVal;
+    end
+
+    for jj ∈ 1:(numColsK - 1), ii ∈ numRowsK:(numRowsI - 1) #<! Middle Left
+        sumVal = zero(T);
+        for nn ∈ 1:numColsK, mm ∈ 1:numRowsK
+            ib0 = (jj >= nn);
+            @inbounds oa = ib0 ? mI[ii - mm + 1, jj - nn + 1] : zero(T);
+            @inbounds sumVal += mK[mm, nn] * oa;
+        end
+        mO[ii, jj] = sumVal;
+    end
+
+    for jj ∈ 1:(numColsK - 1), ii ∈ numRowsI:(numRowsI + numRowsK - 1) #<! Bottom Left
+        sumVal = zero(T);
+        for nn ∈ 1:numColsK, mm ∈ 1:numRowsK
+            ib0 = (jj >= nn) && (ii < numRowsI + mm);;
+            @inbounds oa = ib0 ? mI[ii - mm + 1, jj - nn + 1] : zero(T);
+            @inbounds sumVal += mK[mm, nn] * oa;
+        end
+        mO[ii, jj] = sumVal;
+    end
+
+    for jj ∈ numColsK:(numColsI - 1), ii ∈ 1:(numRowsK - 1) #<! Top Middle
+        sumVal = zero(T);
+        for nn ∈ 1:numColsK, mm ∈ 1:numRowsK
+            ib0 = (ii >= mm);
+            @inbounds oa = ib0 ? mI[ii - mm + 1, jj - nn + 1] : zero(T);
+            @inbounds sumVal += mK[mm, nn] * oa;
+        end
+        mO[ii, jj] = sumVal;
+    end
+
+    for jj ∈ numColsK:(numColsI - 1)
+        @turbo for ii ∈ numRowsK:(numRowsI - 1) #<! Middle Middle
+            sumVal = zero(T);
+            for nn ∈ 1:numColsK, mm ∈ 1:numRowsK
+                @inbounds sumVal += mK[mm, nn] * mI[ii - mm + 1, jj - nn + 1];
+            end
+            mO[ii, jj] = sumVal;
+        end        
+    end
+
+    for jj ∈ numColsK:(numColsI - 1), ii ∈ numRowsI:(numRowsI + numRowsK - 1) #<! Bottom Middle
+        sumVal = zero(T);
+        for nn ∈ 1:numColsK, mm ∈ 1:numRowsK
+            ib0 = (ii < numRowsI + mm);;
+            @inbounds oa = ib0 ? mI[ii - mm + 1, jj - nn + 1] : zero(T);
+            @inbounds sumVal += mK[mm, nn] * oa;
+        end
+        mO[ii, jj] = sumVal;
+    end
+
+    for jj ∈ numColsI:(numColsI + numColsK - 1), ii ∈ 1:(numRowsK - 1) #<! Top Right
+        sumVal = zero(T);
+        for nn ∈ 1:numColsK, mm ∈ 1:numRowsK
+            ib0 = (jj < numColsI + nn) && (ii >= mm);
+            @inbounds oa = ib0 ? mI[ii - mm + 1, jj - nn + 1] : zero(T);
+            @inbounds sumVal += mK[mm, nn] * oa;
+        end
+        mO[ii, jj] = sumVal;
+    end
+
+    for jj ∈ numColsI:(numColsI + numColsK - 1), ii ∈ numRowsK:(numRowsI - 1) #<! Middle Right
+        sumVal = zero(T);
+        for nn ∈ 1:numColsK, mm ∈ 1:numRowsK
+            ib0 = (jj < numColsI + nn);
+            @inbounds oa = ib0 ? mI[ii - mm + 1, jj - nn + 1] : zero(T);
+            @inbounds sumVal += mK[mm, nn] * oa;
+        end
+        mO[ii, jj] = sumVal;
+    end
+
+    for jj ∈ numColsI:(numColsI + numColsK - 1), ii ∈ numRowsI:(numRowsI + numRowsK - 1) #<! Bottom Right
+        sumVal = zero(T);
+        for nn ∈ 1:numColsK, mm ∈ 1:numRowsK
+            ib0 = (jj < numColsI + nn) && (ii < numRowsI + mm);;
+            @inbounds oa = ib0 ? mI[ii - mm + 1, jj - nn + 1] : zero(T);
+            @inbounds sumVal += mK[mm, nn] * oa;
+        end
+        mO[ii, jj] = sumVal;
+    end
+
+end
+
+# TODO: Add the `same` variant.
+
+function _Conv2DValid!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where {T <: AbstractFloat}
+
+    numRowsI, numColsI = size(mI);
+    numRowsK, numColsK = size(mK);
+
+    for jj ∈ 1:(numColsI - numColsK + 1)
+        @turbo for ii in 1:(numRowsI - numRowsK + 1)
+            sumVal = zero(T);
+            for nn ∈ 1:numColsK, mm ∈ 1:numRowsK
+                @inbounds sumVal += mK[mm, nn] * mI[ii - mm + numRowsK, jj - nn + numColsK];
+            end
+            mO[ii, jj] = sumVal;
+        end
+    end
+
+end
+
+function _Conv2DValidSK!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where {T <: AbstractFloat}
+    # Using StaticKernels.jl
+
+    numRows, numCols = size(mK);
+    radV, radH = (numRows, numCols) .÷ 2;
+    mH = Kernel{(1:numRows, 1:numCols)}(@inline mW -> dot(Tuple(mW), Tuple(mK)))
+
+    map!(mH, mO, mI);
 
 end
