@@ -28,6 +28,9 @@
 *.xls
 *.xlsx
 
+# Julia
+**/Manifest.toml
+
 ## TeX / LaTeX Files
 *.aux
 *.log
