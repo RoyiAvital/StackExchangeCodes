@@ -21,7 +21,7 @@
 
 ## Functions
 
-function GradientDescentAccelerated!( mX :: Array{T, D}, numIter :: S, η :: T, mW :: Array{T, D}, mZ :: Array{T, D}, ∇mZ :: Array{T, D}, ∇ObjFun! :: Function, ProjFun! :: Function = identity ) where {T <: AbstractFloat, D <: AbstractVecOrMat, S <: Integer}
+function GradientDescentAccelerated!( mX :: AbstractVecOrMat{T}, numIter :: S, η :: T, mW :: AbstractVecOrMat{T}, mZ :: AbstractVecOrMat{T}, ∇mZ :: AbstractVecOrMat{T}, ∇ObjFun! :: Function, ProjFun! :: Function = identity ) where {T <: AbstractFloat, S <: Integer}
 
     for ii ∈ 1:numIter
         # FISTA (Nesterov) Accelerated
