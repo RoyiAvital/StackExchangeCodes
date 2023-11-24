@@ -136,14 +136,14 @@ end
 hF = Figure(resolution = tSize);
 image!(hF.scene, 0..tSize[1], 0..tSize[2], rotr90(mI));
 display(hF);
-sleep(0.1); #<! Allow enough time to write ot HD and display the image
+sleep(0.1); #<! Allow enough time to write to HD and display the image
 
 hF = Figure(resolution = tSize);
 image!(hF.scene, 0..tSize[1], 0..tSize[2], rotr90(mORef));
 display(hF);
-sleep(0.1); #<! Allow enough time to write ot HD and display the image
+sleep(0.1); #<! Allow enough time to write to HD and display the image
 
 hF = Figure(resolution = tSize);
 image!(hF.scene, 0..tSize[1], 0..tSize[2], rotr90(mO));
 display(hF);
-sleep(0.1); #<! Allow enough time to write ot HD and display the image
+sleep(0.1); #<! Allow enough time to write to HD and display the image

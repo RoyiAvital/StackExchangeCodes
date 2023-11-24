@@ -7,7 +7,7 @@
 # TODO:
 # 	1.  B
 # Release Notes Royi Avital RoyiAvital@yahoo.com
-# - 1.1.000     09/07/2023  Royi Avital
+# - 1.1.000     23/11/2023  Royi Avital
 #   *   Added 2D Convolution.
 # - 1.0.000     09/07/2023  Royi Avital
 #   *   First release.
@@ -63,7 +63,7 @@ function ConvertJuliaImgArray(mI :: Matrix{<: Color{T, 1}}) where {T}
 
 end
 
-function PadArray( mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Real, N <: Signed}
+function PadArray( mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}; padMode :: PadMode, padValue :: T = zero(T) ) where {T <: Real, N <: Signed}
     # Works on Matrix
     # TODO: Support padding larger then the input.
     # TODO: Extend ot Array{T, 3}.
@@ -131,14 +131,14 @@ end
 function Conv2D( mI :: Matrix{T}, mK :: Matrix{T}; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: Real}
     
     if (convMode == CONV_MODE_FULL)
-        mO = Matrix{T}(undef, size(mA) .+ size(mK) .- (1, 1));
+        mO = Matrix{T}(undef, size(mI) .+ size(mK) .- (1, 1));
     elseif (convMode == CONV_MODE_SAME) #<! TODO
-        mO = Matrix{T}(undef, size(mA));
+        mO = Matrix{T}(undef, size(mI));
     elseif (convMode == CONV_MODE_VALID)
-        mO = Matrix{T}(undef, size(mA) .- size(mK) .+ (1, 1));
+        mO = Matrix{T}(undef, size(mI) .- size(mK) .+ (1, 1));
     end
 
-    Conv2D!(mO, vA, mK; convMode);
+    Conv2D!(mO, mI, mK; convMode = convMode);
     return mO;
 
 end
@@ -146,11 +146,11 @@ end
 function Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T}; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat}
 
     if (convMode == CONV_MODE_FULL)
-        _Conv2D!(vO, vA, vB);
+        _Conv2D!(mO, mI, mK);
     elseif (convMode == CONV_MODE_SAME) #<! TODO
-        _Conv2DSame!(vO, vA, vB);
+        _Conv2DSame!(mO, mI, mK);
     elseif (convMode == CONV_MODE_VALID)
-        _Conv2DValid!(vO, vA, vB);
+        _Conv2DValid!(mO, mI, mK);
     end
     
 end
