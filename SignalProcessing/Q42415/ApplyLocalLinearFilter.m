@@ -26,7 +26,7 @@ function [ mOutputImage ] = ApplyLocalLinearFilter( mInputImage, filterRadius, r
 %   1.  "Guided Image Filtering".
 % Remarks:
 %   1.  This is basically estimating the Linear Function (Affine)
-%       parameters for the Local Window. Namely, the ouput is a Linear
+%       parameters for the Local Window. Namely, the output is a Linear
 %       combination of the input Window and a DC Factor. The final step is
 %       aggregation (Uniform) off all estimations of the parameters.
 %   2.  Prefixes:
@@ -36,16 +36,16 @@ function [ mOutputImage ] = ApplyLocalLinearFilter( mInputImage, filterRadius, r
 %       -   's' - Struct.
 %       -   'c' - Cell Array.
 %   3.  The calculation of the Local Variance might be negative due to
-%       numerical diffuculties. If artifacts appear, this might be the
-%       casue. Usually using matrices of type 'double' solves it.
-%   4.  This implemnetation is `ApplyGuidedFilter` where the Guiding Image
+%       numerical difficulties. If artifacts appear, this might be the
+%       cause. Usually using matrices of type 'double' solves it.
+%   4.  This implementation is `ApplyGuidedFilter` where the Guiding Image
 %       is the Input Image.
-%   5.  Speed otimizzation can be achived by wiser use of 'mNumEffPixels'.
+%   5.  Speed optimization can be achieved by wiser use of 'mNumEffPixels'.
 %       Instead of dividing by it calculate its reciprocal once. Moreover,
 %       it can be used only once in the aggregation process.
 % TODO:
 %   1.  Create Multi Variable Linear Model.
-%   2.  Some speed potimization could be made (Taking advantage of 'mNumEffPixels').
+%   2.  Some speed optimization could be made (Taking advantage of 'mNumEffPixels').
 % Release Notes:
 %   -   1.0.000     05/01/2016  Royi Avital
 %       *   First release version

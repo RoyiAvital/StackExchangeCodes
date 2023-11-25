@@ -6,11 +6,11 @@
 #   1.  A
 # TODO:
 # 	1.  B
-# Release Notes Royi Avital RoyiAvital@yahoo.com
-# - 1.0.001     24/11/2023  Royi Avital
+# Release Notes
+# - 1.0.001     24/11/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   Added vanilla gradient descent (No acceleration).
 #   *   Added allocating variations.
-# - 1.0.000     09/07/2023  Royi Avital
+# - 1.0.000     09/07/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   First release.
 
 ## Packages

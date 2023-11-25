@@ -26,7 +26,7 @@ function [ mO ] = ApplyLocalLinearKernel( mI, filterRadius, regFctr )
 %   1.  "Guided Image Filtering".
 % Remarks:
 %   1.  This is basically estimating the Linear Function (Affine)
-%       parameters for the Local Window. Namely, the ouput is a Linear
+%       parameters for the Local Window. Namely, the output is a Linear
 %       combination of the input Window and a DC Factor. The final step is
 %       aggregation (Uniform) off all estimations of the parameters.
 %   2.  Prefixes:
@@ -36,16 +36,16 @@ function [ mO ] = ApplyLocalLinearKernel( mI, filterRadius, regFctr )
 %       -   's' - Struct.
 %       -   'c' - Cell Array.
 %   3.  The calculation of the Local Variance might be negative due to
-%       numerical diffuculties. If artifacts appear, this might be the
-%       casue. Usually using matrices of type 'double' solves it.
-%   4.  This implemnetation is `ApplyGuidedFilter` where the Guiding Image
+%       numerical difficulties. If artifacts appear, this might be the
+%       cause. Usually using matrices of type 'double' solves it.
+%   4.  This implementation is `ApplyGuidedFilter` where the Guiding Image
 %       is the Input Image.
-%   5.  Speed otimizzation can be achived by wiser use of 'mNumEffPixels'.
+%   5.  Speed optimization can be achieved by wiser use of 'mNumEffPixels'.
 %       Instead of dividing by it calculate its reciprocal once. Moreover,
 %       it can be used only once in the aggregation process.
 % TODO:
 %   1.  Create Multi Variable Linear Model.
-%   2.  Some speed potimization could be made (Taking advantage of 'mNumEffPixels').
+%   2.  Some speed optimization could be made (Taking advantage of 'mNumEffPixels').
 % Release Notes:
 %   -   1.0.000     05/01/2016  Royi Avital
 %       *   First release version
@@ -69,13 +69,13 @@ borderType      = BORDER_TYPE_CONSTANT;
 borderValue     = 0;
 normalizeFlag   = OFF;
 
-mNumEffPixels = ApplyBoxFilter(ones([numRows, numCols]), filterRadius, borderType, borderValue, normalizeFlag);
+mNumEffPixels = ApplyBoxFilter(ones(numRows, numCols), filterRadius, borderType, borderValue, normalizeFlag);
 
 mLocalMean          = ApplyBoxFilter(mI, filterRadius, borderType, borderValue, normalizeFlag) ./ mNumEffPixels;
 mLocalMeanSquare    = ApplyBoxFilter((mI .* mI), filterRadius, borderType, borderValue, normalizeFlag) ./ mNumEffPixels;
 mLocalCovariance    = mLocalMeanSquare - (mLocalMean .* mLocalMean);
 
-mO = zeros([numRows, numCols]);
+mO = zeros(numRows, numCols);
 
 for jj = 1:numCols
     for ii = 1:numRows
@@ -103,6 +103,7 @@ for jj = 1:numCols
                             kRowIdx = jRowIdx + mm;
                             kColIdx = jColIdx + nn;
                             
+                            % Sum over pixels which are both in Wj and Wi windows
                             if((kColIdx >= 1) && (kColIdx <= numCols) && (kRowIdx >= 1) && (kRowIdx <= numRows) && (abs(kColIdx - jj) <= filterRadius) && (abs(kRowIdx - ii) <= filterRadius))
                                 
                                 numPixels = numPixels + 1;
@@ -126,7 +127,6 @@ for jj = 1:numCols
         
     end
 end
-
 
 
 end

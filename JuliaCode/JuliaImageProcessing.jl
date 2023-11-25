@@ -5,11 +5,13 @@
 # Remarks:
 #   1.  A
 # TODO:
-# 	1.  B
-# Release Notes Royi Avital RoyiAvital@yahoo.com
-# - 1.1.000     23/11/2023  Royi Avital
+# 	1.  Add convolution in frequency domain as in DSP `Q90036`.
+#       It should include an auxiliary function: `GenWorkSpace()` for teh buffers.  
+#       It should also be optimized for `rfft()`.
+# Release Notes
+# - 1.1.000     23/11/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   Added 2D Convolution.
-# - 1.0.000     09/07/2023  Royi Avital
+# - 1.0.000     09/07/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   First release.
 
 ## Packages

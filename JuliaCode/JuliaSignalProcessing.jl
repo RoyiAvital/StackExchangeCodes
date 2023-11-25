@@ -6,8 +6,8 @@
 #   1.  A
 # TODO:
 # 	1.  B
-# Release Notes Royi Avital RoyiAvital@yahoo.com
-# - 1.0.000     10/07/2023  Royi Avital
+# Release Notes
+# - 1.0.000     10/07/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   First release.
 
 ## Packages
