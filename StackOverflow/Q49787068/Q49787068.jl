@@ -12,7 +12,9 @@
 # TODO:
 # 	1.  C
 # Release Notes
-# - 1.0.000     26/11/2023  Royi Avital
+# - 1.1.000     26/11/2023  Royi Avital RoyiAvital@yahoo.com
+#   *   Added Accelerated Proximal Gradient Descent.
+# - 1.0.000     26/11/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   First release.
 
 ## Packages
@@ -60,10 +62,10 @@ numCols = 50; #<! Symmetric Matrix
 δTol    = 1e-5;
 
 # Solvers
-numIterations = 250;
+numIterations = 10_000;
 
 # Projected Gradient Descent
-η = 0.005;
+η = 0.00005;
 
 ## Generate / Load Data
 oRng = StableRNG(1234);
@@ -100,6 +102,27 @@ mX[:, 1] .= mA \ vB;
 for ii ∈ 2:numIterations
     mX[:, ii] = mX[:, ii - 1] .- η * ∇F(mX[:, ii - 1]); #<! Gradient step
     mX[:, ii] = hProjFun(mX[:, ii]); #<! Projection step
+end
+
+dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
+
+# Accelerated Projected Gradient Descent (Accelerated Proximal Gradient Descent)
+methodName = "Acc PGD";
+
+mX = zeros(numCols, numIterations);
+mX[:, 1] .= mA \ vB;
+vZ = copy(mX[:, 1]);
+∇vZ = copy(mX[:, 1]);
+
+for ii ∈ 2:numIterations
+    ω = ii / (ii + 3);
+    # ω = (ii - 1) / (ii + 2);
+
+    ∇vZ .= ∇F(vZ);
+    mX[:, ii] .= vZ .- (η .* ∇vZ);
+    mX[:, ii] = hProjFun(mX[:, ii]); #<! Projection step
+
+    vZ .= mX[:, ii] .+ (ω .* (mX[:, ii] .- mX[:, ii - 1]))
 end
 
 dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
