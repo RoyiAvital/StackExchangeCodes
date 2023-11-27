@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.0.002     27/11/2023  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `ADMM!()` for classic ADMM form.
 # - 1.0.001     24/11/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   Added vanilla gradient descent (No acceleration).
 #   *   Added allocating variations.
@@ -88,6 +90,32 @@ function GradientDescentAccelerated!( vX :: AbstractVecOrMat{T}, numIter :: S, �
         fistaStepSize = (ii - 1) / (ii + 2);
     
         vZ .= vX .+ (fistaStepSize .* (vX .- vW))
+    end
+
+end
+
+function ADMM!(mX :: Matrix{T}, vZ :: Vector{T}, vU :: Vector{T}, mA :: Matrix{T}, hProxF :: Function, hProxG :: Function; ρ :: T = T(2.5), λ :: T = one(T)) where {T <: AbstractFloat}
+    # Solves f(x) + λ g(Ax)
+    # Where z = Ax, and g(z) has a well defined Prox.
+    # ADMM for the case Ax + z = 0
+    # ProxF(y) = \arg \minₓ 0.5ρ * || A x - y ||_2^2 + f(x)
+    # ProxG(y) = \arg \minₓ 0.5ρ * || x - y ||_2^2 + λ g(x)
+    # Initialization by mX[:, 1]
+    # Supports in place ProxG
+
+    numIterations = size(mX, 2);
+    
+    for ii ∈ 2:numIterations
+        vX = @view mX[:, ii];
+
+        vZ .-= vU;
+        vX .= hProxF(vZ, ρ);
+        mul!(vZ, mA, vX);
+        vZ .+= vU;
+        vZ .= hProxG(vZ, λ / ρ);
+        # vX .= hProxF(vZ - vU, ρ);
+        # vZ .= hProxG(mA * vX + vU, λ / ρ);
+        vU .= vU + mA * vX - vZ;
     end
 
 end

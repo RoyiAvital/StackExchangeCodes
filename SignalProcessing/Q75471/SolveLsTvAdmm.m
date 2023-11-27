@@ -47,6 +47,8 @@ function [ vX, mX ] = SolveLsTvAdmm( vX, mA, vY, mD, paramLambda, sSolverParams 
 %   1.  Add option to implement the `mD` operator as a function handler (To
 %       be implemented by convolution).
 % Release Notes:
+%   -   1.0.001     27/11/2023  Royi Avital
+%       *   Enforcing `paramLambda` to be non negative (Instead of positive).
 %   -   1.0.000     04/06/2021  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
@@ -56,7 +58,7 @@ arguments
     mA (:, :) {mustBeFloat, mustBeReal}
     vY (:, 1) {mustBeFloat, mustBeReal}
     mD (:, :) {mustBeFloat, mustBeReal}
-    paramLambda (1, 1) {mustBeFloat, mustBeReal, mustBePositive}
+    paramLambda (1, 1) {mustBeFloat, mustBeReal, mustBeNonnegative}
     sSolverParams.paramRho (1, 1) {mustBeNumeric, mustBeReal, mustBePositive} = 5
     sSolverParams.numIterations (1, 1) {mustBeNumeric, mustBeReal, mustBePositive, mustBeInteger} = 100
 end
