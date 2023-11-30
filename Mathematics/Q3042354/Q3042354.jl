@@ -198,7 +198,7 @@ dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
 
 methodName = "PD3O";
 
-valL = opnorm(mA)
+valL = opnorm(mA);
 β = 1 / valL;
 γ = 1.8β; #<! γ < 2β (Like a primal step size for Gradient Descent)
 λ = 0.9β * β; #<! γ * δ < β²
