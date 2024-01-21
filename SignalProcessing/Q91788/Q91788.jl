@@ -25,6 +25,7 @@ using Random;
 # External
 using Convex;
 using ECOS;
+using FastLapackInterface;
 using PlotlyJS;
 using StableRNGs;
 
@@ -34,17 +35,17 @@ RNG_SEED = 1234;
 
 juliaCodePath = joinpath(".", "..", "..", "JuliaCode");
 include(joinpath(juliaCodePath, "JuliaInit.jl"));
-include(joinpath(juliaCodePath, "JuliaOptimization.jl"));
+# include(joinpath(juliaCodePath, "JuliaOptimization.jl"));
 
 ## General Parameters
 
 figureIdx = 0;
 
-exportFigures = true;
+exportFigures = false;
 
 ## Functions
 
-function IRLS!( vX :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vW :: Vector{T}, mWA :: Matrix{T}, mC :: Matrix{T}, vT :: Vector{T}; normP :: T = one(T), numItr :: N = 1000, ϵ :: T = T(1e-6) ) where {T <: AbstractFloat, N <: Unsigned}
+function IRLS!( vX :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vW :: Vector{T}, mWA :: Matrix{T}, mC :: Matrix{T}, vT :: Vector{T}, sBKWorkSpace :: BunchKaufmanWs{T}; normP :: T = one(T), numItr :: N = 1000, ϵ :: T = T(1e-6) ) where {T <: AbstractFloat, N <: Unsigned}
 
     errThr = T(1e-6); #<! Should be adaptive per iteration
     effNorm = ((normP - T(2)) / T(2));
@@ -53,20 +54,29 @@ function IRLS!( vX :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vW :: Vector{
         mul!(vW, mA, vX);
         vW .-= vB; #<! Error
         # Basically solving (vW .* A) \ (vW .* vB) <-> (mA' * Diag(vW) * mA) \ (mA' * Diag(vW) * vB).
-        # Since m << n (size(mA, 1) << size(mA, 2)) it is faster to solve the normal equations.
+        # Assuming m << n (size(mA, 1) << size(mA, 2)) it is faster to solve the normal equations.
         # The cost is doubling the condition number.
         vW .= max.(abs.(vW), errThr) .^ effNorm;
         vW .= vW ./ sum(vW);
         mWA .= vW .* mA;
         mul!(mC, mWA', mWA); #<! (mWA' * mWA) 
-        mC .= 0.5 * (mC + mC'); #<! Guarantee symmetry
+        # mC .= 0.5 .* (mC .+ mC'); #<! Guarantees symmetry (Allocates, seems to protect from aliasing)
+        # for jj in 2:size(mC, 2)
+        #     for ii in 1:(jj - 1)
+        #         mC[jj, ii] = mC[ii, jj];
+        #     end
+        # end
+        # No need to symmetrize `mC` as the decomposition looks only on a single triangle
         vW .= vW .* vB; #<! (mW * vB);
         copy!(vT, vX); #<! Previous iteration
         mul!(vX, mWA', vW); #<! (mWA' * mW * vB);
         # ldiv!(cholesky!(mC), vX); #<! vX = (mWA' * mWA) \ (mWA' * mW * vB);
         # Using Bunch-Kaufman as it works for SPSD (Cholesky requires SPD).
-        ldiv!(bunchkaufman!(mC), vX); #<! vX = (mWA' * mWA) \ (mWA' * mW * vB);
-        if maximum(abs.(vX - vT)) <= ϵ
+        _, ipiv, _ = LAPACK.sytrf!(sBkWorkSpace, 'U', mC); #<! Applies the decomposition
+        sBkFac = BunchKaufman(mC, ipiv, 'U', true, false, BLAS.BlasInt(0));
+        ldiv!(sBkFac, vX); #<! vX = (mWA' * mWA) \ (mWA' * mW * vB);
+        vT .= abs.(vX .- vT);
+        if maximum(vT) <= ϵ
             break;
         end
     end
@@ -82,8 +92,9 @@ function IRLS(mA :: Matrix{T}, vB :: Vector{T}; normP :: T = one(T), numItr :: N
     vW  = Vector{T}(undef, size(mA, 1));
     mWA = Matrix{T}(undef, size(mA));
     mC  = Matrix{T}(undef, size(mA, 2), size(mA, 2));
+    sBkWorkSpace = BunchKaufmanWs(mC);
 
-    vX = IRLS!(vX, mA, vB, vW, mWA, mC, vT; normP = normP, numItr = numItr);
+    vX = IRLS!(vX, mA, vB, vW, mWA, mC, vT, sBkWorkSpace; normP = normP, numItr = numItr);
 
     return vX;
     
@@ -142,11 +153,12 @@ vT  = zeros(polyDeg + 1);
 vW  = zeros(numSamples);
 mWA = zeros(size(mX));
 mC  = zeros(polyDeg + 1, polyDeg + 1);
+sBkWorkSpace = BunchKaufmanWs(mC);
 
-# vP = IRLS!(vP, mX, vY, vW, mWA, mC, vT; normP = 1.0, numItr = numIterations);
-vP = IRLS(mX, vY; normP = 1.0, numItr = numIterations);
+vP = IRLS!(vP, mX, vY, vW, mWA, mC, vT, sBkWorkSpace; normP = 1.0, numItr = numIterations);
+# vP = IRLS(mX, vY; normP = 1.0, numItr = numIterations);
 
-# @btime IRLS!(vP, mX, vY, vW, mWA, mC, vT; normP = 1.0, numItr = Unsigned(1000), ϵ = 0.0) setup=(vP = zeros(2))
+# @btime IRLS!(vP, mX, vY, vW, mWA, mC, vT, sBkWorkSpace; normP = 1.0, numItr = Unsigned(1000), ϵ = 0.0) setup=(vP = zeros(2))
 
 dSolvers[methodName] = vP;
 
