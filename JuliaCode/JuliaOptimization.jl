@@ -96,7 +96,7 @@ function GradientDescentAccelerated!( vX :: AbstractVecOrMat{T}, numIter :: S, �
 
 end
 
-function ADMM!(mX :: Matrix{T}, vZ :: Vector{T}, vU :: Vector{T}, mA :: Matrix{T}, hProxF :: Function, hProxG :: Function; ρ :: T = T(2.5), λ :: T = one(T)) where {T <: AbstractFloat}
+function ADMM!(mX :: Matrix{T}, vZ :: Vector{T}, vU :: Vector{T}, mA :: AbstractMatrix{T}, hProxF :: Function, hProxG :: Function; ρ :: T = T(2.5), λ :: T = one(T)) where {T <: AbstractFloat}
     # Solves f(x) + λ g(Ax)
     # Where z = Ax, and g(z) has a well defined Prox.
     # ADMM for the case Ax + z = 0
