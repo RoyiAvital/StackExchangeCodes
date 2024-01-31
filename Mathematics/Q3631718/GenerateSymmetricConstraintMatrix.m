@@ -3,7 +3,7 @@ function [ mLU ] = GenerateSymmetricConstraintMatrix( numRows )
 % [ mLU ] = GenerateSymmetricConstraintMatrix( numRows )
 % Generates a sparse Matrix which enforces symmetric constraint on a matrix
 % in its vector form. For any symmetric matrix 'mX' the following holds:
-% 'mLU * mX(:) = 0'. So by addign the constairnt to problem it enforces the
+% 'mLU * mX(:) = 0'. So by adding the constairnt to problem it enforces the
 % solution to be a symmetric matrix.
 % Input:
 %   - numRows           -   Number of Rows.
