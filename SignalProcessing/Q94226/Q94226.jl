@@ -74,7 +74,7 @@ vY = mData[:, 2];
 
 
 # Model
-# mD = spdiagm(numSamples, numSamples, -1 => -ones(numSamples - 1), 0 => ones(numSamples));
+# Forward Finite Differences matrix
 mD = spdiagm(numSamples, numSamples, 0 => -ones(numSamples), 1 => ones(numSamples - 1));
 mDD = copy(mD);
 for kk in 1:polyDeg
