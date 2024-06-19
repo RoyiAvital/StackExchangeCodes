@@ -210,3 +210,42 @@ function _Conv1DValid!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T} ) wher
 
 end
 
+
+function L1Spline( vY :: Vector{T}, λ :: T ) where {T <: Real}
+    # L1 Splines for Robust, Simple, and Fast Smoothing of Grid Data (https://arxiv.org/abs/1208.2292)
+
+    numSamples = length(vY);
+
+    mD = spdiagm(numSamples, numSamples, -1 => ones(numSamples - 1), 0 => -2 * ones(numSamples), 1 => ones(numSamples - 1));
+    mD = mD[2:(end - 1), :];
+
+    vX = Variable(numSamples);
+    sConvProb = minimize( norm(vX - vY, 1) + λ * sumsquares(mD * vX) );
+    solve!(sConvProb, ECOS.Optimizer; silent = true);
+    vZ = vec(vX.value);
+
+    return vZ;
+
+end
+
+
+function L1PieceWise( vY :: Vector{T}, λ :: T, polyDeg :: N; ρ :: T = 1.0 ) where {T <: Real, N <: Integer}
+    # L1 Splines for Robust, Simple, and Fast Smoothing of Grid Data (https://arxiv.org/abs/1208.2292)
+
+    numSamples = length(vY);
+
+    mD = spdiagm(numSamples, numSamples, 0 => -ones(numSamples), 1 => ones(numSamples - 1));
+    mDD = copy(mD);
+    for kk in 1:polyDeg
+        mD[:] = mD * mDD;
+    end
+    mD = mD[1:(end - polyDeg - 1), :];
+
+    vX = Variable(numSamples);
+    sConvProb = minimize( 0.5 * sumsquares(vX - vY) + λ * norm(mD * vX, 1) );
+    solve!(sConvProb, ECOS.Optimizer; silent = true);
+    vZ = vec(vX.value);
+
+    return vZ;
+
+end
