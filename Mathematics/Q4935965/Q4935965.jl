@@ -24,7 +24,7 @@ using Random;
 # External
 using Convex;
 using ECOS;
-using FastLapackInterface; #<! Required for Optimization
+using FastLapackInterface; #<! Required for `JuliaOptimization.jl`
 using LogExpFunctions;
 using PlotlyJS;
 using StableRNGs;
@@ -58,7 +58,6 @@ numCols = 8;  #<! Matrix A
 
 # Solver Parameters
 α               = 3.5e-0; #<! Step Size
-β               = 0.5;  #<! Backtracking
 numIterations   = Unsigned(50_000);
 
 #%% Load / Generate Data
@@ -112,8 +111,6 @@ end
 ## Display Results
 
 figureIdx += 1;
-
-titleStr = L"\\alpha_{1c} = 352 \pm 11 \\text{ km s}^{-1}";
 
 oTrace1 = scatter(x = 1:numIterations, y = vObjFun, mode = "lines", text = "Gradient Descent", name = "Gradient Descent",
                   line = attr(width = 3.0));
