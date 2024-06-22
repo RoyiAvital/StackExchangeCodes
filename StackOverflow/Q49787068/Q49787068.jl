@@ -86,7 +86,7 @@ vX0 = Variable(numCols);
 # Since mX0 and mB are SPSD the `tr()` in non negative.
 # Hence one could use `abs()` to avoid complex numbers.
 sConvProb = minimize(norm(vX0, 1), mA * vX0 == vB);
-solve!(sConvProb, SCS.Optimizer; silent_solver = true);
+solve!(sConvProb, SCS.Optimizer; silent = true);
 vXRef = vX0.value
 optVal = sConvProb.optval;
 

@@ -25,8 +25,81 @@
 
 
 ## Constants & Configuration
+include("./JuliaInit.jl");
 
 ## Functions
+
+function CalcFunGrad!( vG :: AbstractVecOrMat{T}, vP :: AbstractVecOrMat{T}, vX :: AbstractVecOrMat{T}, hFun :: Function; diffMode :: DiffMode = DIFF_MODE_CENTRAL, ε :: T = T(1e-6) ) where {T <: AbstractFloat}
+    # Non allocating assuming `hFun()` is non allocating.
+    # vP is assumed to be zeros.
+
+    numElements = length(vX);
+    funValRef   = hFun(vX);
+
+    # It seems that Julia can not define local functions in `if` block
+    # See https://github.com/JuliaLang/julia/issues/15602, https://discourse.julialang.org/t/13815
+    # if (diffMode == DIFF_MODE_BACKWARD)
+    #     DiffFun(vP) = (funValRef - hFun(vX - vP)) / ε;
+    # elseif (diffMode == DIFF_MODE_CENTRAL) 
+    #     DiffFun(vP) = (hFun(vX + vP) - hFun(vX - vP)) / (2ε);
+    # elseif (diffMode == DIFF_MODE_COMPLEX) 
+    #     DiffFun(vP) = imag(hFun(vX + (1im * vP))) / ε;
+    # elseif (diffMode == DIFF_MODE_FORWARD) 
+    #     DiffFun(vP) = (hFun(vX + vP) - funValRef) / ε;
+    # end
+
+    # Could be solved using anonymous functions.
+    # One could use hDiffFun = vP :: AbstractVecOrMat{T} -> (funValRef - hFun(vX - vP)) / ε;.
+    # Yet, performance wise, it won't do anything and `vP` is already guaranteed to be `AbstractVecOrMat{T}`.
+    if (diffMode == DIFF_MODE_BACKWARD)
+        DiffFun = vP -> (funValRef - hFun(vX - vP)) / ε;
+    elseif (diffMode == DIFF_MODE_CENTRAL) 
+        DiffFun = vP -> (hFun(vX + vP) - hFun(vX - vP)) / (2ε);
+    elseif (diffMode == DIFF_MODE_COMPLEX) 
+        DiffFun = vP -> imag(hFun(vX + (1im * vP))) / ε;
+    elseif (diffMode == DIFF_MODE_FORWARD) 
+        DiffFun = vP -> (hFun(vX + vP) - funValRef) / ε;
+    end
+
+    # Using actual function defintion (Equivaklent to the anonymous above).
+    # Functions are processed as objects and then assigned.
+    # if (diffMode == DIFF_MODE_BACKWARD)
+    #     DiffFun = function( vP :: AbstractVecOrMat{T} ) 
+    #         return (funValRef - hFun(vX - vP)) / ε;
+    #     end
+    # elseif (diffMode == DIFF_MODE_CENTRAL) 
+    #     DiffFun = function( vP :: AbstractVecOrMat{T} )
+    #         return (hFun(vX + vP) - hFun(vX - vP)) / (2ε);
+    #     end
+    # elseif (diffMode == DIFF_MODE_COMPLEX) 
+    #     DiffFun = function( vP :: AbstractVecOrMat{T} )
+    #         return imag(hFun(vX + (1im * vP))) / ε;
+    #     end
+    # elseif (diffMode == DIFF_MODE_FORWARD) 
+    #     DiffFun = function( vP :: AbstractVecOrMat{T} )
+    #         return (hFun(vX + vP) - funValRef) / ε;
+    #     end
+    # end
+
+    for ii ∈ 1:numElements
+        vP[ii] = ε;
+        vG[ii] = DiffFun(vP);
+        vP[ii] = zero(T);
+    end
+
+end
+
+function CalcFunGrad( vX :: AbstractVecOrMat{T}, hFun :: Function; diffMode :: DiffMode = DIFF_MODE_CENTRAL, ε :: T = T(1e-6) ) where {T <: AbstractFloat}
+
+    vP = zeros(T, size(vX));
+    vG = zeros(T, size(vX));
+
+    CalcFunGrad!(vG, vP, vX, hFun; diffMode = diffMode, ε = ε);
+
+    return vG;
+
+end
+
 
 function GradientDescent( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ∇ObjFun :: Function; ProjFun :: Function = identity ) where {T <: AbstractFloat, S <: Integer}
     # This variation allocates memory.
@@ -51,6 +124,39 @@ function GradientDescent!( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ∇
 
 end
 
+function GradientDescentBackTracking!( vX :: AbstractVecOrMat{T}, vG :: AbstractVecOrMat{T}, vZ :: AbstractVecOrMat{T}, numIter :: S, η :: T, ObjFun :: Function, ∇ObjFun :: Function; ProjFun :: Function = identity, α :: T = T(0.5), β :: T = T(1e-10) ) where {T <: AbstractFloat, S <: Integer}
+    # Non allocating assuming function are not allocating.
+
+    for ii ∈ 1:numIter
+        vG .= ∇ObjFun(vX);
+        objFunVal = ObjFun(vX);
+        vZ .= vX .- η .*  vG;
+        while ((hObjFun(vZ) > objFunVal) && (α > β))
+            η *= α;
+            vZ .= vX .- η .*  vG;
+        end
+        vG .*= η;
+        η   /= α;
+        vX .-= vG;
+    
+        vX .= mX .- (η .* ∇vX);
+        vX = ProjFun(vX);
+    end
+
+end
+
+function GradientDescentBackTracking( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ObjFun :: Function, ∇ObjFun :: Function; ProjFun :: Function = identity, α :: T = T(0.5), β :: T = T(1e-10) ) where {T <: AbstractFloat, S <: Integer}
+    # Mutates vX
+
+    vG = copy(vX);
+    vZ = copy(vX);
+
+    GradientDescentBackTracking(vX, vG, vZ, numIter, η, ObjFun, ∇ObjFun; ProjFun = ProjFun, α = α, β = β);
+
+end
+
+
+
 function GradientDescentAccelerated( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ∇ObjFun :: Function; ProjFun :: Function = identity ) where {T <: AbstractFloat, S <: Integer}
     # This variation allocates memory.
     # No requirements from ∇ObjFun, ProjFun to be allocations free.
@@ -71,7 +177,7 @@ function GradientDescentAccelerated( vX :: AbstractVecOrMat{T}, numIter :: S, η
     
         fistaStepSize = (ii - 1) / (ii + 2);
     
-        vZ .= vX .+ (fistaStepSize .* (vX .- vW))
+        vZ .= vX .+ (fistaStepSize .* (vX .- vW));
     end
 
 end
@@ -91,7 +197,7 @@ function GradientDescentAccelerated!( vX :: AbstractVecOrMat{T}, numIter :: S, �
     
         fistaStepSize = (ii - 1) / (ii + 2);
     
-        vZ .= vX .+ (fistaStepSize .* (vX .- vW))
+        vZ .= vX .+ (fistaStepSize .* (vX .- vW));
     end
 
 end
