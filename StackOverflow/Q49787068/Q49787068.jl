@@ -25,6 +25,7 @@ using Printf;
 using Random;
 # External
 using Convex;
+using FastLapackInterface; #<! Required for Optimization
 using PlotlyJS;
 using SCS;
 using StableRNGs;
@@ -140,7 +141,7 @@ for (ii, methodName) in enumerate(keys(dSolvers))
                mode = "lines", text = methodName, name = methodName, line = attr(width = 3.0))
 end
 oLayout = Layout(title = "Objective Function, Condition Number = $(@sprintf("%0.3f", cond(mA)))", width = 600, height = 600, hovermode = "closest",
-                 xaxis_title = "Iteration", yaxis_title = raw"$$\frac{ \left| {f}^{\star} - {f}_{i} \right| }{ \left| {f}^{\star} \right| }$ [dB]$");
+                 xaxis_title = "Iteration", yaxis_title = raw"$\frac{ \left| {f}^{\star} - {f}_{i} \right| }{ \left| {f}^{\star} \right| }$ [dB]");
 
 hP = plot(vTr, oLayout);
 display(hP);
