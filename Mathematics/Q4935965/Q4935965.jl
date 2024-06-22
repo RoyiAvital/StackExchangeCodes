@@ -45,8 +45,8 @@ exportFigures = false;
 
 oRng = StableRNG(1234);
 
-## Functions
 
+## Functions
 
 
 ## Parameters
@@ -55,12 +55,12 @@ oRng = StableRNG(1234);
 numRows = 10; #<! Matrix A
 numCols = 8;  #<! Matrix A
 
-
 # Solver Parameters
 α               = 3.5e-0; #<! Step Size
 numIterations   = Unsigned(50_000);
 
-#%% Load / Generate Data
+
+## Load / Generate Data
 mA  = randn(oRng, numRows, numCols);
 vX  = randn(oRng, numCols);
 vB  = randn(oRng, numRows);
@@ -74,6 +74,7 @@ h∇Fun( vX :: Vector{<: AbstractFloat} )     = (1 / sum(exp.(μ * (mA * vX - vB
 if (maximum(abs.(h∇Fun(vX) - CalcFunGrad(vX, hObjFun))) > 1e-6)
     println("The gradient function is not validated");
 end
+
 
 ## Analysis
 
@@ -107,10 +108,12 @@ for ii ∈ 1:numIterations
 end
 
 
-
 ## Display Results
 
 figureIdx += 1;
+
+# Using `height = nothing, width = nothing` means current size
+oConf = PlotConfig(toImageButtonOptions = attr(format = "png", height = nothing, width = nothing).fields); #<! Won't work on VS Code
 
 oTrace1 = scatter(x = 1:numIterations, y = vObjFun, mode = "lines", text = "Gradient Descent", name = "Gradient Descent",
                   line = attr(width = 3.0));
@@ -119,10 +122,11 @@ oTrace2 = scatter(x = 1:numIterations, y = optVal * ones(numIterations),
                   line = attr(width = 1.5, dash = "dot"));
 oLayout = Layout(title = "Objective Function", width = 600, height = 600, hovermode = "closest",
                  xaxis_title = "Iteration", yaxis_title = "Value");
-hP = plot([oTrace1, oTrace2], oLayout);
+hP = plot([oTrace1, oTrace2], oLayout, config = oConf);
 display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
     savefig(hP, figFileNme);
 end
+
