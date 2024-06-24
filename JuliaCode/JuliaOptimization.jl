@@ -228,6 +228,41 @@ function ADMM!(mX :: Matrix{T}, vZ :: Vector{T}, vU :: Vector{T}, mA :: Abstract
 
 end
 
+function OrthogonalProjectionOntoConvexSets( vY :: AbstractVecOrMat{T}, vProjFun :: AbstractVector{Function}; numIter :: S = 1_000, ε :: T = T(1e-7) ) where {T <: AbstractFloat, S <: Integer}
+
+    numSets = length(vProjFun);
+    
+    aZ = [zeros(T, size(vY)) for _ ∈ 1:numSets];
+    aU = [zeros(T, size(vY)) for _ ∈ 1:numSets]; #<! TODO: Optimize vU (Probably single instance)
+    vT = copy(vY);
+    vX = copy(vY);
+
+    for ii ∈ 1:numIter
+        maxVal = zero(T);
+        for jj ∈ 1:numSets
+            aU[jj] = vProjFun[jj](vT + aZ[jj]);
+            aZ[jj] = vT + aZ[jj] - aU[jj];
+
+            vT .= aU[jj]
+
+            maxI = maximum(abs(x - y) for (x, y) ∈ zip(vX, aU[jj])); #<! maximum(abs.(vX .- aU[jj]));
+            if (maxVal < maxI)
+                maxVal = maxI;
+            end
+        end
+        stopCond = maxVal < ε;
+
+        vX .= vT;
+        
+        if stopCond
+            break;
+        end
+    end
+
+    return vX;
+
+end
+
 function IRLS!( vX :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vW :: Vector{T}, mWA :: Matrix{T}, mC :: Matrix{T}, vT :: Vector{T}, sBKWorkSpace :: BunchKaufmanWs{T}; normP :: T = one(T), numItr :: N = 1000, ϵ :: T = T(1e-6) ) where {T <: AbstractFloat, N <: Unsigned}
 
     errThr = T(1e-6); #<! Should be adaptive per iteration
