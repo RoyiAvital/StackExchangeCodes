@@ -157,7 +157,7 @@ end
 
 
 
-function GradientDescentAccelerated( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ∇ObjFun :: G; ProjFun :: F = identity ) where {T <: AbstractFloat, S <: Integer, F <: Function, G <: Function}
+function GradientDescentAccelerated( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ∇ObjFun :: Function; ProjFun :: Function = identity ) where {T <: AbstractFloat, S <: Integer} #, F <: Function, G <: Function}
     # This variation allocates memory.
     # No requirements from ∇ObjFun, ProjFun to be allocations free.
 

@@ -45,6 +45,26 @@ oRng = StableRNG(1234);
 
 ## Functions
 
+function QuantizeP!( mP :: AbstractMatrix{T} ) where {T <: AbstractFloat}
+    # Will fails if the first rows have the same values which becomes maximum
+
+    vIdx = Vector{CartesianIndex{2}}(undef, size(mP, 2));
+    
+    for ii ∈ 1:size(mP, 2)
+        maxIdx = argmax(mP);
+        mP[maxIdx[1], :] .= zero(T); #<! Zero the row
+        mP[:, maxIdx[2]] .= zero(T); #<! Zero the column
+        vIdx[ii] = maxIdx;
+    end
+
+    # Assigning 1
+    for ii ∈ 1:size(mP, 2)
+        mP[vIdx[ii]] = one(T);
+    end
+
+    return mP;
+
+end
 
 
 ## Parameters
@@ -74,9 +94,13 @@ hProjUnitCol( mY :: AbstractMatrix{T} ) where {T <: AbstractFloat} = mY .- ((sum
 hProjUnitRow( mY :: AbstractMatrix{T} ) where {T <: AbstractFloat} = mY .- (((sum(mY, dims = 2) .- one(T)) ./ size(mY, 2)) .* (sum(mY, dims = 2) .> one(T)));
 hGradFun( mP :: AbstractMatrix{T} ) where {T <: AbstractFloat}     = mH' * (mH * mP * vβ - vY) * vβ'; #<! ObjFun: 0.5 * || H * P * β - y ||^2
 
-hProj = hProjUnitRow ∘ hProjUnitCol ∘ hProjNonNeg;
+hProj = hProjNonNeg ∘ hProjUnitRow ∘ hProjUnitCol ∘ hProjNonNeg;
 
 GradientDescentAccelerated(mP, numIterations, η, hGradFun; ProjFun = hProj);
+
+mO = copy(mP);
+
+mO = QuantizeP!(mO);
 
 # Quantize mP
 
