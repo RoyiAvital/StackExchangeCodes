@@ -228,7 +228,7 @@ function ADMM!(mX :: Matrix{T}, vZ :: Vector{T}, vU :: Vector{T}, mA :: Abstract
 
 end
 
-function OrthogonalProjectionOntoConvexSets( vY :: AbstractVecOrMat{T}, vProjFun :: AbstractVector{Function}; numIter :: S = 1_000, ε :: T = T(1e-7) ) where {T <: AbstractFloat, S <: Integer}
+function OrthogonalProjectionOntoConvexSets( vY :: AbstractVecOrMat{T}, vProjFun :: AbstractVector{<: Function}; numIter :: S = 1_000, ε :: T = T(1e-6) ) where {T <: AbstractFloat, S <: Integer}
 
     numSets = length(vProjFun);
     
@@ -240,12 +240,14 @@ function OrthogonalProjectionOntoConvexSets( vY :: AbstractVecOrMat{T}, vProjFun
     for ii ∈ 1:numIter
         maxVal = zero(T);
         for jj ∈ 1:numSets
-            aU[jj] = vProjFun[jj](vT + aZ[jj]);
-            aZ[jj] = vT + aZ[jj] - aU[jj];
+            # aU[jj]  = vProjFun[jj](vT + aZ[jj]);
+            aU[jj] .= vT .+ aZ[jj];
+            aU[jj]  = vProjFun[jj](aU[jj]);
+            aZ[jj] .= vT .+ aZ[jj] .- aU[jj];
 
             vT .= aU[jj]
 
-            maxI = maximum(abs(x - y) for (x, y) ∈ zip(vX, aU[jj])); #<! maximum(abs.(vX .- aU[jj]));
+            maxI = @fastmath maximum(abs(x - y) for (x, y) ∈ zip(vX, aU[jj])); #<! maximum(abs.(vX .- aU[jj]));
             if (maxVal < maxI)
                 maxVal = maxI;
             end
