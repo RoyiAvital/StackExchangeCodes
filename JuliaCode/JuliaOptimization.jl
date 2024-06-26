@@ -157,14 +157,14 @@ end
 
 
 
-function GradientDescentAccelerated( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ∇ObjFun :: Function; ProjFun :: Function = identity ) where {T <: AbstractFloat, S <: Integer}
+function GradientDescentAccelerated( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ∇ObjFun :: G; ProjFun :: F = identity ) where {T <: AbstractFloat, S <: Integer, F <: Function, G <: Function}
     # This variation allocates memory.
     # No requirements from ∇ObjFun, ProjFun to be allocations free.
 
-    vW = Array{T, length(size(vX))}(undef, size(vX));
+    vW = Array{T, ndims(vX)}(undef, size(vX));
     vZ = copy(vX);
 
-    ∇vZ = Array{T, length(size(vX))}(undef, size(vX));
+    ∇vZ = Array{T, ndims(vX)}(undef, size(vX));
 
     for ii ∈ 1:numIter
         # FISTA (Nesterov) Accelerated
