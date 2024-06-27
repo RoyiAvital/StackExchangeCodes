@@ -202,7 +202,7 @@ function GradientDescentAccelerated!( vX :: AbstractVecOrMat{T}, numIter :: S, �
 
 end
 
-function ADMM!(mX :: Matrix{T}, vZ :: Vector{T}, vU :: Vector{T}, mA :: AbstractMatrix{T}, hProxF :: Function, hProxG :: Function; ρ :: T = T(2.5), λ :: T = one(T)) where {T <: AbstractFloat}
+function ADMM!(vX :: AbstractVector{T}, vZ :: AbstractVector{T}, vU :: AbstractVector{T}, mA :: AbstractMatrix{T}, hProxF :: Function, hProxG :: Function, numIterations :: N; ρ :: T = T(2.5), λ :: T = one(T)) where {T <: AbstractFloat, N <: Integer}
     # Solves f(x) + λ g(Ax)
     # Where z = Ax, and g(z) has a well defined Prox.
     # ADMM for the case Ax + z = 0
@@ -210,12 +210,8 @@ function ADMM!(mX :: Matrix{T}, vZ :: Vector{T}, vU :: Vector{T}, mA :: Abstract
     # ProxG(y) = \arg \minₓ 0.5ρ * || x - y ||_2^2 + λ g(x)
     # Initialization by mX[:, 1]
     # Supports in place ProxG
-
-    numIterations = size(mX, 2);
     
-    for ii ∈ 2:numIterations
-        vX = @view mX[:, ii];
-
+    for ii ∈ 1:numIterations
         vZ .-= vU;
         vX .= hProxF(vZ, ρ);
         mul!(vZ, mA, vX);
@@ -225,6 +221,52 @@ function ADMM!(mX :: Matrix{T}, vZ :: Vector{T}, vU :: Vector{T}, mA :: Abstract
         # vZ .= hProxG(mA * vX + vU, λ / ρ);
         vU .= vU + mA * vX - vZ;
     end
+
+    return vX;
+
+end
+
+function ADMM(vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, hProxF :: Function, hProxG :: Function, numIterations :: N; ρ :: T = T(2.5), λ :: T = one(T)) where {T <: AbstractFloat, N <: Integer}
+    # Solves f(x) + λ g(Ax)
+    # Where z = Ax, and g(z) has a well defined Prox.
+    # ADMM for the case Ax + z = 0
+    # ProxF(y) = \arg \minₓ 0.5ρ * || A x - y ||_2^2 + f(x)
+    # ProxG(y) = \arg \minₓ 0.5ρ * || x - y ||_2^2 + λ g(x)
+    # Initialization by mX[:, 1]
+    # Supports in place ProxG
+
+    numRows = size(mA, 1);
+    numCols = size(mA, 2);
+
+    vZ = copy(vX);
+    vU = zeros(T, size(vX));
+
+    vX = ADMM!(vX, vZ, vU, mA, hProxF, hProxG, numIterations; ρ = ρ, λ = λ);
+    
+    return vX;
+
+end
+
+function ProximalGradientDescent!( vX :: AbstractVector{T}, vG :: AbstractVector{T}, ∇Fun :: Function, ProxFun :: Function, η :: T, numIterations :: S; λ :: T = one(T) ) where {T <: AbstractFloat, S <: Integer}
+
+    λ *= η;
+
+    for ii ∈ 1:numIterations
+        vG = ∇Fun(vX);
+        vX .-= η .* vG; 
+        vX .= ProxFun(vX, λ);
+    end
+
+    return vX;
+
+end
+
+function ProximalGradientDescent( vX :: AbstractVector{T}, ∇Fun :: Function, ProxFun :: Function, η :: T, numIterations :: S; λ :: T = one(T) ) where {T <: AbstractFloat, S <: Integer}
+
+    vG = similar(vX);
+    vX = ProximalGradientDescent!(vX, vG, ∇Fun, ProxFun, η, numIterations; λ = λ);
+
+    return vX;
 
 end
 
