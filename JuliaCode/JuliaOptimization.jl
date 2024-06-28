@@ -156,7 +156,6 @@ function GradientDescentBackTracking( vX :: AbstractVecOrMat{T}, numIter :: S, �
 end
 
 
-
 function GradientDescentAccelerated( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ∇ObjFun :: Function; ProjFun :: Function = identity ) where {T <: AbstractFloat, S <: Integer} #, F <: Function, G <: Function}
     # This variation allocates memory.
     # No requirements from ∇ObjFun, ProjFun to be allocations free.
@@ -219,7 +218,7 @@ function ADMM!(vX :: AbstractVector{T}, vZ :: AbstractVector{T}, vU :: AbstractV
         vZ .= hProxG(vZ, λ / ρ);
         # vX .= hProxF(vZ - vU, ρ);
         # vZ .= hProxG(mA * vX + vU, λ / ρ);
-        vU .= vU + mA * vX - vZ;
+        vU .= mul!(vU, mA, vX, one(T), one(T)) .- vZ;
     end
 
     return vX;
@@ -234,12 +233,13 @@ function ADMM(vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, hProxF :: Functi
     # ProxG(y) = \arg \minₓ 0.5ρ * || x - y ||_2^2 + λ g(x)
     # Initialization by mX[:, 1]
     # Supports in place ProxG
+    # https://nikopj.github.io/notes/admm_scaled
+    # TODO: Add support for uniform scaling for mA.
 
     numRows = size(mA, 1);
-    numCols = size(mA, 2);
 
-    vZ = copy(vX);
-    vU = zeros(T, size(vX));
+    vZ = zeros(T, numRows);
+    vU = zeros(T, numRows);
 
     vX = ADMM!(vX, vZ, vU, mA, hProxF, hProxG, numIterations; ρ = ρ, λ = λ);
     
@@ -247,24 +247,65 @@ function ADMM(vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, hProxF :: Functi
 
 end
 
-function ProximalGradientDescent!( vX :: AbstractVector{T}, vG :: AbstractVector{T}, ∇Fun :: Function, ProxFun :: Function, η :: T, numIterations :: S; λ :: T = one(T) ) where {T <: AbstractFloat, S <: Integer}
+function ProximalGradientDescent!( vX :: AbstractVector{T}, vG :: AbstractVector{T}, ∇F :: Function, ProxG :: Function, η :: T, numIterations :: S; λ :: T = one(T) ) where {T <: AbstractFloat, S <: Integer}
+    # Solves f(x) + λ g(x)
+    # ∇F(y) = ∇f(y)
+    # ProxG(y) = \arg \minₓ 0.5 * || x - y ||_2^2 + λ g(x)
+    # Supports in place ProxG
 
     λ *= η;
 
     for ii ∈ 1:numIterations
-        vG = ∇Fun(vX);
+        vG = ∇F(vX);
         vX .-= η .* vG; 
-        vX .= ProxFun(vX, λ);
+        vX .= ProxG(vX, λ);
     end
 
     return vX;
 
 end
 
-function ProximalGradientDescent( vX :: AbstractVector{T}, ∇Fun :: Function, ProxFun :: Function, η :: T, numIterations :: S; λ :: T = one(T) ) where {T <: AbstractFloat, S <: Integer}
+function ProximalGradientDescent( vX :: AbstractVector{T}, ∇F :: Function, ProxFun :: Function, η :: T, numIterations :: S; λ :: T = one(T) ) where {T <: AbstractFloat, S <: Integer}
 
     vG = similar(vX);
-    vX = ProximalGradientDescent!(vX, vG, ∇Fun, ProxFun, η, numIterations; λ = λ);
+    vX = ProximalGradientDescent!(vX, vG, ∇F, ProxFun, η, numIterations; λ = λ);
+
+    return vX;
+
+end
+
+function ProximalGradientDescentAcc!( vX :: AbstractVector{T}, vG :: AbstractVector{T}, vZ :: AbstractVector{T}, vW :: AbstractVector{T}, ∇F :: Function, ProxG :: Function, η :: T, numIterations :: S; λ :: T = one(T) ) where {T <: AbstractFloat, S <: Integer}
+    # Solves f(x) + λ g(x)
+    # ∇F(y) = ∇f(y)
+    # ProxG(y) = \arg \minₓ 0.5 * || x - y ||_2^2 + λ g(x)
+    # Supports in place ProxG
+
+    λ *= η;
+
+    for ii ∈ 1:numIterations
+        # FISTA (Nesterov) Accelerated
+    
+        vG = ∇F(vZ);
+    
+        vW .= vX; #<! Previous iteration
+        vX .= vZ .- (η .* vG);
+        vX .= ProxG(vX, λ);
+    
+        fistaStepSize = (ii - 1) / (ii + 2);
+    
+        vZ .= vX .+ (fistaStepSize .* (vX .- vW));
+    end
+
+    return vX;
+
+end
+
+function ProximalGradientDescentAcc( vX :: AbstractVector{T}, ∇F :: Function, ProxFun :: Function, η :: T, numIterations :: S; λ :: T = one(T) ) where {T <: AbstractFloat, S <: Integer}
+
+    vG = similar(vX);
+    vZ = copy(vX);
+    vW = similar(vX);
+    vX = ProximalGradientDescentAcc!(vX, vG, vZ, vW, ∇F, ProxFun, η, numIterations; λ = λ);
 
     return vX;
 

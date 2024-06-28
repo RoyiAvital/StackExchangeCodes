@@ -3,7 +3,7 @@ function [ vX, mX ] = SolveLsL1Admm( mA, vB, paramLambda, numIterations )
 %[ vX, mX ] = SolveLsL1Admm( mA, vB, lambdaFctr, numIterations )
 % Solve L1 Regularized Least Squares Using Alternating Direction Method of Multipliers (ADMM) Method.
 % Input:
-%   - mA                -   Input Matirx.
+%   - mA                -   Input Matrix.
 %                           The model matrix.
 %                           Structure: Matrix (m X n).
 %                           Type: 'Single' / 'Double'.
@@ -47,7 +47,7 @@ function [ vX, mX ] = SolveLsL1Admm( mA, vB, paramLambda, numIterations )
 %   -   1.1.000     23/08/2017
 %       *   Added optimized factorization.
 %   -   1.0.000     23/08/2017
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 MAT_TYPE_SKINNY = 1;
@@ -64,7 +64,7 @@ vX  = pinv(mA) * vB; %<! Dealing with "Fat Matrix"
 
 paramRho    = 5;
 
-% Cahing Factorization
+% Caching Factorization
 [mL, mU] = MatrixFactorize(mA, paramRho, matType);
 
 vZ = vX;
@@ -89,7 +89,7 @@ for ii = 2:numIterations
     % vX = max(vX, 0); %<! Project onto R+
     
     vZ = ProxL1(vX + (vU / paramRho), paramLambda / paramRho);
-    % Projectin z. See Dual methods and ADMM (http://www.stat.cmu.edu/~ryantibs/convexopt-F13/lectures/23-dual-meth.pdf) Pg. 10.
+    % Projecting z. See Dual methods and ADMM (http://www.stat.cmu.edu/~ryantibs/convexopt-F13/lectures/23-dual-meth.pdf) Pg. 10.
     vZ = max(vZ, 0); %<! Project onto R+
     
     vU = vU + (paramRho * (vX - vZ));

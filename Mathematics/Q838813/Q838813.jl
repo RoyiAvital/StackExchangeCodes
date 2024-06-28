@@ -17,17 +17,6 @@
 # - 1.0.000     27/06/2024  Royi Avital
 #   *   First release.
 
-# $$
-# \begin{align*}
-# \arg \min_{\boldsymbol{X}} \quad & \frac{1}{2} {\left\| \boldsymbol{X} - \boldsymbol{y} \right\|}_{2}^{2} \\
-# \text{subject to} \quad & \begin{aligned} 
-# \boldsymbol{X} \boldsymbol{1} & = \boldsymbol{1} \\
-# {X}_{i, j} & \geq 0 \\
-# \boldsymbol{X} & = \boldsymbol{X}^{T}
-# \end{aligned}
-# \end{align*}
-# $$
-
 
 ## Packages
 
