@@ -64,7 +64,7 @@ colShift = 0;
 for ii = 1:(numPixels - numRows)
     if(mod(ii + colShift, numRows) == 0)
         % Take care of cases where the pixel is the last pixel in the
-        % column (Resided on the lasr row of the image hence no valid
+        % column (Resided on the last row of the image hence no valid
         % vertical derivative).
         colShift = colShift + 1;
     end
@@ -95,7 +95,7 @@ mDD     = mDDh + mDDv; %<! Laplacian
 % The following are equivalent:
 % mO = reshape(mDD * mI(:), numRows, numCols);
 % mO = conv2(conv2(mI, vDx, 'valid'), vDx(end:-1:1), 'full') + conv2(conv2(mI, vDy, 'valid'), vDy(end:-1:1), 'full');
-% Pay attnetion that in real Laplacian we would apply convolution twice
+% Pay attention that in real Laplacian we would apply convolution twice
 % while in the above we apply its Adjoint (Correlation) hence the filter is
 % practically [-1, 2, -1] while for Laplacian it is [1, -2, 1].
 % In parts:

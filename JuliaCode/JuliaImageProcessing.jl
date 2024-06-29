@@ -9,6 +9,9 @@
 #       It should include an auxiliary function: `GenWorkSpace()` for teh buffers.  
 #       It should also be optimized for `rfft()`.
 # Release Notes
+# - 1.2.000     29/06/2023  Royi Avital RoyiAvital@yahoo.com
+#   *   Added functions to generate Convolution Matrix (Sparse).
+#   *   Added a function to calculate the image Laplace Operator.
 # - 1.1.000     23/11/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   Added 2D Convolution.
 # - 1.0.000     09/07/2023  Royi Avital RoyiAvital@yahoo.com
@@ -17,6 +20,7 @@
 ## Packages
 
 # Internal
+using SparseArrays;
 
 # External
 using ColorTypes;
@@ -141,6 +145,7 @@ function Conv2D( mI :: Matrix{T}, mK :: Matrix{T}; convMode :: ConvMode = CONV_M
     end
 
     Conv2D!(mO, mI, mK; convMode = convMode);
+    
     return mO;
 
 end
@@ -158,6 +163,7 @@ function Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T}; convMode ::
 end
 
 function _Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where {T <: AbstractFloat}
+    # Full Convolution
 
     numRowsI, numColsI = size(mI);
     numRowsK, numColsK = size(mK);
@@ -270,6 +276,126 @@ function _Conv2DValid!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) wher
             mO[ii, jj] = sumVal;
         end
     end
+
+end
+
+
+function GenConvMtx( vK :: AbstractVector{T}, numElements :: N; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat, N <: Integer}
+    
+    kernelLength = length(vK);
+
+    if (convMode == CONV_MODE_FULL)
+        rowIdxFirst = 1;
+        rowIdxLast  = numElements + kernelLength - 1;
+        outputSize  = numElements + kernelLength - 1;
+    elseif (convMode == CONV_MODE_SAME)
+        rowIdxFirst = 1 + floor(kernelLength / 2);
+        rowIdxLast  = rowIdxFirst + numElements - 1;
+        outputSize  = numElements;
+    elseif (convMode == CONV_MODE_VALID)
+        rowIdxFirst = kernelLength;
+        rowIdxLast  = (numElements + kernelLength - 1) - kernelLength + 1;
+        outputSize  = numElements - kernelLength + 1;
+    end
+
+    mtxIdx = 0;
+    vI = ones(N, numElements * kernelLength);
+    vJ = ones(N, numElements * kernelLength);
+    vV = zeros(T, numElements * kernelLength);
+
+    for jj ∈ 1:numElements
+        for ii ∈ 1:kernelLength
+            if((ii + jj - 1 >= rowIdxFirst) && (ii + jj - 1 <= rowIdxLast))
+                # Valid output matrix row index
+                mtxIdx += 1;
+                vI[mtxIdx] = ii + jj - rowIdxFirst;
+                vJ[mtxIdx] = jj;
+                vV[mtxIdx] = vK[ii];
+            end
+        end
+    end
+
+    mK = sparse(vI, vJ, vV, outputSize, numElements);
+
+    return mK;
+
+end
+
+
+function GenConvMtx( mH :: AbstractMatrix{T}, numRows :: N, numCols :: N; convMode = ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat, N <: Integer}
+    
+    numColsKernel   = size(mH, 2);
+    numBlockMtx     = numColsKernel;
+
+    lBlockMtx = Vector{SparseMatrixCSC{T, N}}(undef, numBlockMtx);
+
+    for ii ∈ 1:numBlockMtx
+        lBlockMtx[ii] = GenConvMtx(mH[:, ii], numRows; convMode = convMode);
+    end
+
+    if (convMode == CONV_MODE_FULL)
+        # For convolution shape - 'full' the Doubly Block Toeplitz Matrix
+        # has the first column as its main diagonal.
+        diagIdx     = 0;
+        numRowsKron = numCols + numColsKernel - 1;
+    elseif (convMode == CONV_MODE_SAME)
+        # For convolution shape - 'same' the Doubly Block Toeplitz Matrix
+        # has the first column shifted by the kernel horizontal radius.
+        diagIdx     = floor(numColsKernel / 2);
+        numRowsKron = numCols;
+    elseif (convMode == CONV_MODE_VALID)
+        # For convolution shape - 'valid' the Doubly Block Toeplitz Matrix
+        # has the first column shifted by the kernel horizontal length.
+        diagIdx     = numColsKernel - 1;
+        numRowsKron = numCols - numColsKernel + 1;
+    end
+
+    vI = ones(N, min(numRowsKron, numCols));
+    mK = kron(spdiagm(numRowsKron, numCols, diagIdx => vI), lBlockMtx[1]);
+
+    for ii ∈ 2:numBlockMtx
+        diagIdx = diagIdx - 1;
+        mK = mK + kron(spdiagm(numRowsKron, numCols, diagIdx => vI), lBlockMtx[ii]);
+    end
+
+    return mK;
+
+end
+
+
+function CalcImageLaplacian!( mO :: Matrix{T}, mI :: Matrix{T}, mB :: Matrix{T}, mV1 :: Matrix{T}, mV2 :: Matrix{T}, mKₕ :: Matrix{T}, mKᵥ :: Matrix{T} ) where {T <: AbstractFloat}
+
+    _Conv2DValid!(mV1, mI, mKₕ);
+    _Conv2D!(mO, mV1, rot180(mKₕ)); #<! TODO: Remove allocation
+
+    _Conv2DValid!(mV2, mI, mKᵥ);
+    _Conv2D!(mB, mV2, rot180(mKᵥ)); #<! TODO: Remove allocation
+
+    mO .+= mB;
+
+    return mO;
+
+end
+
+function CalcImageLaplacian( mI :: Matrix{T}; mKₕ :: Matrix{T} = [one(T) -one(T)], mKᵥ :: Matrix{T} = [[one(T), -one(T)];;] ) where {T <: AbstractFloat}
+
+    mO = similar(mI);
+    mB = similar(mI); #<! Buffer
+
+    numRows = size(mI, 1);
+    numCols = size(mI, 2);
+
+    numRowsKₕ = size(mKₕ, 1);
+    numColsKₕ = size(mKₕ, 2);
+    numRowsmKᵥ = size(mKᵥ, 1);
+    numColsmKᵥ = size(mKᵥ, 2);
+
+    mV1 = Matrix{T}(undef, numRows - numRowsKₕ + 1, numCols - numColsKₕ + 1);
+    mV2 = Matrix{T}(undef, numRows - numRowsmKᵥ + 1, numCols - numColsmKᵥ + 1);
+
+    mO = CalcImageLaplacian!(mO, mI, mB, mV1, mV2, mKₕ, mKᵥ);
+
+    return mO;
 
 end
 

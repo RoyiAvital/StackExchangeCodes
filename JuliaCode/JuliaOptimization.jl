@@ -7,6 +7,10 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.0.004     28/06/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Updated `ADMM()` and `ADMM!()`.
+#   *   Added a function to project onto intersection of convex sets.
+#   *   Added Accelerated Proximal Gradient Descent.
 # - 1.0.003     21/01/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `IRLS()` and `IRLS!()` for || A x - b ||_p.
 # - 1.0.002     27/11/2023  Royi Avital RoyiAvital@yahoo.com

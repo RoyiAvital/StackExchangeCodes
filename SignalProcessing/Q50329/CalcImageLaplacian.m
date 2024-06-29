@@ -18,16 +18,16 @@ function [ mO ] = CalcImageLaplacian( mI )
 % Remarks:
 %   1.  The Laplacian is given by d^2I/dx^2 + d^2I/dy^2. The second
 %       derivative in coefficients should be [1, -2, 1]. Yet this function
-%       implements [-1, 2, -1]. This is dues the fast usually we are after
-%       volving {D}^{T} D x where D is Derivative Operator with the
-%       convolution kernel [1, -1]. So the function implementes Dx.' * Dx +
+%       implements [-1, 2, -1]. This is due the fast usually we are after
+%       convolving {D}^{T} D x where D is Derivative Operator with the
+%       convolution kernel [1, -1]. So the function implements Dx.' * Dx +
 %       Dy.' * Dy. Where D.' is correlation instead of convolution.
 % TODO:
-%   1.  See if it can be done in onve convolution by padding the image and
+%   1.  See if it can be done in one convolution by padding the image and
 %       using [-1, 2, 1] directly.
 % Release Notes:
 %   -   1.0.000     07/07/2018  Royi Avital
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 % If mD is the matrix form of convolution by vK then:
@@ -39,7 +39,7 @@ function [ mO ] = CalcImageLaplacian( mI )
 %       equivalent of 'conv2(conv2(mI, vK, 'valid'), vK(end:-1:1), 'full')'
 %       namely convolution and then correlation with different Convolution
 %       Shape.
-%   *   If one uses Full Convol;ution (Inpuit and Output size are the same)
+%   *   If one uses Full Convolution (Input and Output size are the same)
 %       all works with no dimension adjustments.
 
 vK = [1, -1]; %<! Horizontal 1st Derivative

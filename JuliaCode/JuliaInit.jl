@@ -41,6 +41,6 @@ end
 end
 
 # Display UIntx numbers as integers
-Base.show(io::IO, x::T) where {T<:Union{UInt, UInt128, UInt64, UInt32, UInt16, UInt8}} = Base.print(io, x)
+Base.show(io::IO, x::T) where {T<:Union{UInt, UInt128, UInt64, UInt32, UInt16, UInt8}} = Base.print(io, x);
 
 ## Auxiliary Functions

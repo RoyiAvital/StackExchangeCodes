@@ -54,7 +54,7 @@ tic();
 for ii = 1:length(vParamLambda)
     paramLambda = vParamLambda(ii);
     
-    hAFun   = @(vX) vX + (paramLambda * reshape(CalcImageLaplacian(  reshape(vX, numRows, numCols) ), numPixels, 1));
+    hAFun   = @(vX) vX + (paramLambda * reshape(CalcImageLaplacian( reshape(vX, numRows, numCols) ), numPixels, 1));
     vB      = paramLambda * reshape(CalcImageLaplacian(mI), [], 1) + ones([numPixels, 1]);
     
     mO(:, :, ii) = reshape(pcg(hAFun, vB), numRows, numCols);
