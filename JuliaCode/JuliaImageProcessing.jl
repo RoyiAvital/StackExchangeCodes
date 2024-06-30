@@ -8,10 +8,13 @@
 # 	1.  Add convolution in frequency domain as in DSP `Q90036`.
 #       It should include an auxiliary function: `GenWorkSpace()` for teh buffers.  
 #       It should also be optimized for `rfft()`.
+#   2.  
 # Release Notes
 # - 1.2.000     29/06/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   Added functions to generate Convolution Matrix (Sparse).
+#   *   Added functions to generate Filter Matrix (Sparse).
 #   *   Added a function to calculate the image Laplace Operator.
+#   *   Added a function for in place padding.
 # - 1.1.000     23/11/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   Added 2D Convolution.
 # - 1.0.000     09/07/2023  Royi Avital RoyiAvital@yahoo.com
@@ -69,26 +72,21 @@ function ConvertJuliaImgArray(mI :: Matrix{<: Color{T, 1}}) where {T}
 
 end
 
-function PadArray( mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}; padMode :: PadMode, padValue :: T = zero(T) ) where {T <: Real, N <: Signed}
-    # Works on Matrix
-    # TODO: Support padding larger then the input.
-    # TODO: Extend ot Array{T, 3}.
-    # TODO: Create non allocating variant.
+function PadArray!( mB :: Matrix{T}, mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}; padMode :: PadMode, padValue :: T = zero(T) ) where {T <: Real, N <: Signed}
 
     numRowsA, numColsA = size(mA);
-    numRowsB, numColsB = (numRowsA, numColsA) .+ (2 .* tuPadRadius);
-    mB = Matrix{T}(undef, numRowsB, numColsB);
+    numRowsB, numColsB = (numRowsA, numColsA) .+ (N(2) .* tuPadRadius);
     
     if (padMode == PAD_MODE_CONSTANT)
         mB .= padValue;
-        mB[(tuPadRadius[1] + 1):(numRowsB - tuPadRadius[1]), (tuPadRadius[2] + 1):(numColsB - tuPadRadius[2])] .= mA;
+        mB[(tuPadRadius[1] + one(N)):(numRowsB - tuPadRadius[1]), (tuPadRadius[2] + one(N)):(numColsB - tuPadRadius[2])] .= mA;
     end
 
     if (padMode == PAD_MODE_REPLICATE)
         for jj in 1:numColsB
-            nn = clamp(jj - tuPadRadius[2], 1, numColsA);
+            nn = clamp(jj - tuPadRadius[2], one(N), numColsA);
             for ii in 1:numRowsB
-                mm = clamp(ii - tuPadRadius[1], 1, numRowsA);
+                mm = clamp(ii - tuPadRadius[1], one(N), numRowsA);
                 mB[ii, jj] = mA[mm, nn];
             end
         end
@@ -96,11 +94,11 @@ function PadArray( mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}; padMode :: PadMo
 
     if (padMode == PAD_MODE_SYMMETRIC)
         for jj in 1:numColsB
-            nn = ifelse(jj - tuPadRadius[2] < 1, tuPadRadius[2] - jj + 1, jj - tuPadRadius[2]);
+            nn = ifelse(jj - tuPadRadius[2] < one(N), tuPadRadius[2] - jj + one(N), jj - tuPadRadius[2]);
             nn = ifelse(jj - tuPadRadius[2] > numColsA, numColsA - (jj - (numColsA + tuPadRadius[2]) - 1), nn);
             for ii in 1:numRowsB
-                mm = ifelse(ii - tuPadRadius[1] < 1, tuPadRadius[1] - ii + 1, ii - tuPadRadius[1]);
-                mm = ifelse(ii - tuPadRadius[1] > numRowsA, numRowsA - (ii - (numRowsA + tuPadRadius[1]) - 1), mm);
+                mm = ifelse(ii - tuPadRadius[1] < one(N), tuPadRadius[1] - ii + one(N), ii - tuPadRadius[1]);
+                mm = ifelse(ii - tuPadRadius[1] > numRowsA, numRowsA - (ii - (numRowsA + tuPadRadius[1]) - one(N)), mm);
                 mB[ii, jj] = mA[mm, nn];
             end
         end
@@ -108,10 +106,10 @@ function PadArray( mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}; padMode :: PadMo
 
     if (padMode == PAD_MODE_REFLECT) #<! Mirror
         for jj in 1:numColsB
-            nn = ifelse(jj - tuPadRadius[2] < 1, tuPadRadius[2] - jj + 2, jj - tuPadRadius[2]);
+            nn = ifelse(jj - tuPadRadius[2] < one(N), tuPadRadius[2] - jj + N(2), jj - tuPadRadius[2]);
             nn = ifelse(jj - tuPadRadius[2] > numColsA, numColsA - (jj - (numColsA + tuPadRadius[2])), nn);
             for ii in 1:numRowsB
-                mm = ifelse(ii - tuPadRadius[1] < 1, tuPadRadius[1] - ii + 2, ii - tuPadRadius[1]);
+                mm = ifelse(ii - tuPadRadius[1] < one(N), tuPadRadius[1] - ii + N(2), ii - tuPadRadius[1]);
                 mm = ifelse(ii - tuPadRadius[1] > numRowsA, numRowsA - (ii - (numRowsA + tuPadRadius[1])), mm);
                 mB[ii, jj] = mA[mm, nn];
             end
@@ -120,7 +118,7 @@ function PadArray( mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}; padMode :: PadMo
 
     if (padMode == PAD_MODE_CIRCULAR)
         for jj in 1:numColsB
-            nn = ifelse(jj - tuPadRadius[2] < 1, numColsA + jj - tuPadRadius[2], jj - tuPadRadius[2]);
+            nn = ifelse(jj - tuPadRadius[2] < one(N), numColsA + jj - tuPadRadius[2], jj - tuPadRadius[2]);
             nn = ifelse(jj - tuPadRadius[2] > numColsA, jj - numColsA - tuPadRadius[2], nn);
             for ii in 1:numRowsB
                 mm = ifelse(ii - tuPadRadius[1] < 1, numRowsA + ii - tuPadRadius[1], ii - tuPadRadius[1]);
@@ -134,7 +132,25 @@ function PadArray( mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}; padMode :: PadMo
 
 end
 
-function Conv2D( mI :: Matrix{T}, mK :: Matrix{T}; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: Real}
+function PadArray( mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}; padMode :: PadMode, padValue :: T = zero(T) ) where {T <: Real, N <: Signed}
+    # Works on Matrix
+    # TODO: Support padding larger then the input.
+    # TODO: Extend ot Array{T, 3}.
+    # TODO: Create non allocating variant.
+
+    numRowsA, numColsA = size(mA);
+    numRowsB, numColsB = (numRowsA, numColsA) .+ (N(2) .* tuPadRadius);
+    mB = Matrix{T}(undef, numRowsB, numColsB);
+
+    mB = PadArray!(mB, mA, tuPadRadius; padMode = padMode, padValue = padValue);
+
+    return mB;
+    
+    
+
+end
+
+function Conv2D( mI :: Matrix{T}, mK :: Matrix{T}; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat}
     
     if (convMode == CONV_MODE_FULL)
         mO = Matrix{T}(undef, size(mI) .+ size(mK) .- (1, 1));
@@ -159,6 +175,8 @@ function Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T}; convMode ::
     elseif (convMode == CONV_MODE_VALID)
         _Conv2DValid!(mO, mI, mK);
     end
+
+    return mO;
     
 end
 
@@ -322,7 +340,7 @@ function GenConvMtx( vK :: AbstractVector{T}, numElements :: N; convMode :: Conv
 end
 
 
-function GenConvMtx( mH :: AbstractMatrix{T}, numRows :: N, numCols :: N; convMode = ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat, N <: Integer}
+function GenConvMtx( mH :: AbstractMatrix{T}, numRows :: N, numCols :: N; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat, N <: Integer}
     
     numColsKernel   = size(mH, 2);
     numBlockMtx     = numColsKernel;
@@ -359,6 +377,162 @@ function GenConvMtx( mH :: AbstractMatrix{T}, numRows :: N, numCols :: N; convMo
     end
 
     return mK;
+
+end
+
+function GenFilterMtx( mH :: AbstractMatrix{T}, numRows :: N, numCols :: N; filterMode :: FilterMode = FILTER_MODE_CONVOLUTION, boundaryMode :: BoundaryMode = BND_MODE_REPLICATE ) where {T <: AbstractFloat, N <: Integer}
+    
+    numElementsImage    = numRows * numCols;
+    numRowsKernel       = size(mH, 1);
+    numColsKernel       = size(mH, 2);
+    numElementsKernel   = numRowsKernel * numColsKernel;
+
+    vR = repeat(1:numElementsImage, inner = numElementsKernel); #<! `repeat()` returns a Vector from the range
+    vC = zeros(Int64, numElementsImage * numElementsKernel);
+    vV = zeros(T, numElementsImage * numElementsKernel);
+
+    kernelRadiusV = numRowsKernel ÷ 2;
+    kernelRadiusH = numColsKernel ÷ 2;
+
+    if (filterMode == FILTER_MODE_CONVOLUTION)
+        mHH = rot180(mH); #<! Code is written for correlation
+    elseif (filterMode == FILTER_MODE_CORRELATION)
+        mHH = mH; #<! Code is written for correlation
+    end
+
+    if (boundaryMode == BND_MODE_CIRCULAR)
+        CalcPxShift = _CalcPxShiftCircular;
+    elseif (boundaryMode == BND_MODE_REPLICATE)
+        CalcPxShift = _CalcPxShiftReplicate;
+    elseif (boundaryMode == BND_MODE_SYMMETRIC)
+        CalcPxShift = _CalcPxShiftSymmetric;
+    elseif (boundaryMode == BND_MODE_ZEROS)
+        CalcPxShift = _CalcPxShiftZeros;
+    end
+
+    pxIdx    = zero(N);
+    elmntIdx = zero(N);
+
+    for jj ∈ 1:numCols
+        for ii ∈ 1:numRows
+            pxIdx += 1;
+            for ll ∈ -kernelRadiusH:kernelRadiusH
+                for kk ∈ -kernelRadiusV:kernelRadiusV
+                    elmntIdx += 1;
+                    
+                    # Pixel Index Shift such that pxIdx + pxShift is the linear
+                    # index of the pixel in the image
+                    pxShift, isValid = CalcPxShift(ii, jj, ll, kk, numRows, numCols, numElementsImage);
+
+                    if (isValid)
+                        valH = mHH[kk + kernelRadiusV + one(N), ll + kernelRadiusH + one(N)];
+                    else
+                        pxShift = zero(N);
+                        valH    = zero(T);
+                    end
+                    
+                    vC[elmntIdx] = pxIdx + pxShift;
+                    vV[elmntIdx] = valH;
+                    
+                end
+            end
+        end
+    end
+    
+    mK = sparse(vR, vC, vV, numElementsImage, numElementsImage);
+    dropzeros!(mK); #<! Julia inserts zeros, this removes
+
+    return mK;
+
+end
+
+function _CalcPxShiftCircular( ii :: N, jj :: N, ll :: N, kk :: N, numRows :: N, numCols :: N, numElements :: N ) where {N <: Integer}
+
+    # Pixel Index Shift such that pxIdx + pxShift is the linear
+    # index of the pixel in the image
+    pxShift = (ll * numRows) + kk;
+    
+    if((ii + kk) > numRows)
+        pxShift -= numRows;
+    end
+    
+    if((ii + kk) < one(N))
+        pxShift += numRows;
+    end
+    
+    if((jj + ll) > numCols)
+        pxShift -= numElements;
+    end
+    
+    if(jj + ll < one(N))
+        pxShift += numElements;
+    end
+
+    return pxShift, true;
+
+end
+
+function _CalcPxShiftReplicate( ii :: N, jj :: N, ll :: N, kk :: N, numRows :: N, numCols :: N, numElements :: N ) where {N <: Integer}
+
+    # Pixel Index Shift such that pxIdx + pxShift is the linear
+    # index of the pixel in the image
+    pxShift = (ll * numRows) + kk;
+    
+    if((ii + kk) > numRows)
+        pxShift = pxShift - (ii + kk - numRows);
+    end
+    
+    if((ii + kk) < one(N))
+        pxShift = pxShift + (one(N) - (ii + kk));
+    end
+    
+    if((jj + ll) > numCols)
+        pxShift = pxShift - ((jj + ll - numCols) * numRows);
+    end
+    
+    if(jj + ll < one(N))
+        pxShift = pxShift + ((one(N) - (jj + ll)) * numRows);
+    end
+
+    return pxShift, true;
+
+end
+
+function _CalcPxShiftSymmetric( ii :: N, jj :: N, ll :: N, kk :: N, numRows :: N, numCols :: N, numElements :: N ) where {N <: Integer}
+
+    # Pixel Index Shift such that pxIdx + pxShift is the linear
+    # index of the pixel in the image
+    pxShift = (ll * numRows) + kk;
+    
+    if((ii + kk) > numRows)
+        pxShift = pxShift - (N(2) * (ii + kk - numRows) - one(N));
+    end
+    
+    if((ii + kk) < one(N))
+        pxShift = pxShift + (N(2) * (one(N) - (ii + kk)) - one(N));
+    end
+    
+    if((jj + ll) > numCols)
+        pxShift = pxShift - ((N(2) * (jj + ll - numCols) - one(N)) * numRows);
+    end
+    
+    if(jj + ll < one(N))
+        pxShift = pxShift + ((N(2) * (one(N) - (jj + ll)) - one(N)) * numRows);
+    end
+
+    return pxShift, true;
+
+end
+
+function _CalcPxShiftZeros( ii :: N, jj :: N, ll :: N, kk :: N, numRows :: N, numCols :: N, numElements :: N ) where {N <: Integer}
+
+    # Pixel Index Shift such that pxIdx + pxShift is the linear
+    # index of the pixel in the image
+    pxShift = (ll * numRows) + kk;
+    
+    isValid = ((ii + kk <= numRows) && (ii + kk >= one(N)) && (jj + ll <= numCols) && (jj + ll >= one(N)));
+
+    return pxShift, isValid;
 
 end
 

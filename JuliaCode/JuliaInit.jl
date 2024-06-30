@@ -27,10 +27,22 @@
     PAD_MODE_SYMMETRIC
 end
 
+@enum BoundaryMode begin
+    BND_MODE_CIRCULAR
+    BND_MODE_REPLICATE
+    BND_MODE_SYMMETRIC
+    BND_MODE_ZEROS
+end
+
 @enum ConvMode begin
     CONV_MODE_FULL
     CONV_MODE_SAME
     CONV_MODE_VALID
+end
+
+@enum FilterMode begin
+    FILTER_MODE_CONVOLUTION
+    FILTER_MODE_CORRELATION
 end
 
 @enum DiffMode begin
