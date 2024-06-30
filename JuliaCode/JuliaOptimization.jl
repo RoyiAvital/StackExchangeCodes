@@ -352,7 +352,8 @@ function OrthogonalProjectionOntoConvexSets( vY :: AbstractVecOrMat{T}, vProjFun
 
 end
 
-function IRLS!( vX :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vW :: Vector{T}, mWA :: Matrix{T}, mC :: Matrix{T}, vT :: Vector{T}, sBKWorkSpace :: BunchKaufmanWs{T}; normP :: T = one(T), numItr :: N = 1000, ϵ :: T = T(1e-6) ) where {T <: AbstractFloat, N <: Unsigned}
+function IRLS!( vX :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vW :: Vector{T}, mWA :: Matrix{T}, mC :: Matrix{T}, vT :: Vector{T}, sBKWorkSpace :: BunchKaufmanWs{T}; normP :: T = one(T), numItr :: N = UInt32(100), ϵ :: T = T(1e-6) ) where {T <: AbstractFloat, N <: Unsigned}
+    # Solves ||A * x - y||ₚ
 
     errThr = T(1e-6); #<! Should be adaptive per iteration
     effNorm = ((normP - T(2)) / T(2));
@@ -392,7 +393,7 @@ function IRLS!( vX :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vW :: Vector{
     
 end
 
-function IRLS(mA :: Matrix{T}, vB :: Vector{T}; normP :: T = one(T), numItr :: N = 1000 ) where {T <: AbstractFloat, N <: Unsigned}
+function IRLS( mA :: Matrix{T}, vB :: Vector{T}; normP :: T = one(T), numItr :: N = UInt32(100) ) where {T <: AbstractFloat, N <: Unsigned}
 
     vX  = Vector{T}(undef, size(mA, 2));
     vT  = Vector{T}(undef, size(mA, 2));

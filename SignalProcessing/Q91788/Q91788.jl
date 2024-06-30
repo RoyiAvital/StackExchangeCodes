@@ -139,7 +139,7 @@ methodName = "Convex.jl"
 
 vP0 = Variable(polyDeg + 1);
 sConvProb = minimize(norm(mX * vP0 - vY, modelNorm));
-solve!(sConvProb, ECOS.Optimizer; silent_solver = true);
+solve!(sConvProb, ECOS.Optimizer; silent = true);
 vPRef = vec(vP0.value)
 optVal = sConvProb.optval;
 
