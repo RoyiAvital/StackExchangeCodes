@@ -57,8 +57,8 @@ oRng = StableRNG(1234);
 numRows = 500; #<! Matrix X
 numCols = 450; #<! Matrix X
 
-numRowsK = 05; #<! Matrix K
-numColsK = 07; #<! Matrix K
+numRowsK = 09; #<! Matrix K
+numColsK = 11; #<! Matrix K
 
 λ = 0.05;
 
