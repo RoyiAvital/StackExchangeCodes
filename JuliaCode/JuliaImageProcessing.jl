@@ -10,6 +10,8 @@
 #       It should also be optimized for `rfft()`.
 #   2.  
 # Release Notes
+# - 1.3.000     29/06/2023  Royi Avital RoyiAvital@yahoo.com
+#   *   Added functions to apply linear color conversion.
 # - 1.2.000     29/06/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   Added functions to generate Convolution Matrix (Sparse).
 #   *   Added functions to generate Filter Matrix (Sparse).
@@ -574,3 +576,79 @@ function CalcImageLaplacian( mI :: Matrix{T}; mKₕ :: Matrix{T} = [one(T) -one(
 end
 
 
+function ConvertColorSpace!( mO :: Array{T, 3}, mI :: Array{T, 3}, mC :: Matrix{T} ) where{T <: AbstractFloat}
+
+    numRows = size(mI, 1);
+    numCols = size(mI, 2);
+    numPx = numRows * numCols;
+
+    mII = @invoke reshape(mI, numPx, 3);
+    mOO = @invoke reshape(mO, numPx, 3);
+
+    mul!(mOO, mII, mC');
+
+    return mO;
+
+end
+
+function ConvertColorSpace( mI :: Array{T, 3}, mC :: Matrix{T} ) where{T <: AbstractFloat}
+
+    mO = similar(mI);
+
+    mO = ConvertColorSpace!(mO, mI, mC);
+
+    return mO;
+
+end
+
+function GenColorConversionMat( colorConvMat :: ColorConvMat )
+    
+    # RGB <-> YCgCo
+    # Y in [0, 1], Cg / Co in [-0.5, 0.5]
+    mRgbToYCgCo = [+0.2500 +0.5000 +0.2500; -0.2500 +0.5000 -0.2500; +0.5000 00.0000 -0.5000];
+    mYCgCoToRgb = [+1.0000 -1.0000 +1.0000; +1.0000 +1.0000 00.0000; +1.0000 -1.0000 -1.0000];
+    
+    # RGB <-> YPbPr SD TV
+    # Y in [0, 1], Pb / Pr in [-0.5, 0.5]
+    mRgbToYPbPrSdTv = [+0.2990 +0.5870 +0.1140; -0.1690 -0.3310 +0.5000; +0.5000 -0.4190 -0.0810];
+    mYPbPrToRgbSdTv = [+1.0000 -0.0009 +1.4017; +1.0000 -0.3437 -0.7142; +1.0000 +1.7722 +0.0010];
+    
+    # RGB <-> YPbPr HD TV
+    # Y in [0, 1], Pb / Pr in [-0.5, 0.5]
+    mRgbToYPbPrHdTv = [+0.2130 +0.7150 +0.0720; -0.1150 -0.3850 +0.5000; +0.5000 -0.4540 -0.0460];
+    mYPbPrToRgbHdTv = [+1.0000 +0.0008 +1.5742; +1.0000 -0.1872 -0.4690; +1.0000 +1.8561 +0.0009];
+    
+    # RGB <-> YUV
+    # Y in [0, 1], U in [-0.436, 0.436], V in [-0.615, 0.615]
+    mRgbToYuv = [+0.2990 +0.5870 +0.1140; -0.1470 -0.2890 +0.4360; +0.6150 -0.5150 -0.1000];
+    mYuvToRgb = [+1.0000 00.0000 +1.1398; +1.0000 -0.3946 -0.5805; +1.0000 +2.0320 -0.0006];
+
+    # RGB <-> YIQ
+    # Y in [0, 1], U in [-0.5957, 0.5957], V in [-0.5226, 0.5226]
+    mRgbToYiq = [+0.2990 +0.5870 +0.1140; +0.5959 -0.2746 -0.3213; +0.2115 -0.5227 +0.3112];
+    mYiqToRgb = [+1.0000 +0.9560 +0.6190; +1.0000 -0.2720 -0.6470; +1.0000 -1.1060 +0.1703];
+
+    if (colorConvMat == RGB_TO_YCGCO)
+        return mRgbToYCgCo;
+    elseif (colorConvMat == YCGCO_TO_RGB)
+        return mYCgCoToRgb;
+    elseif (colorConvMat == RGB_TO_YPBPR_SD)
+        return mRgbToYPbPrSdTv;
+    elseif (colorConvMat == YPBPR_TO_RGB_SD)
+        return mYPbPrToRgbSdTv;
+    elseif (colorConvMat == RGB_TO_YPBPR_HD)
+        return mRgbToYPbPrHdTv;
+    elseif (colorConvMat == YPBPR_TO_RGB_HD)
+        return mYPbPrToRgbHdTv;
+    elseif (colorConvMat == RGB_TO_YUV)
+        return mRgbToYuv;
+    elseif (colorConvMat == YUV_TO_RGB)
+        return mYuvToRgb;
+    elseif (colorConvMat == RGB_TO_YIQ)
+        return mRgbToYiq;
+    elseif (colorConvMat == YIQ_TO_RGB)
+        return mYiqToRgb;
+    end
+
+
+end

@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.1.000    01/07/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `PlotSparseMat()`.
 # - 1.0.001     29/06/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Made `T` a float type.
 #   *   Fixed dynamic range for `heatmap()`.
@@ -16,6 +18,7 @@
 ## Packages
 
 # Internal
+using SparseArrays;
 
 # External
 using PlotlyJS;
@@ -48,6 +51,25 @@ function DisplayImage(mI :: Array{T, 3}; tuImgSize :: Tuple{N, N} = size(mI)[1:2
                 
     hP = Plot([oTr1], oLayout);
     
+    return hP; #<! display(hP);
+
+end
+
+function PlotSparseMat( mM :: AbstractSparseMatrix )
+    # Works with up to ~100K elements
+
+    numRows = size(mM, 1);
+    numCols = size(mM, 2);
+    vI, vJ, vV = findnz(mM);
+
+    oTr = scattergl(x = vJ, y = vI, mode = "markers",
+                  text = "Sparse Matrix", name = "Sparse Matrix", marker = attr(size = 5.0))
+    oLayout = Layout(title = "Sparse Matrix Pattern", width = 600, height = 600, hovermode = "closest",
+                  xaxis_title = "Column", yaxis_title = "Row",
+                  yaxis_range = [numRows, 1], xaxis_range = [1, numCols]);
+    
+    hP = Plot([oTr], oLayout);
+
     return hP; #<! display(hP);
 
 end

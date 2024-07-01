@@ -52,6 +52,21 @@ end
     DIFF_MODE_FORWARD
 end
 
+@enum ColorConvMat begin
+    RGB_TO_YCGCO
+    YCGCO_TO_RGB
+    RGB_TO_YPBPR_SD
+    YPBPR_TO_RGB_SD
+    RGB_TO_YPBPR_HD
+    YPBPR_TO_RGB_HD
+    RGB_TO_YUV
+    YUV_TO_RGB
+    RGB_TO_YIQ
+    YIQ_TO_RGB
+end
+
+
+
 # Display UIntx numbers as integers
 Base.show(io::IO, x::T) where {T<:Union{UInt, UInt128, UInt64, UInt32, UInt16, UInt8}} = Base.print(io, x);
 
