@@ -45,6 +45,11 @@ end
     FILTER_MODE_CORRELATION
 end
 
+@enum OriginLoc begin
+    BOTTOM_LEFT
+    TOP_LEFT
+end
+
 @enum DiffMode begin
     DIFF_MODE_BACKWARD
     DIFF_MODE_CENTRAL
