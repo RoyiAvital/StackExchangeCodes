@@ -10,6 +10,8 @@
 #       It should also be optimized for `rfft()`.
 #   2.  
 # Release Notes
+# - 1.4.000     05/07/2023  Royi Avital RoyiAvital@yahoo.com
+#   *   Added a convolution function with support for `CONV_MODE_SAME`.
 # - 1.3.000     29/06/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   Added functions to apply linear color conversion.
 # - 1.2.000     29/06/2023  Royi Avital RoyiAvital@yahoo.com
@@ -156,7 +158,7 @@ function Conv2D( mI :: Matrix{T}, mK :: Matrix{T}; convMode :: ConvMode = CONV_M
     
     if (convMode == CONV_MODE_FULL)
         mO = Matrix{T}(undef, size(mI) .+ size(mK) .- (1, 1));
-    elseif (convMode == CONV_MODE_SAME) #<! TODO
+    elseif (convMode == CONV_MODE_SAME)
         mO = Matrix{T}(undef, size(mI));
     elseif (convMode == CONV_MODE_VALID)
         mO = Matrix{T}(undef, size(mI) .- size(mK) .+ (1, 1));
@@ -172,7 +174,7 @@ function Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T}; convMode ::
 
     if (convMode == CONV_MODE_FULL)
         _Conv2D!(mO, mI, mK);
-    elseif (convMode == CONV_MODE_SAME) #<! TODO
+    elseif (convMode == CONV_MODE_SAME)
         _Conv2DSame!(mO, mI, mK);
     elseif (convMode == CONV_MODE_VALID)
         _Conv2DValid!(mO, mI, mK);
@@ -271,7 +273,7 @@ function _Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where {T 
     for jj ∈ numColsI:(numColsI + numColsK - 1), ii ∈ numRowsI:(numRowsI + numRowsK - 1) #<! Bottom Right
         sumVal = zero(T);
         for nn ∈ 1:numColsK, mm ∈ 1:numRowsK
-            ib0 = (jj < numColsI + nn) && (ii < numRowsI + mm);;
+            ib0 = (jj < numColsI + nn) && (ii < numRowsI + mm);
             @inbounds oa = ib0 ? mI[ii - mm + 1, jj - nn + 1] : zero(T);
             @inbounds sumVal += mK[mm, nn] * oa;
         end
@@ -280,7 +282,33 @@ function _Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where {T 
 
 end
 
-# TODO: Add the `same` variant.
+function _Conv2DSame!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where {T <: AbstractFloat}
+    # Matches MATLAB
+    # Assumes size(mK) <= size(mI)
+
+    numRowsI, numColsI = size(mI);
+    numRowsK, numColsK = size(mK);
+
+    ancY = (numRowsK ÷ 2) + 1; #<! Anchor (Aligned with mI[ii, jj])
+    ancX = (numColsK ÷ 2) + 1; #<! Anchor (Aligned with mI[ii, jj])
+
+    # Mapping: `mm -> ii + (mm - ancY)` is correlation (Works with `ancY = (numRowsK + 1) ÷ 2;`, mm ∈ 1:numRowsK)
+    # Mapping: `mm -> ii + (ancY - mm)` is convolution (For odd size, Symmetric)
+    # Mapping: `mm -> ii + (ancY - mm)` is convolution (Works with `ancY = (numRowsK ÷ 2) + 1;`, mm ∈ numRowsK:-1:1)
+
+    for jj ∈ 1:numColsI
+        @fastmath @inbounds @simd for ii in 1:numRowsI
+            sumVal = zero(T);
+            for nn ∈ numColsK:-1:1, mm ∈ numRowsK:-1:1
+                inBnd = (jj + ancX <= numColsI + nn) && (jj + ancX > nn) && (ii + ancY <= numRowsI + mm) && (ii + ancY > mm);
+                @inbounds valI = inBnd ? mI[ii + ancY - mm, jj + ancX - nn] : zero(T);
+                @inbounds sumVal += mK[mm, nn] * valI;
+            end
+            mO[ii, jj] = sumVal;
+        end
+    end
+
+end
 
 function _Conv2DValid!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where {T <: AbstractFloat}
 
