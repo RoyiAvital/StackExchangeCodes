@@ -6,7 +6,11 @@
 **/.vscode/*
 
 # Archive Files
+*.7z
+*.rar
 *.tar*
+*.zip
+
 
 # Media Files
 *.avi

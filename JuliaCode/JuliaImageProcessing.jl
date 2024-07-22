@@ -678,5 +678,52 @@ function GenColorConversionMat( colorConvMat :: ColorConvMat )
         return mYiqToRgb;
     end
 
+end
+
+function CalcImgGrad!( mIx :: Matrix{T}, mIy :: Matrix{T},  mI :: Matrix{T} ) where {T <: AbstractFloat}
+
+    # Matches MATLAB's `gradient()` for 2D array
+    # The returned gradient has the same dimensions as the input image.
+    numRows = size(mI, 1);
+    numCols = size(mI, 2);
+
+    for jj ∈ 1:numCols
+        for ii ∈ 1:numRows
+            if (ii == 1)
+                mIy[ii, jj] = mI[2, jj] - mI[1, jj];
+            elseif (ii == numRows)
+                mIy[ii, jj] = mI[numRows, jj] - mI[numRows - 1, jj];
+            else
+                mIy[ii, jj] = T(0.5) * (mI[ii + 1, jj] - mI[ii - 1, jj]);
+            end
+            if (jj == 1)
+                mIx[ii, jj] = mI[ii, 2] - mI[ii, 1];
+            elseif (jj == numCols)
+                mIx[ii, jj] = mI[ii, numCols] - mI[ii, numCols - 1];
+            else
+                mIx[ii, jj] = T(0.5) * (mI[ii, jj + 1] - mI[ii, jj - 1]);
+            end
+        end
+    end
+
+    return mIx, mDy;
 
 end
+
+
+function CalcImgGrad( mI :: Matrix{T} ) where {T <: AbstractFloat}
+    
+    # Matches MATLAB's `gradient()` for 2D array
+    # The returned gradient has the same dimensions as the input image.
+    numRows = size(mI, 1);
+    numCols = size(mI, 2);
+    
+    mIx = similar(mI);
+    mIy = similar(mI);
+
+    mIx, mIy = CalcImgGrad!(mIx, mIy,  mI);
+
+    return mIx, mIy;
+
+end
+
