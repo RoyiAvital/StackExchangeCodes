@@ -8,7 +8,9 @@
 #       -   Move to folder using `cd(raw"<PathToFolder>");`.
 #       -   Activate the environment using `] activate .`.
 #       -   Instantiate the environment using `] instantiate`.
-#   2.  fd
+#   2.  Using `Symmetric(BandedMatrix(mA));` for teh 5 point operator seems to be slow in Julia.  
+#       Namely, it has no performance improvement over using the direct solver on `mA` itself.
+#       It takes ~500 [Sec].
 # TODO:
 # 	1.  C
 # Release Notes Royi Avital RoyiAvital@yahoo.com
@@ -22,13 +24,16 @@ using LinearAlgebra;
 using Printf;
 using Random;
 # External
+using BandedMatrices;
 using BenchmarkTools;
 using ColorTypes;          #<! Required for Image Processing
 using ConjugateGradients;
 using FileIO;              #<! Required for loading images
 using Krylov;
+using LimitedLDLFactorizations;
 using LinearOperators;
 using LoopVectorization;   #<! Required for Image Processing
+using MKLSparse;
 using PlotlyJS;
 using SparseArrays;
 using StableRNGs;
@@ -61,13 +66,7 @@ struct DerivativeKernels{T <: AbstractFloat}
     DerivativeKernels{T}() where {T <: AbstractFloat} = new([one(T) -one(T)], [-one(T) one(T)], [one(T); -one(T);;], [-one(T); one(T);;]);
 end
 
-DerivativeKernels(dataType :: Type{<: AbstractFloat}) = DerivativeKernels{dataType}();
-
-
-mKx  = [one(T) -one(T)];
-    mK⁺x = [-one(T) one(T)];
-    mKy  = [one(T); -one(T);;];
-    mK⁺y = [-one(T); one(T);;];
+DerivativeKernels(dataType :: Type{<: AbstractFloat} = Float64) = DerivativeKernels{dataType}();
 
 ## Parameters
 
@@ -97,24 +96,24 @@ numPx = numRows * numCols;
 
 # Define the A operator
 
-function OpAMul!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T, λ :: T, γ :: T, ε :: T, mO :: AbstractMatrix{T} ) where {T <: AbstractFloat}
+function OpAMul!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T, sK :: DerivativeKernels{T}, λ :: T, γ :: T, ε :: T, mO :: AbstractMatrix{T} ) where {T <: AbstractFloat}
 
     # Using `λ` instead of `α` as `α` reserved for the BLAS operation
     γ² = γ * γ;
     
     mX = @invoke reshape(vX, size(mO));
 
-    mDx = Conv2D(mX, [one(T) -one(T)]; convMode = CONV_MODE_VALID);
+    mDx = Conv2D(mX, sK.mKx; convMode = CONV_MODE_VALID);
     # mAx = exp.(-(mDx .* mDx) ./ (2γ²));
     mAx = inv.((abs.(mDx) .^ γ) .+ ε)
     mDx .*= mAx;
-    mDx = Conv2D(mDx, [-one(T) one(T)]; convMode = CONV_MODE_FULL);
+    mDx = Conv2D(mDx, sK.mK⁺x; convMode = CONV_MODE_FULL);
     
-    mDy = Conv2D(mX, [one(T); -one(T);;]; convMode = CONV_MODE_VALID);
+    mDy = Conv2D(mX, sK.mKy; convMode = CONV_MODE_VALID);
     # mAy = exp.(-(mDy .* mDy) ./ (2γ²));
     mAy = inv.((abs.(mDy) .^ γ) .+ ε)
     mDy .*= mAy;
-    mDy = Conv2D(mDy, [-one(T); one(T);;]; convMode = CONV_MODE_FULL);
+    mDy = Conv2D(mDy, sK.mK⁺y; convMode = CONV_MODE_FULL);
 
     mO .= mX .+ λ .* (mDx .+ mDy);
     if (β == zero(T))
@@ -143,24 +142,19 @@ function OpAMul!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β 
 
 end
 
-function OpAMul!!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T, λ :: T, γ :: T, ε :: T, mTx :: AbstractMatrix{T}, mTy :: AbstractMatrix{T}, mDx :: AbstractMatrix{T}, mDy :: AbstractMatrix{T}, mO :: AbstractMatrix{T} ) where {T <: AbstractFloat}
+function OpAMul!!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T, sK :: DerivativeKernels{T}, λ :: T, γ :: T, ε :: T, mTx :: AbstractMatrix{T}, mTy :: AbstractMatrix{T}, mDx :: AbstractMatrix{T}, mDy :: AbstractMatrix{T}, mO :: AbstractMatrix{T} ) where {T <: AbstractFloat}
 
     # Using `λ` instead of `α` as `α` reserved for the BLAS operation
     
     mX = @invoke reshape(vX, size(mO));
 
-    const vKx  = [one(T) -one(T)];
-    const vK⁺x = [-one(T) one(T)];
-    const vKy  = [one(T); -one(T);;];
-    const vK⁺y = [-one(T); one(T);;];
-
-    mTx = Conv2D!(mTx, mX, vKx; convMode = CONV_MODE_VALID);
+    mTx = Conv2D!(mTx, mX, sK.mKx; convMode = CONV_MODE_VALID);
     mTx ./= (abs.(mTx) .^ γ) .+ ε;
-    mDx = Conv2D!(mDx, mTx, vK⁺x; convMode = CONV_MODE_FULL);
+    mDx = Conv2D!(mDx, mTx, sK.mK⁺x; convMode = CONV_MODE_FULL);
     
-    mTy = Conv2D!(mTy, mX, vKy; convMode = CONV_MODE_VALID);
+    mTy = Conv2D!(mTy, mX, sK.mKy; convMode = CONV_MODE_VALID);
     mTy ./= (abs.(mTy) .^ γ) .+ ε;
-    mDy = Conv2D!(mDy, mTy, vK⁺y; convMode = CONV_MODE_FULL);
+    mDy = Conv2D!(mDy, mTy, sK.mK⁺y; convMode = CONV_MODE_FULL);
 
     mO .= mX .+ λ .* (mDx .+ mDy);
     if (β == zero(T))
@@ -207,6 +201,24 @@ function GenMatA( vY :: AbstractVector{T}, numRows :: N, numCols :: N, λ :: T, 
 
 end
 
+function GenMatAxAy( vY :: AbstractVector{T}, numRows :: N, numCols :: N, λ :: T, γ :: T, ε :: T ) where {T <: AbstractFloat, N <: Integer}
+
+    mDx = GenConvMtx([1.0 -1.0], numRows, numCols; convMode = CONV_MODE_VALID);
+    mDy = GenConvMtx([1.0; -1.0;;], numRows, numCols; convMode = CONV_MODE_VALID);
+    
+    # mAx = Diagonal(exp.(- ((mDx * vY) .^ 2) ./ (2 * γ * γ)));
+    # mAy = Diagonal(exp.(- ((mDy * vY) .^ 2) ./ (2 * γ * γ)));
+    
+    # Could apply λ in this step
+    mAx = Diagonal(inv.((abs.(mDx * vY) .^ γ) .+ ε));
+    mAy = Diagonal(inv.((abs.(mDy * vY) .^ γ) .+ ε));
+
+    return mAx, mAy;
+
+end
+
+sK = DerivativeKernels(Float64);
+
 mO = similar(mI);
 mTx = zeros(numRows, numCols - 1);
 mTy = zeros(numRows - 1, numCols);
@@ -216,32 +228,43 @@ vY = zeros(numPx);
 copyto!(vY, mI); #<! `copyto!()` ignores the shape
 
 # No need for `MulAT!()` as the operator is symmetric
-MulA!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T ) where {T <: AbstractFloat} = OpAMul!(vY, vX, α, β, λ, γ, ε, mO);
-MulA!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T ) where {T <: AbstractFloat} = OpAMul!!(vY, vX, α, β, λ, γ, ε, mTx, mTy, mDx, mDy, mO);
+MulA!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T ) where {T <: AbstractFloat} = OpAMul!(vY, vX, α, β, sK, λ, γ, ε, mO);
+MulA!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T ) where {T <: AbstractFloat} = OpAMul!!(vY, vX, α, β, sK, λ, γ, ε, mTx, mTy, mDx, mDy, mO);
 
-hOpA( vY :: AbstractVector{T}, vX :: AbstractVector{T} ) where {T <: AbstractFloat} = OpAMul!!(vY, vX, 1.0, 0.0, λ, γ, ε, mTx, mTy, mDx, mDy, mO);
+hOpA( vY :: AbstractVector{T}, vX :: AbstractVector{T} ) where {T <: AbstractFloat} = OpAMul!!(vY, vX, 1.0, 0.0, sK, λ, γ, ε, mTx, mTy, mDx, mDy, mO);
 oCG = CGData(numPx, eltype(vY));
 
 vX = copy(vY);
-vX, exitCode, numItr = ConjugateGradients.cg(hOpA, vY; tol = 5e-7, maxIter = 3_000, data = oCG);
+# vX, exitCode, numItr = ConjugateGradients.cg(hOpA, vY; tol = 5e-7, maxIter = 3_000, data = oCG);
 exitCode, numItr = ConjugateGradients.cg!(hOpA, vY, vX; tol = 5e-7, maxIter = 3_000, data = oCG);
+# exitCode, numItr = ConjugateGradients.cg!(hOpA, vY, vX; tol = 5e-7, maxIter = 3_000, precon = (x, y) -> ldiv!(x, mP, y), data = oCG);
+runTime = @belapsed ConjugateGradients.cg!(hOpA, vY, vX; tol = 5e-7, maxIter = 3_000, data = oCG) setup = (vX = copy(vY)) seconds = 2;
+resAnalysis = @sprintf("Conjugate Gradient solution run time: %0.5f [Sec]", runTime);
+println(resAnalysis);
 
 # The operator is SPD (Symmetric Positive Definite)
 isSymmetric = true;
 isHermitian = false; #<! Irrelevant
 opA = LinearOperator(Float64, numRows * numCols, numRows * numCols, isSymmetric, isHermitian, MulA!);
 
+#  Preconditioner
+mA = GenMatA(vY, numRows, numCols, λ, γ, ε);
+mP = lldl(mA);
+mP.D .= abs.(mP.D);
+
+mD = Diagonal(mA);
+mP = Diagonal(inv.(mD.diag));
+
 oKrylovSolver = CgSolver(opA, vY);
-cg!(oKrylovSolver, opA, vY);
-runTime = @belapsed cg!(oKrylovSolver, opA, vB) setup = (vB = copy(vY)) seconds = 2;
+vX = copy(vY);
+Krylov.cg!(oKrylovSolver, opA, vY, vX);
+runTime = @belapsed Krylov.cg!(oKrylovSolver, opA, vB, vX) setup = (vB = copy(vY)) seconds = 2;
 resAnalysis = @sprintf("Conjugate Gradient solution run time: %0.5f [Sec]", runTime);
 println(resAnalysis);
 
 vX = oKrylovSolver.x;
 copyto!(mO, vX);
 clamp!(mO, 0.0, 1.0);
-
-
 
 mA = GenMatA(vY, numRows, numCols, λ, γ, ε);
 vXD = mA \ vY;
@@ -252,14 +275,27 @@ println(resAnalysis);
 copyto!(mO, vXD);
 clamp!(mO, 0.0, 1.0);
 
+# Banded Matrix
+# Seems to be much slower!
+# mA = GenMatA(vY, numRows, numCols, λ, γ, ε);
+# mB = Symmetric(BandedMatrix(mA));
+# vXD = mB \ vY;
+# runTime = @belapsed Symmetric(BandedMatrix(GenMatA(vY, numRows, numCols, λ, γ, ε))) \ vB setup = (vB = copy(vY)) seconds = 2;
+# resAnalysis = @sprintf("Direct solution run time: %0.5f [Sec]", runTime);
+# println(resAnalysis);
 
+# copyto!(mO, vXD);
+# clamp!(mO, 0.0, 1.0);
+
+
+# Timing Operators
 runTime = @belapsed GenMatA(vY, numRows, numCols, λ, γ, ε) * vB setup = (vB = copy(vY)) seconds = 2;
-resAnalysis = @sprintf("Direct solution run time: %0.5f [Sec]", runTime);
+resAnalysis = @sprintf("Matrix operator run time: %0.5f [Sec]", runTime);
 println(resAnalysis);
 
 
 runTime = @belapsed opA * vB setup = (vB = copy(vY)) seconds = 2;
-resAnalysis = @sprintf("Direct solution run time: %0.5f [Sec]", runTime);
+resAnalysis = @sprintf("Functional operator run time: %0.5f [Sec]", runTime);
 println(resAnalysis);
 
 
