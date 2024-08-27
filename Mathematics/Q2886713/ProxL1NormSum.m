@@ -1,7 +1,7 @@
 function [ vX ] = ProxL1NormSum( vY, paramGamma, paramB )
 % ----------------------------------------------------------------------------------------------- %
 % [ vX ] = ProxL1NormSum( vY, paramGamma, paramB )
-%   Solving the Least Squares Problem with L1 Regualarization (LASOO) with
+%   Solving the Least Squares Problem with L1 Regularization (LASOO) with
 %   Linear Equality Constraints (Sum of Elements) - Prox Operator.
 % Input:
 %   - vY            -   Input Vector.
@@ -21,7 +21,7 @@ function [ vX ] = ProxL1NormSum( vY, paramGamma, paramB )
 %                       Range: (-inf, inf).
 % Output:
 %   - vX            -   Output Vector.
-%                       The vector whichi minizes teh objective function
+%                       The vector which minimizes the objective function
 %                       and its sum of elements equals to paramB.
 %                       Structure: Vector (Column).
 %                       Type: 'Single' / 'Double'.

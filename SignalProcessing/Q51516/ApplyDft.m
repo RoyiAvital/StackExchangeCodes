@@ -1,14 +1,14 @@
 function [ vF ] = ApplyDft( vX, numFreqSamples )
 % ----------------------------------------------------------------------------------------------- %
 % [ vF ] = AppltDft( vX, numFreqSamples )
-%   Applt the N Point ('numFreqSamples') DFT Trnasform on input.
+%   Apply the N Point ('numFreqSamples') DFT Transform on input.
 % Input:
 %   - vX            -   Input Vector.
 %                       Structure: Vector (Column).
 %                       Type: 'Single' / 'Double'.
 %                       Range: (-inf, inf).
 %   - numFreqSamples-   Number of Frequency Samples.
-%                       Sets the number of Smaples in the Frequency Domain.
+%                       Sets the number of Samples in the Frequency Domain.
 %                       Must by not smaller than the size of teh input.
 %                       Structure: Scalar.
 %                       Type: 'Single' / 'Double'.

@@ -13,7 +13,7 @@ function [ vY ] = BilateralFilter1D( vX, kernelRadius, timeStd, valueStd )
 %                           Range: {1, 2, ...}
 %   - timeStd           -   Time Axis Std.
 %                           The Standard Deviation of the exponential
-%                           weights along the time axis (The axis of teh
+%                           weights along the time axis (The axis of the
 %                           support o the signal).
 %                           Structure: Scalar.
 %                           Type: 'Single' / 'Double'.

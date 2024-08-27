@@ -6,7 +6,7 @@
 % Remarks:
 %   1.  Image - Certificate of Arrival for Berta Werner (Wikipdia).
 %       Taken from https://commons.wikimedia.org/wiki/File:Certificate_of_Arrival_for_Berta_Werner._-_NARA_-_282038.jpg.
-%   2.  This solves teh same problem using Conjugate Gradient.
+%   2.  This solves the same problem using Conjugate Gradient.
 % TODO:
 % 	1.  ds
 % Release Notes
