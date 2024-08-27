@@ -8,12 +8,14 @@
 #       -   Move to folder using `cd(raw"<PathToFolder>");`.
 #       -   Activate the environment using `] activate .`.
 #       -   Instantiate the environment using `] instantiate`.
-#   2.  Using `Symmetric(BandedMatrix(mA));` for teh 5 point operator seems to be slow in Julia.  
+#   2.  Using `Symmetric(BandedMatrix(mA));` for the 5 point laplacian operator seems to be slow in Julia.  
 #       Namely, it has no performance improvement over using the direct solver on `mA` itself.
 #       It takes ~500 [Sec].
 # TODO:
 # 	1.  C
 # Release Notes Royi Avital RoyiAvital@yahoo.com
+# - 1.0.001     26/08/2024  Royi Avital
+#   *   Fixed the bug with the `Ax` and `Ay` images calculation.
 # - 1.0.000     20/07/2024  Royi Avital
 #   *   First release.
 
@@ -70,16 +72,22 @@ DerivativeKernels(dataType :: Type{<: AbstractFloat} = Float64) = DerivativeKern
 
 ## Parameters
 
-imgUrl = raw"https://i.imgur.com/69CLVcn.png" #<! "Flower.png" locally
+# Data
+# From Image Smoothing via L0 Gradient Minimization (https://www.cse.cuhk.edu.hk/~leojia/projects/L0smoothing/ImageSmoothing.htm)
+imgUrl = raw"https://i.imgur.com/8LuDAju.png"; #<! Basketball
+# imgUrl = raw"https://i.imgur.com/LzBNqV8.png"; #<! Beach
+# imgUrl = raw"https://i.imgur.com/69CLVcn.png"; #<! Flower ("Flower.png" locally)
+# imgUrl = raw"https://i.imgur.com/r9nUFsM.png"; #<! Mountain
 
-λ = 0.05;
-# Using `γ` instead of `γ` as `γ` reserved for the BLAS operation
-γ = 0.95;
-ε = 1e-5;
+# Model
+λ = 2.15;
+# Using `γ` instead of `α` as `α` reserved for the BLAS operation
+γ = 1.5;
+ε = 1e-4;
 
 # Solver Parameters
 numItr = 5_000;
-solThr = 5e-7;
+solThr = 1e-6;
 
 
 #%% Load / Generate Data
@@ -87,6 +95,10 @@ solThr = 5e-7;
 mI = load(download(imgUrl));
 mI = ConvertJuliaImgArray(mI);
 mI = mI ./ 255.0;
+if (ndims(mI) > 2) #<! Assumes RGB (Not RGBA)
+    mI = mean(mI, dims = 3);
+    mI = dropdims(mI, dims = 3);
+end
 
 numRows = size(mI, 1);
 numCols = size(mI, 2);
@@ -108,22 +120,18 @@ copyto!(vY, mI); #<! `copyto!()` ignores the shape
 
 # Define the A operator
 
-function OpAMul!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T, sK :: DerivativeKernels{T}, λ :: T, γ :: T, ε :: T, mO :: AbstractMatrix{T} ) where {T <: AbstractFloat}
+function OpAMul!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T, sK :: DerivativeKernels{T}, mAx :: AbstractMatrix{T}, mAy :: AbstractMatrix{T}, λ :: T, mO :: AbstractMatrix{T} ) where {T <: AbstractFloat}
 
     # Implements the Linear Operator (`mA`) by convolution operations.
-    # Using `λ` instead of `α` as `α` reserved for the BLAS operation
+    # Using `γ` instead of `α` as `α` reserved for the BLAS operation
     
     mX = @invoke reshape(vX, size(mO));
 
     mDx = Conv2D(mX, sK.mKx; convMode = CONV_MODE_VALID);
-    # mAx = exp.(-(mDx .* mDx) ./ (2γ²));
-    mAx = inv.((abs.(mDx) .^ γ) .+ ε)
     mDx .*= mAx;
     mDx = Conv2D(mDx, sK.mK⁺x; convMode = CONV_MODE_FULL);
     
     mDy = Conv2D(mX, sK.mKy; convMode = CONV_MODE_VALID);
-    # mAy = exp.(-(mDy .* mDy) ./ (2γ²));
-    mAy = inv.((abs.(mDy) .^ γ) .+ ε)
     mDy .*= mAy;
     mDy = Conv2D(mDy, sK.mK⁺y; convMode = CONV_MODE_FULL);
 
@@ -154,19 +162,19 @@ function OpAMul!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β 
 
 end
 
-function OpAMul!!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T, sK :: DerivativeKernels{T}, λ :: T, γ :: T, ε :: T, mTx :: AbstractMatrix{T}, mTy :: AbstractMatrix{T}, mDx :: AbstractMatrix{T}, mDy :: AbstractMatrix{T}, mO :: AbstractMatrix{T} ) where {T <: AbstractFloat}
+function OpAMul!!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T, sK :: DerivativeKernels{T}, mAx :: AbstractMatrix{T}, mAy :: AbstractMatrix{T}, λ :: T, mTx :: AbstractMatrix{T}, mTy :: AbstractMatrix{T}, mDx :: AbstractMatrix{T}, mDy :: AbstractMatrix{T}, mO :: AbstractMatrix{T} ) where {T <: AbstractFloat}
 
     # Non allocating version of `OpAMul!()` (Some allocations by `reshape()`)
-    # Using `λ` instead of `α` as `α` reserved for the BLAS operation
+    # Using `γ` instead of `α` as `α` reserved for the BLAS operation
     
     mX = @invoke reshape(vX, size(mO));
 
     mTx = Conv2D!(mTx, mX, sK.mKx; convMode = CONV_MODE_VALID);
-    mTx ./= (abs.(mTx) .^ γ) .+ ε;
+    mTx .*= mAx;
     mDx = Conv2D!(mDx, mTx, sK.mK⁺x; convMode = CONV_MODE_FULL);
     
     mTy = Conv2D!(mTy, mX, sK.mKy; convMode = CONV_MODE_VALID);
-    mTy ./= (abs.(mTy) .^ γ) .+ ε;
+    mTy .*= mAy;
     mDy = Conv2D!(mDy, mTy, sK.mK⁺y; convMode = CONV_MODE_FULL);
 
     mO .= mX .+ λ .* (mDx .+ mDy);
@@ -214,7 +222,7 @@ function GenMatA( vY :: AbstractVector{T}, numRows :: N, numCols :: N, λ :: T, 
 
 end
 
-function GenMatAxAy( vY :: AbstractVector{T}, numRows :: N, numCols :: N, λ :: T, γ :: T, ε :: T ) where {T <: AbstractFloat, N <: Integer}
+function GenMatAxAy( vY :: AbstractVector{T}, numRows :: N, numCols :: N, γ :: T, ε :: T ) where {T <: AbstractFloat, N <: Integer}
 
     mDx = GenConvMtx([1.0 -1.0], numRows, numCols; convMode = CONV_MODE_VALID);
     mDy = GenConvMtx([1.0; -1.0;;], numRows, numCols; convMode = CONV_MODE_VALID);
@@ -230,6 +238,20 @@ function GenMatAxAy( vY :: AbstractVector{T}, numRows :: N, numCols :: N, λ :: 
 
 end
 
+function GenAxAy( mX :: AbstractMatrix{T}, sK :: DerivativeKernels{T}, γ :: T, ε :: T ) where {T <: AbstractFloat}
+
+    mDx = Conv2D(mX, sK.mKx; convMode = CONV_MODE_VALID);
+    # mAx = exp.(-(mDx .* mDx) ./ (2γ²));
+    mAx = inv.((abs.(mDx) .^ γ) .+ ε)
+    
+    mDy = Conv2D(mX, sK.mKy; convMode = CONV_MODE_VALID);
+    # mAy = exp.(-(mDy .* mDy) ./ (2γ²));
+    mAy = inv.((abs.(mDy) .^ γ) .+ ε)
+
+    return mAx, mAy;
+
+end
+
 
 # %% Verify Operators
 # Verify the convolution based operators and measure run time.
@@ -237,10 +259,14 @@ end
 # Operator as a Matrix
 mA = GenMatA(vY, numRows, numCols, λ, γ, ε); #<! Realization of the operator as a matrix
 
+# The matrices Ax, Ay in the paper are calculated once based on the original image.
+# They must not be calculated at the operator as it depends on its input which is changing each iteration in the PCG solver.
+mAx, mAy = GenAxAy(mI, sK, γ, ε);
+
 # Operator by Convolution
 # No need for `MulAT!()` as the operator is symmetric
-MulA!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T ) where {T <: AbstractFloat} = OpAMul!(vY, vX, α, β, sK, λ, γ, ε, mO);
-MulA!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T ) where {T <: AbstractFloat} = OpAMul!!(vY, vX, α, β, sK, λ, γ, ε, mTx, mTy, mDx, mDy, mO);
+MulA!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T ) where {T <: AbstractFloat} = OpAMul!(vY, vX, α, β, sK, mAx, mAy, λ, mO);
+MulA!( vY :: AbstractVector{T}, vX :: AbstractVector{T}, α :: T, β :: T ) where {T <: AbstractFloat} = OpAMul!!(vY, vX, α, β, sK, mAx, mAy, λ, mTx, mTy, mDx, mDy, mO);
 
 # The operator is SPD (Symmetric Positive Definite)
 isSymmetric = true;
@@ -285,7 +311,7 @@ resAnalysis = @sprintf("Conjugate Gradient (`Krylov.jl`) solution run time: %0.5
 println(resAnalysis);
 
 # Solution by `ConjugateGradients.jl`
-hOpA( vY :: AbstractVector{T}, vX :: AbstractVector{T} ) where {T <: AbstractFloat} = OpAMul!!(vY, vX, 1.0, 0.0, sK, λ, γ, ε, mTx, mTy, mDx, mDy, mO);
+hOpA( vY :: AbstractVector{T}, vX :: AbstractVector{T} ) where {T <: AbstractFloat} = OpAMul!!(vY, vX, 1.0, 0.0, sK, mAx, mAy, λ, mTx, mTy, mDx, mDy, mO);
 oCG = CGData(numPx, eltype(vY));
 
 vXCG = copy(vY);
@@ -364,4 +390,9 @@ if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
     savefig(hP, figFileNme);
 end
+
+
+opErr = sqrt(mean(abs2.(vXD - oKrylovSolver.x)));
+resAnalysis = @sprintf("RMSE of solutions: %0.5f", opErr);
+println(resAnalysis);
 
