@@ -1,7 +1,7 @@
 function [ vX ] = ProjectOntoLinearInequality( vY, mC, vD, stopThr )
 % ----------------------------------------------------------------------------------------------- %
 %[ vX ] = ProjectOntoLinearInequality( vY, mC, vD, stopThr )
-% Applies the projection onto the Convex Polytop / Convex Polyhedron: mC *
+% Applies the projection onto the Convex Polytope / Convex Polyhedron: mC *
 % vX <= vD using Alternating Minimzation. The problem is formulated as:
 % \arg \min_{x} \frac{1}{2} \left\| x - y \right\|_{2}^{w} subject to C x
 % <= d.
@@ -43,7 +43,7 @@ function [ vX ] = ProjectOntoLinearInequality( vY, mC, vD, stopThr )
 %   1.  U
 % Release Notes:
 %   -   1.0.000     04/09/2017  Royi Avital
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 numConst    = size(mC, 1);

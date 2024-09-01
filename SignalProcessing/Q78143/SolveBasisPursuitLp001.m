@@ -3,7 +3,7 @@ function [ vX ] = SolveBasisPursuitLp001( mA, vB )
 %[ vX ] = SolveBasisPursuitLp002( mA, vB )
 % Solve Basis Pursuit problem using Linear Programming.
 % Input:
-%   - mA                -   Input Matirx.
+%   - mA                -   Input Matrix.
 %                           The model matrix.
 %                           Structure: Matrix (m X n).
 %                           Type: 'Single' / 'Double'.
@@ -28,7 +28,7 @@ function [ vX ] = SolveBasisPursuitLp001( mA, vB )
 %   1.  Implement in the form of course.
 % Release Notes:
 %   -   1.0.000     29/03/2018
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 numRows = size(mA, 1);

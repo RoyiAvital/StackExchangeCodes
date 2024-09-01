@@ -8,7 +8,7 @@ function [ vX, mX ] = SolveL2LInfAdmm( vX, mA, vY, paramLambda, paramRho, numIte
 %                           Structure: Vector (n X 1).
 %                           Type: 'Single' / 'Double'.
 %                           Range: (-inf, inf).
-%   - mA                -   Input Matirx.
+%   - mA                -   Input Matrix.
 %                           The model matrix.
 %                           Structure: Matrix (m X n).
 %                           Type: 'Single' / 'Double'.
@@ -54,7 +54,7 @@ function [ vX, mX ] = SolveL2LInfAdmm( vX, mA, vY, paramLambda, paramRho, numIte
 %   1.  Initialization of `vZ` and `vU`.
 % Release Notes:
 %   -   1.0.000     14/11/2023
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 arguments (Input)
@@ -73,7 +73,7 @@ end
 
 numElements = size(vX, 1);
 
-% Cahing Factorization
+% Caching Factorization
 mC = decomposition(eye(numElements) + paramRho * (mA' * mA), 'chol');
 
 vZ = zeros(size(mA, 1), 1);

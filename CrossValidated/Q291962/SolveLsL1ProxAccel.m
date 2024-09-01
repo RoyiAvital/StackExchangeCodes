@@ -3,7 +3,7 @@ function [ vX, mX ] = SolveLsL1ProxAccel( mA, vB, paramLambda, numIterations )
 %[ vX, mX ] = SolveLsL1ProxAccel( mA, vB, paramLambda, numIterations )
 % Solve L1 Regularized Least Squares Using Accelerated Proximal Gradient (PGM) Method.
 % Input:
-%   - mA                -   Input Matirx.
+%   - mA                -   Input Matrix.
 %                           The model matrix.
 %                           Structure: Matrix (m X n).
 %                           Type: 'Single' / 'Double'.
@@ -40,7 +40,7 @@ function [ vX, mX ] = SolveLsL1ProxAccel( mA, vB, paramLambda, numIterations )
 %   1.  B
 % Release Notes:
 %   -   1.0.000     23/08/2017
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 FISTA_STEP__METHOD_SMOOTH       = 1; %<! Monotonic, Slower

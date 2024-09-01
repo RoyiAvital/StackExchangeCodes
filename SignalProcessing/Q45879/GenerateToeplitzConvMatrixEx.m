@@ -4,7 +4,7 @@ function [ mH ] = GenerateToeplitzConvMatrix( vH, numElementsData, convShape )
 % Generates matrix 'mH' such that mH * vX = conv(vX, vH, 'convShape').
 % Input:
 %   - vH                -   Input Vector.
-%                           The coeeficients of the filter.
+%                           The coefficients of the filter.
 %                           Structure: Vector (n X 1).
 %                           Type: 'Single' / 'Double'.
 %                           Range: (-inf, inf).
@@ -36,7 +36,7 @@ function [ mH ] = GenerateToeplitzConvMatrix( vH, numElementsData, convShape )
 %       shape same.
 % Release Notes:
 %   -   1.0.000     11/01/2020  Royi Avital
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 CONVOLUTION_SHAPE_FULL         = 1;

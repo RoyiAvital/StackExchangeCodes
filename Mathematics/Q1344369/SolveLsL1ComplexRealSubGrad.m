@@ -41,7 +41,7 @@ function [ vX, mX ] = SolveLsL1ComplexRealSubGrad( mA, vB, lambdaFctr, numIterat
 %   1.  B
 % Release Notes:
 %   -   1.0.000     07/11/2016
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 % vX  = mAA \ vAb;

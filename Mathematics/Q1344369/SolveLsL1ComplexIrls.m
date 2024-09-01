@@ -39,7 +39,7 @@ function [ vX, mX ] = SolveLsL1ComplexIrls( mA, vB, lambdaFctr, numIterations )
 %   1.  B
 % Release Notes:
 %   -   1.0.000     07/11/2016
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 paramEps = 1e-9;

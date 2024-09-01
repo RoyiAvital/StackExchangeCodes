@@ -6,9 +6,9 @@ function [ vX ] = SolveLsL0Bomp( mA, vB, numBlocks, paramK, tolVal )
 % \arg \min_{x} {\left\| A x - b \right\|}_{2}^{2} subject to {\left\| x
 % \right\|}_{2, 0} \leq K
 % Input:
-%   - mA                -   Input Matirx.
+%   - mA                -   Input Matrix.
 %                           The model matrix (Fat Matrix). Assumed to be
-%                           normlaized. Namely norm(mA(:, ii)) = 1 for any
+%                           normalized. Namely norm(mA(:, ii)) = 1 for any
 %                           ii.
 %                           Structure: Matrix (m X n).
 %                           Type: 'Single' / 'Double'. 
@@ -57,7 +57,7 @@ function [ vX ] = SolveLsL0Bomp( mA, vB, numBlocks, paramK, tolVal )
 %   1.  Pre Process 'mA' by normalizing its columns.
 % Release Notes:
 %   -   1.0.000     19/08/2019
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 numRows = size(mA, 1);

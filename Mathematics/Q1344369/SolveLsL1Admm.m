@@ -45,7 +45,7 @@ function [ vX, mX ] = SolveLsL1Admm( mA, vB, lambdaFctr, numIterations )
 %   2.  Add "Stopping Condition".
 % Release Notes:
 %   -   1.0.000     07/11/2016
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 rhoFctr = 1.0;

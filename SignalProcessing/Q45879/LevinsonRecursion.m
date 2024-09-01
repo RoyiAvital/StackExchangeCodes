@@ -28,7 +28,7 @@ function [ vX ] = LevinsonRecursion( mT, vY )
 %   1.  A
 % Release Notes:
 %   -   1.0.000     15/02/2017  Royi Avital
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------------- %
 
 numRows = size(mT, 1); %<! Square Matrix
@@ -42,7 +42,7 @@ vF(1) = 1 / mT(1, 1);
 vB(1) = 1 / mT(1, 1); 
 vX(1) = vY(1) / mT(1, 1);
 
-for iRow = 2 : numRows
+for iRow = 2:numRows
     % Calculate the epsilons (error expressions)
     epsF = mT(iRow, 1:(iRow - 1)) * vF(1:(iRow - 1));
     epsB = mT(1, 2:iRow) * vB(1:(iRow - 1));

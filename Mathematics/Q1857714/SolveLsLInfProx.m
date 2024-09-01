@@ -3,7 +3,7 @@ function [ vX, mX ] = SolveLsLInfProx( mA, vB, paramLambda, numIterations )
 %[ vX, mX ] = SolveLsL1Prox( mA, vB, lambdaFctr, numIterations )
 % Solve L Infinity Regularized Least Squares Using Proximal Gradient (PGM) Method.
 % Input:
-%   - mA                -   Input Matirx.
+%   - mA                -   Input Matrix.
 %                           The model matrix.
 %                           Structure: Matrix (m X n).
 %                           Type: 'Single' / 'Double'.
@@ -38,7 +38,7 @@ function [ vX, mX ] = SolveLsLInfProx( mA, vB, paramLambda, numIterations )
 %   1.  B
 % Release Notes:
 %   -   1.0.000     23/08/2017
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 mAA = mA.' * mA;

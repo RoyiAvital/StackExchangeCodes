@@ -3,7 +3,7 @@ function [ hLegendObj ] = ClickableLegend( varargin )
 %[  ] = DetectAlgMain(  )
 % Main function to run the 'Detect' algorithm
 % Input:
-%   - xxx               -   Input Paramseter.
+%   - xxx               -   Input Parameters.
 %                           Structure: Matrix.
 %                           Type: 'Single' / 'Double'.
 %                           Range: [0, 1].
@@ -22,7 +22,7 @@ function [ hLegendObj ] = ClickableLegend( varargin )
 %   1.  Adds
 % Release Notes:
 %   -   1.0.000    07/03/2016   Royi Avital
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 % Create Legend

@@ -75,7 +75,7 @@ mLocalMean          = ApplyBoxFilter(mInputImage, filterRadius, borderType, bord
 mLocalMeanSquare    = ApplyBoxFilter((mInputImage .* mInputImage), filterRadius, borderType, borderValue, normalizeFlag) ./ mNumEffPixels;
 mLocalCovariance    = mLocalMeanSquare - (mLocalMean .* mLocalMean);
 % This step is needed only for cases the calculation is using Integral
-% Images for the calcultion of the Box Blur.
+% Images for the calculation of the Box Blur.
 % mLocalCovariance    = max(mLocalCovariance, 0);
 
 % Similar to "Soft Thresholding" of the Covariance

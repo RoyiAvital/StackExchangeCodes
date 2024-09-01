@@ -9,7 +9,7 @@ function [ vF ] = ApplyDft( vX, numFreqSamples )
 %                       Range: (-inf, inf).
 %   - numFreqSamples-   Number of Frequency Samples.
 %                       Sets the number of Samples in the Frequency Domain.
-%                       Must by not smaller than the size of teh input.
+%                       Must by not smaller than the size of the input.
 %                       Structure: Scalar.
 %                       Type: 'Single' / 'Double'.
 %                       Range: {1, 2, 3, 4}.

@@ -34,7 +34,7 @@ function [ vX, mX ] = SolveLsL1ComplexRealCd( mA, vB, lambdaFctr, numIterations 
 % References
 %   1.  Wikipedia Coordinate Descent Method - https://en.wikipedia.org/wiki/Coordinate_descent.
 % Remarks:
-%   1.  Coordienat Descent is basically Steepest Descnt in L1 Norm.
+%   1.  Coordinate Descent is basically Steepest Descent in L1 Norm.
 %   2.  This implementation, using transformation into Real Domain, does
 %       Coordinate Descent in 2 coordinates (jj, jj + numElements) which
 %       are tied due to the Complex Norm. Basically generalizing the
@@ -45,7 +45,7 @@ function [ vX, mX ] = SolveLsL1ComplexRealCd( mA, vB, lambdaFctr, numIterations 
 %   1.  B
 % Release Notes:
 %   -   1.0.000     07/11/2016
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 vX  = pinv(mA) * vB; %<! Dealing with "Fat Matrix"

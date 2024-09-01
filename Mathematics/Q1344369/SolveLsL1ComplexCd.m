@@ -32,14 +32,14 @@ function [ vX, mX ] = SolveLsL1ComplexCd( mA, vB, lambdaFctr, numIterations )
 % References
 %   1.  Wikipedia Coordinate Descent Method - https://en.wikipedia.org/wiki/Coordinate_descent.
 % Remarks:
-%   1.  Coordienat Descent is basically Steepest Descnt in L1 Norm.
+%   1.  Coordinate Descent is basically Steepest Descent in L1 Norm.
 % Known Issues:
 %   1.  A
 % TODO:
 %   1.  B
 % Release Notes:
 %   -   1.0.000     07/11/2016
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 vANorm = sum(mA .* conj(mA), 1);

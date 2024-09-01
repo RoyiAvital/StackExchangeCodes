@@ -6,7 +6,7 @@ function [ vX ] = SolveProxL1( vY, paramLambda )
 % $$ \arg \min_{ x \in \mathbb{R}^{n} } \frac{1}{2} {\left\| x - y \right|}_{2}^{2} + \lambda {\left\| x \right\|}_{1} $$
 % Input:
 %   - vY                -   Input Vector.
-%                           The vector to apply the PRox operator upon.
+%                           The vector to apply the Prox operator upon.
 %                           Structure: Vector (n X 1).
 %                           Type: 'Single' / 'Double'.
 %                           Range: (-inf, inf).
@@ -30,7 +30,7 @@ function [ vX ] = SolveProxL1( vY, paramLambda )
 %   1.  Pre calculate decomposition of the Linear System.
 % Release Notes:
 %   -   1.0.000     27/11/2019  Royi Avital
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 

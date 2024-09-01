@@ -12,7 +12,7 @@ function [ vX, mX ] = SolveLsL1Admm( vX, mA, vY, paramLambda, sSolverParams )
 %                           Structure: Vector (n X 1).
 %                           Type: 'Single' / 'Double'.
 %                           Range: (-inf, inf).
-%   - mA                -   Input Matirx.
+%   - mA                -   Input Matrix.
 %                           The model matrix.
 %                           Structure: Matrix (m X n).
 %                           Type: 'Single' / 'Double'.
@@ -80,7 +80,7 @@ numIterations   = sSolverParams.numIterations;
 
 mX = zeros(size(mA, 2), numIterations);
 
-% Caching facotirzation
+% Caching factorization
 mC = MatrixFactorize(mA, paramRho, matType);
 vAy = mA.' * vY;
 

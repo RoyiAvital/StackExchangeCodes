@@ -2,7 +2,7 @@ function [ vX ] = SolveLsNormConst( mA, vB, normConst )
 % ----------------------------------------------------------------------------------------------- %
 %[ vX ] = SolveLsNormConst( mA, vB, normConst )
 % Solves norm constrained Least Squares problem by finding the optimal Dual
-% Variable (paramLambda) of the KKT Conditions by succesively solving
+% Variable (paramLambda) of the KKT Conditions by successively solving
 % Tikhonov Regularized Least Squares problems.
 % Input:
 %   - mA                -   Input Matrix.
@@ -35,7 +35,7 @@ function [ vX ] = SolveLsNormConst( mA, vB, normConst )
 %   1.  U
 % Release Notes:
 %   -   1.0.000     21/08/2017
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 paramLambdaInit = 0;

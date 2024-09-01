@@ -8,7 +8,7 @@ function [ mObjFunVal, mSolErrNorm ] = UpdateAnalysisData( mObjFunVal, mSolErrNo
 %   1.  A
 % Release Notes:
 %   -   1.0.000     23/11/2016
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 cvxOptVal = sCvxSol.cvxOptVal;

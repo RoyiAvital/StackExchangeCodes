@@ -10,7 +10,7 @@ function [ vX, mX ] = SolveLsTvAdmm( vX, mA, vB, mD, paramLambda, numIterations 
 %                           Structure: Vector (n X 1).
 %                           Type: 'Single' / 'Double'.
 %                           Range: (-inf, inf).
-%   - mA                -   Input Matirx.
+%   - mA                -   Input Matrix.
 %                           The model matrix.
 %                           Structure: Matrix (m X n).
 %                           Type: 'Single' / 'Double'.
@@ -52,7 +52,7 @@ function [ vX, mX ] = SolveLsTvAdmm( vX, mA, vB, mD, paramLambda, numIterations 
 %   1.  Pre calculate decomposition of the Linear System.
 % Release Notes:
 %   -   1.0.000     27/11/2019  Royi Avital
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 MAT_TYPE_SKINNY = 1;

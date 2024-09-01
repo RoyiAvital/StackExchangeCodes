@@ -3,7 +3,7 @@ function [ vX ] = SolveBpAdmm( mA, vB, paramLambda )
 %[ vX ] = SolveBpAdmm( mA, vB, paramLambda )
 % Solve Basis Pursuit (Q1) problem using ADMM.
 % Input:
-%   - mA                -   Input Matirx.
+%   - mA                -   Input Matrix.
 %                           The model matrix.
 %                           Structure: Matrix (m X n).
 %                           Type: 'Single' / 'Double'.
@@ -34,7 +34,7 @@ function [ vX ] = SolveBpAdmm( mA, vB, paramLambda )
 %   1.  B
 % Release Notes:
 %   -   1.0.000     03/04/2018
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 numIterations = 350;

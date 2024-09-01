@@ -2,9 +2,9 @@ function [ vX, paramLambda ] = SolveLsNormSquaredConst( mA, vB, normSquaredConst
 % ----------------------------------------------------------------------------------------------- %
 %[ vX ] = SolveLsNormConst( mA, vB, normConst )
 % Solves norm constrained Least Squares problem by finding the optimal Dual
-% Variable (paramLambda) of the KKT Conditions by succesively solving
+% Variable (paramLambda) of the KKT Conditions by successively solving
 % Tikhonov Regularized Least Squares problems.
-% The objective Funciton is given by:
+% The objective Function is given by:
 % \arg \min_{x} \frac{1}{2} {\left\| A x - b \right\|}_{2}^{2}
 % subject to {\left\| x \right\|}_{2}^{2} \leq normSquaredConst
 % Input:
@@ -38,7 +38,7 @@ function [ vX, paramLambda ] = SolveLsNormSquaredConst( mA, vB, normSquaredConst
 %   1.  U
 % Release Notes:
 %   -   1.0.000     14/04/2019
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 paramLambda = 0; %<! Initialization

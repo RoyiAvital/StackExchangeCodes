@@ -41,7 +41,7 @@ function [ vX, mX ] = SolveLsL1ComplexRealPgm( mA, vB, lambdaFctr, numIterations
 %   1.  B
 % Release Notes:
 %   -   1.0.000     07/11/2016
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 % vX  = mAA \ vAb;

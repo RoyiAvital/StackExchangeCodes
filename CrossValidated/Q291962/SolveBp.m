@@ -3,7 +3,7 @@ function [ vX, paramLambda ] = SolveBp( mA, vB, paramEpsilon )
 %[ vX ] = SolveBpAdmm( mA, vB, paramLambda )
 % Solve Basis Pursuit (Q1Eps) problem using ADMM.
 % Input:
-%   - mA                -   Input Matirx.
+%   - mA                -   Input Matrix.
 %                           The model matrix.
 %                           Structure: Matrix (m X n).
 %                           Type: 'Single' / 'Double'.
@@ -40,11 +40,11 @@ function [ vX, paramLambda ] = SolveBp( mA, vB, paramEpsilon )
 %   1.  B
 % Release Notes:
 %   -   1.0.000     03/04/2018
-%       *   First realease version.
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 SOLVER_METHOD_ADMM  = 1; %<! ADMM
-SOLVER_METHOD_PPGM  = 2; %<! PRoximal Gradient Method
+SOLVER_METHOD_PPGM  = 2; %<! Proximal Gradient Method
 SOLVER_METHOD_CD    = 3; %<! Coordinate Descent
 
 solverMethod = SOLVER_METHOD_CD;

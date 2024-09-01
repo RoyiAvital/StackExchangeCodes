@@ -95,12 +95,12 @@ end
 %% Estimating the Frequencies
 
 % Estimated Complex Exponent number of signals. For real signals it will
-% ouput 2M signals as it will output negative and positive frequencies.
+% output 2M signals as it will output negative and positive frequencies.
 numSignalsEst = EstimateHarmonicSignalOrder(vX, 8 * numSignals, ceil(numSamples / 2)) / 2;
 
 % Designed for Complex Exponent. Hence for signal it will generate +-f.
 % hence we need 2 * numSaignals and filter only the positive ones.
-% EstimateSinesNum() generetes 2M as model order for real signal.
+% EstimateSinesNum() generates 2M as model order for real signal.
 vFEst = EstimateHarmonicSignalFreq(vY, 2 * numSignalsEst, ceil(numSamples / 2), samplingFreq);
 vFEst = vFEst(vFEst > 0);
 
