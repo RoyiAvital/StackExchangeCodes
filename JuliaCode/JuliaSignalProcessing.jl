@@ -7,6 +7,10 @@
 # TODO:
 # 	1.  Add DFT convolution code from https://dsp.stackexchange.com/questions/90036.
 # Release Notes
+# - 1.1.000     03/09/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `GenGaussianKernel()`.
+#   *   Added `PadArray!()`.
+#   *   Changed `N` in `PadArray()` into `Integer`.
 # - 1.0.000     10/07/2023  Royi Avital RoyiAvital@yahoo.com
 #   *   First release.
 
@@ -22,9 +26,8 @@ include("./JuliaInit.jl");
 
 ## Functions
 
-function PadArray( vA :: Vector{T}, padRadius :: N, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Real, N <: Signed}
+function PadArray!( vB :: Vector{T}, vA :: Vector{T}, padRadius :: N, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Real, N <: Integer}
     # TODO: Support padding larger then the input.
-    # TODO: Create non allocating variant.
     # TODO: Add modes: `pre`, `after`, `both`.
 
     numElementsA = length(vA);
@@ -67,6 +70,21 @@ function PadArray( vA :: Vector{T}, padRadius :: N, padMode :: PadMode; padValue
             vB[ii] = vA[jj];
         end
     end
+
+    return vB;
+
+end
+
+function PadArray( vA :: Vector{T}, padRadius :: N, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Real, N <: Integer}
+    # TODO: Support padding larger then the input.
+    # TODO: Add modes: `pre`, `after`, `both`.
+
+    numElementsA = length(vA);
+    numElementsB = numElementsA + 2padRadius
+
+    vB = Vector{T}(undef, numElementsB);
+    
+    PadArray!(vB, vA, padMode; padValue = padValue);
 
     return vB;
 
@@ -249,3 +267,20 @@ function L1PieceWise( vY :: Vector{T}, λ :: T, polyDeg :: N; ρ :: T = 1.0 ) wh
     return vZ;
 
 end
+
+function GenGaussianKernel( σ :: T, kernelRadius :: N ) where {T <: AbstractFloat, N <: Integer}
+
+    numElements = N(2) * kernelRadius + 1;
+
+    vK = zeros(T, numElements);
+
+    for (ii, mm) ∈ enumerate(-kernelRadius:kernelRadius)
+        vK[ii] = exp(- (mm * mm) / (T(2.0) * σ * σ));
+    end
+
+    vK ./= sum(mK);
+
+    return vK;
+
+end
+
