@@ -59,13 +59,15 @@ oRng = StableRNG(1234);
 
 function CalcImageGrad( mI :: Matrix{T}, mKx :: Matrix{T}, mKy :: Matrix{T}, σ :: T ) where {T <: AbstractFloat}
 
+    STD_TO_RADIUS_FACTOR = T(4.0); #<! Match `scipy.ndimage.gaussian_filter` default
+    
     mII = copy(mI);
 
     padRadiusV = size(mKx, 1) ÷ 2; #<! Vertical
     padRadiusH = size(mKx, 2) ÷ 2; #<! Horizontal
     
     if (α > zero(T))
-        gaussKernelRadius = ceil(Int, T(3.0) * σ);
+        gaussKernelRadius = ceil(Int, STD_TO_RADIUS_FACTOR * σ);
         mG = GenGaussianKernel(α, (gaussKernelRadius, gaussKernelRadius));
         mIIPad = PadArray(mII, (gaussKernelRadius, gaussKernelRadius), PAD_MODE_REFLECT);
         Conv2D!(mII, mIIPad, mG; convMode = CONV_MODE_VALID);
@@ -82,6 +84,8 @@ end
 
 function CalcImageStructureTensor( mIx :: Matrix{T}, mIy :: Matrix{T}, ρ :: T ) where {T <: AbstractFloat}
 
+    STD_TO_RADIUS_FACTOR = T(4.0); #<! Match `scipy.ndimage.gaussian_filter` default
+    
     numRows, numCols = size(mIx); #<! mIx and mIy have equal dimensions
     mJ = zeros(T, numRows, numCols, 3); #<! Symmetric
 
@@ -90,7 +94,7 @@ function CalcImageStructureTensor( mIx :: Matrix{T}, mIy :: Matrix{T}, ρ :: T )
     mJ[:, :, 3] = mIy .* mIy;
 
     if (ρ > zero(T))
-        gaussKernelRadius = ceil(Int, T(3.0) * σ);
+        gaussKernelRadius = ceil(Int, STD_TO_RADIUS_FACTOR * σ);
         mG = GenGaussianKernel(α, (gaussKernelRadius, gaussKernelRadius));
         for ii ∈ 1:3
             mJPad = PadArray(mJ[:, :, ii], (gaussKernelRadius, gaussKernelRadius), PAD_MODE_REFLECT);
@@ -239,7 +243,7 @@ mKyy    = collect(mKxx');
 
 # Solver Parameters
 τ = 0.1; #<! Time Step Size (Must be ≤ 0.125)
-numIter = 40; #<! Iterations
+numIter = 100; #<! Iterations
 
 
 #%% Load / Generate Data

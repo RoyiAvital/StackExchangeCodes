@@ -10,6 +10,8 @@
 #       It should also be optimized for `rfft()`.
 #   2.  
 # Release Notes
+# - 1.6.000     07/09/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Made `PadArray()` support any type of `Number`.
 # - 1.5.000     03/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `GenGaussianKernel()`.
 #   *   Changed `N` in `PadArray()` and `PadArray()!` into `Integer`.
@@ -140,7 +142,7 @@ function PadArray!( mB :: Matrix{T}, mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}
 
 end
 
-function PadArray( mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Real, N <: Integer}
+function PadArray( mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Number, N <: Integer}
     # Works on Matrix
     # TODO: Support padding larger then the input.
     # TODO: Extend ot Array{T, 3}.
@@ -155,7 +157,7 @@ function PadArray( mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}, padMode :: PadMo
 
 end
 
-function PadArray( mA :: Matrix{T}, padRadius :: N; padMode :: PadMode, padValue :: T = zero(T) ) where {T <: Real, N <: Integer}
+function PadArray( mA :: Matrix{T}, padRadius :: N; padMode :: PadMode, padValue :: T = zero(T) ) where {T <: Number, N <: Integer}
     
     return PadArray(mA, (padRadius, padRadius); padMode = padMode, padValue = padValue);
 

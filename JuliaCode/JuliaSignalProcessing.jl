@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  Add DFT convolution code from https://dsp.stackexchange.com/questions/90036.
 # Release Notes
+# - 1.2.000     07/09/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Made `PadArray()` support any type of `Number`.
 # - 1.1.000     03/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `GenGaussianKernel()`.
 #   *   Added `PadArray!()`.
@@ -26,7 +28,7 @@ include("./JuliaInit.jl");
 
 ## Functions
 
-function PadArray!( vB :: Vector{T}, vA :: Vector{T}, padRadius :: N, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Real, N <: Integer}
+function PadArray!( vB :: Vector{T}, vA :: Vector{T}, padRadius :: N, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Number, N <: Integer}
     # TODO: Support padding larger then the input.
     # TODO: Add modes: `pre`, `after`, `both`.
 
@@ -75,7 +77,7 @@ function PadArray!( vB :: Vector{T}, vA :: Vector{T}, padRadius :: N, padMode ::
 
 end
 
-function PadArray( vA :: Vector{T}, padRadius :: N, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Real, N <: Integer}
+function PadArray( vA :: Vector{T}, padRadius :: N, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Number, N <: Integer}
     # TODO: Support padding larger then the input.
     # TODO: Add modes: `pre`, `after`, `both`.
 
