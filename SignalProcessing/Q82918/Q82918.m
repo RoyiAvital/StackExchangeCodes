@@ -151,7 +151,7 @@ if(generateFigures == ON)
 end
 
 
-%% Auxilizary Functions
+%% Auxiliary Functions
 
 function [ vP ] = CalcPhaseVec( aziAngle, distElm, sigFreq, numElements )
 

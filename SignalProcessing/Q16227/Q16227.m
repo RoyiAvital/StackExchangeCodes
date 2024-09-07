@@ -1,6 +1,6 @@
 % StackExchange Signal Processing Q16227
 % https://dsp.stackexchange.com/questions/16227
-% Matching 2 Undirected Weighted Graph in MATLAB
+% Matching 2 Undirected Weighted Graph in MATLAB.
 % References:
 %   1.  
 % Remarks:
@@ -80,7 +80,7 @@ disp(['The brute force matching best cost: ', num2str(bestCost)]);
 
 
 
-%% Auxilizary Functions
+%% Auxiliary Functions
 
 function [ totalCost ] = CalcCost(vU, vV, vM)
 

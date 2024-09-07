@@ -48,7 +48,7 @@ mY = DftReSample2D(mX, [numRowsO, numColsO]);
 disp(['The interpolation error is given by: ', num2str(max(abs(mYRef - mY), [], 'all'))]);
 
 
-%% Auxilizary Function
+%% Auxiliary Function
 
 function [ mX ] = GenTest( vSize, sincRadius )
 

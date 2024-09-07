@@ -67,7 +67,7 @@ disp(['The Least Squares solution MSE vs. the ground truth      : ', num2str(mse
 disp(['The Total Least Squares solution MSE vs. the ground truth: ', num2str(mseTLS)]);
 
 
-%% Auxilizary Functions
+%% Auxiliary Functions
 
 function [ vX ] = TlsRegression( mH, vY )
 

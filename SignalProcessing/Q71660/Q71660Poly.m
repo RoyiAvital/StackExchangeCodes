@@ -95,7 +95,7 @@ if(generateFigures == ON)
 end
 
 
-%% Auxilizary Functions
+%% Auxiliary Functions
 
 function [ vX ] = TlsRegression( mH, vY )
 

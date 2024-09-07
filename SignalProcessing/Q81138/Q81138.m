@@ -33,7 +33,7 @@ SPEED_OF_LIGHT_M_S = 3e9;
 
 % Array
 numElements = 20;
-distElmFctr = 1; %<! Fector of el
+distElmFctr = 1; %<! Factor of el
 
 % Signals
 timeInterval    = 5;
@@ -102,7 +102,7 @@ figure();
 polarplot(vA, abs(vH));
 
 
-%% Auxilizary Functions
+%% Auxiliary Functions
 
 function [ vP ] = CalcPhaseVec( aziAngle, distElm, sigFreq, numElements )
 

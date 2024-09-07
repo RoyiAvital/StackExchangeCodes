@@ -172,7 +172,7 @@ end
 % end
 
 
-%% Auxilizary Functions
+%% Auxiliary Functions
 
 
 

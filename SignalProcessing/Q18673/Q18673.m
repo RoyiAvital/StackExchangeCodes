@@ -1,6 +1,6 @@
 % StackExchange Signal Processing Q18673
 % https://dsp.stackexchange.com/questions/18673
-% Image Compression Using the SVD
+% Image Compression Using the SVD.
 % References:
 %   1.  
 % Remarks:
@@ -78,7 +78,7 @@ end
 %% Display Results
 
 
-%% Auxilizary Functions
+%% Auxiliary Functions
 
 
 

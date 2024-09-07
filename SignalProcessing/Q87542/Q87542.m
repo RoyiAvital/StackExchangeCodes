@@ -1,6 +1,6 @@
 % StackExchange Signal Processing Q87542
 % https://dsp.stackexchange.com/questions/87542
-% Solveing Linear Equation of Discrete Convolution Kernels
+% Solving Linear Equation of Discrete Convolution Kernels
 % References:
 %   1.  
 % Remarks:
@@ -158,7 +158,7 @@ end
 
 
 
-%% Auxilizary Functions
+%% Auxiliary Functions
 
 function [ mA ] = BuildA( mH, mG, paramLambda )
 

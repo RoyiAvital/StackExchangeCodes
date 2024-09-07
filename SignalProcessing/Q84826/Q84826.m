@@ -83,7 +83,7 @@ disp(['The vectorized entropy of Img002 is: ', num2str(CalcImgEntropy(mI002, ENT
 % end
 
 
-%% Auxilizary Functions
+%% Auxiliary Functions
 
 
 

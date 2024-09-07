@@ -90,7 +90,7 @@ disp(['The reference `vH`:' , num2str(vH.')]);
 
 
 
-%% Auxilizary Functions
+%% Auxiliary Functions
 
 function [ mX ] = BuildConvFullMat( vK, numSamples )
 

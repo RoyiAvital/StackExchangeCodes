@@ -155,7 +155,7 @@ end
 % set(hA, 'NextPlot', 'add');
 
 
-%% Auxilizary Functions
+%% Auxiliary Functions
 
 function [ mm, nn ] = FindNext(mW, mC, ii, jj)
 
