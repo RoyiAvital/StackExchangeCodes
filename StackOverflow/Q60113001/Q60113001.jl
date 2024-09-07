@@ -63,13 +63,14 @@ function CalcImageGrad( mI :: Matrix{T}, mKx :: Matrix{T}, mKy :: Matrix{T}, σ 
     
     mII = copy(mI);
 
+    # Assuming `mKx`, `mKy` have the same dimensions
     padRadiusV = size(mKx, 1) ÷ 2; #<! Vertical
     padRadiusH = size(mKx, 2) ÷ 2; #<! Horizontal
     
-    if (α > zero(T))
+    if (σ > zero(T))
         gaussKernelRadius = ceil(Int, STD_TO_RADIUS_FACTOR * σ);
-        mG = GenGaussianKernel(α, (gaussKernelRadius, gaussKernelRadius));
-        mIIPad = PadArray(mII, (gaussKernelRadius, gaussKernelRadius), PAD_MODE_REFLECT);
+        mG = GenGaussianKernel(σ, (gaussKernelRadius, gaussKernelRadius));
+        mIIPad = PadArray(mII, (gaussKernelRadius, gaussKernelRadius), PAD_MODE_SYMMETRIC);
         Conv2D!(mII, mIIPad, mG; convMode = CONV_MODE_VALID);
     end
 
@@ -89,16 +90,17 @@ function CalcImageStructureTensor( mIx :: Matrix{T}, mIy :: Matrix{T}, ρ :: T )
     numRows, numCols = size(mIx); #<! mIx and mIy have equal dimensions
     mJ = zeros(T, numRows, numCols, 3); #<! Symmetric
 
-    mJ[:, :, 1] = mIx .* mIx;
-    mJ[:, :, 2] = mIx .* mIy;
-    mJ[:, :, 3] = mIy .* mIy;
+    mJ[:, :, 1] .= mIx .* mIx;
+    mJ[:, :, 2] .= mIx .* mIy;
+    mJ[:, :, 3] .= mIy .* mIy;
 
     if (ρ > zero(T))
-        gaussKernelRadius = ceil(Int, STD_TO_RADIUS_FACTOR * σ);
-        mG = GenGaussianKernel(α, (gaussKernelRadius, gaussKernelRadius));
-        for ii ∈ 1:3
-            mJPad = PadArray(mJ[:, :, ii], (gaussKernelRadius, gaussKernelRadius), PAD_MODE_REFLECT);
-            Conv2D!(mJ[:, :, ii], mJPad, mG; convMode = CONV_MODE_VALID);
+        gaussKernelRadius = ceil(Int, STD_TO_RADIUS_FACTOR * ρ);
+        mG = GenGaussianKernel(ρ, (gaussKernelRadius, gaussKernelRadius));
+        for ii ∈ 1:size(mJ, 3)
+            mJPad = PadArray(mJ[:, :, ii], (gaussKernelRadius, gaussKernelRadius), PAD_MODE_SYMMETRIC);
+            # Conv2D!(mJ[:, :, ii], mJPad, mG; convMode = CONV_MODE_VALID); #<! Might have a memory leak!
+            mJ[:, :, ii] = Conv2D(mJPad, mG; convMode = CONV_MODE_VALID);
         end
     end
 
@@ -170,14 +172,14 @@ function CalcImageDiffusivityTensor( mJ :: Array{T, 3}, α :: T, opMode :: OpMod
 end
 
 
-function CalcTimeUpdate( mU :: Matrix{T}, mD :: Array{T, 3}, mKx :: Matrix{T}, mKxx :: Matrix{T},  mKy :: Matrix{T}, mKyy :: Matrix{T},  mKxy :: Matrix{T} ) where {T <: AbstractFloat}
+function CalcTimeUpdate( mU :: Matrix{T}, mD :: Array{T, 3}, mKx :: Matrix{T}, mKxx :: Matrix{T}, mKy :: Matrix{T}, mKyy :: Matrix{T}, mKxy :: Matrix{T} ) where {T <: AbstractFloat}
 
     mA = mD[:, :, 1];
     mB = mD[:, :, 2];
     mC = mD[:, :, 2];
     mD = mD[:, :, 3];
 
-    # Assumes mKx, mKy have the same support
+    # Assumes `mKx`, `mKy` have the same support
     padRadiusV = size(mKx, 1) ÷ 2; #<! Vertical
     padRadiusH = size(mKx, 2) ÷ 2; #<! Horizontal
 
@@ -190,12 +192,12 @@ function CalcTimeUpdate( mU :: Matrix{T}, mD :: Array{T, 3}, mKx :: Matrix{T}, m
     PadArray!(mPad, mD, (padRadiusV, padRadiusH), PAD_MODE_SYMMETRIC);
     mDy = Conv2D(mPad, mKy; convMode = CONV_MODE_VALID);
 
-    # Could be reused from previous calculation
+    # TODO: Could be reused from previous calculation
     PadArray!(mPad, mU, (padRadiusV, padRadiusH), PAD_MODE_SYMMETRIC);
     mUx = Conv2D(mPad, mKx; convMode = CONV_MODE_VALID);
     mUy = Conv2D(mPad, mKy; convMode = CONV_MODE_VALID);
 
-    # Assumes mKxx, mKyy have the same support
+    # Assumes `mKxx`, `mKyy` have the same support
     padRadiusV = size(mKxx, 1) ÷ 2; #<! Vertical
     padRadiusH = size(mKxx, 2) ÷ 2; #<! Horizontal
 
@@ -237,7 +239,7 @@ mKyy    = collect(mKxx');
 # Scharr Kernels
 mKx     = -(1.0 /   32.0) .* [-3.0 0.0  3.0; -10.0 0.0 10.0; -3.0 0.0 3.0];
 mKxx    =  (1.0 / 1024.0) .* [9.0 0.0 -18.0 0.0 9.0; 60.0 0.0 -120.0 0.0 60.0; 118.0 0.0 -236.0 0.0 118.0; 60.0 0.0 -120.0 0.0 60.0; 9.0 0.0 -18.0 0.0 9.0];
-mKxy    = -(1.0 / 1024.0) .* [9.0 -30.0 0.0 30.0 9.0; -30.0 -100.0 0.0 100.0 30.0; 0.0 0.0 0.0 0.0 0.0; 30.0 100.0 0.0 -100.0 -30.0; 9.0 30.0 0.0 -30.0 -9.0];
+mKxy    = -(1.0 / 1024.0) .* [-9.0 -30.0 0.0 30.0 9.0; -30.0 -100.0 0.0 100.0 30.0; 0.0 0.0 0.0 0.0 0.0; 30.0 100.0 0.0 -100.0 -30.0; 9.0 30.0 0.0 -30.0 -9.0];
 mKy     = collect(mKx');
 mKyy    = collect(mKxx');
 
@@ -283,7 +285,7 @@ display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    savefig(hP, figFileNme);
+    # savefig(hP, figFileNme);
 end
 
 figureIdx += 1;
@@ -293,5 +295,5 @@ display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    savefig(hP, figFileNme);
+    # savefig(hP, figFileNme);
 end
