@@ -1,5 +1,5 @@
 # Test Code for Image Processing
-# Several test for the Julia Code.
+# Several tests for the Julia Code based on MATLAB Reference.
 # References:
 #   1.  
 # Remarks:

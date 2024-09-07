@@ -67,9 +67,9 @@ lMatPltLibclr = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b
 # %% Constants
 
 # Reference for `scipy.signal.convolve2d()`
-L_BND_MODE      = ['fill', 'wrap', 'symm']
+L_BND_MODE      = ['fill', 'symm', 'wrap']
 L_CONV_MODE     = ['full', 'same', 'valid']
-L_GAUSS_MODE    = ['reflect', 'constant', 'nearest', 'mirror', 'wrap']
+L_GAUSS_MODE    = ['constant', 'mirror', 'nearest', 'reflect', 'wrap']
 
 
 # %% Local Packages
@@ -83,7 +83,7 @@ L_GAUSS_MODE    = ['reflect', 'constant', 'nearest', 'mirror', 'wrap']
 numRows = 123
 numCols = 122
 
-repFactor = 15
+repFactor = 20
 
 
 # %% Load / Generate Data
@@ -91,31 +91,33 @@ repFactor = 15
 mI = np.random.rand(numRows, numCols)
 
 vBndMode    = np.tile(L_BND_MODE, repFactor)
-vCnvMode    = np.tile(L_CONV_MODE, repFactor)
+vCnvMode    = np.random.permutation(np.tile(L_CONV_MODE, repFactor))
 vGaussMode  = np.tile(L_GAUSS_MODE, repFactor)
 
 
 # %% Convolution
 
 numTests = min(len(vBndMode), len(vCnvMode))
-mConv    = np.empty((numTests, 5), dtype = np.ndarray)
+cConv    = np.empty((numTests, 5), dtype = np.ndarray)
 
 for ii in range(numTests):
     vKernelSize = np.random.randint(1, 10, size = (2))
+    vKernelSize[0] += (1 - np.mod(vKernelSize[0], 2))
+    vKernelSize[1] += (1 - np.mod(vKernelSize[1], 2))
     mK = np.random.rand(*vKernelSize)
     mO = sp.signal.convolve2d(mI, mK, mode = vCnvMode[ii], boundary = vBndMode[ii])
 
-    mConv[ii, 0] = mO
-    mConv[ii, 1] = vKernelSize
-    mConv[ii, 2] = mK
-    mConv[ii, 3] = vCnvMode[ii]
-    mConv[ii, 4] = vBndMode[ii]
+    cConv[ii, 0] = mO
+    cConv[ii, 1] = vKernelSize
+    cConv[ii, 2] = mK
+    cConv[ii, 3] = vCnvMode[ii]
+    cConv[ii, 4] = vBndMode[ii]
 
 
 # %% Gaussian Filter
 
 numTests = len(vGaussMode)
-mGauss   = np.empty((numTests, 4), dtype = np.ndarray)
+cGauss   = np.empty((numTests, 4), dtype = np.ndarray)
 
 for ii in range(numTests):
     kernelStd    = 5 * random.random()
@@ -123,15 +125,15 @@ for ii in range(numTests):
     
     mO = sp.ndimage.gaussian_filter(mI, kernelStd, mode = vGaussMode[ii], radius = kernelRadius)
 
-    mGauss[ii, 0] = mO
-    mGauss[ii, 1] = kernelStd
-    mGauss[ii, 2] = kernelRadius
-    mGauss[ii, 3] = vGaussMode[ii]
+    cGauss[ii, 0] = mO
+    cGauss[ii, 1] = kernelStd
+    cGauss[ii, 2] = kernelRadius
+    cGauss[ii, 3] = vGaussMode[ii]
 
 
 # %% Save Data
 
-dData = {'mI': mI, 'mConv': mConv, 'mGauss': mGauss}
+dData = {'mI': mI, 'cConv': cConv, 'cGauss': cGauss}
 np.savez_compressed('TestImageProcessing', **dData)
 sp.io.savemat('TestImageProcessingPython.mat', dData, appendmat = True)
 
