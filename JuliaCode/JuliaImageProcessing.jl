@@ -8,7 +8,8 @@
 # 	1.  Add convolution in frequency domain as in DSP `Q90036`.
 #       It should include an auxiliary function: `GenWorkSpace()` for teh buffers.  
 #       It should also be optimized for `rfft()`.
-#   2.  
+#   2.  Check the case of inplace convolution for array of images.
+#       See `Q60113001.jl`.
 # Release Notes
 # - 1.6.000     07/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Made `PadArray()` support any type of `Number`.
