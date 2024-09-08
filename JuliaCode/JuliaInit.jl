@@ -7,6 +7,9 @@
 # TODO:
 # 	1.  B
 # Release Notes Royi Avital RoyiAvital@yahoo.com
+# - 1.1.000     08/09/2023  Royi Avital
+#   *   Added `VecOrView` and `MatOrView`.
+#   *   Added `isJuliaInit` to suppress multiple initializations.
 # - 1.0.000     09/07/2023  Royi Avital
 #   *   First release.
 
@@ -16,6 +19,12 @@
 
 # External
 
+# Types
+
+# Support views for Matrices / Vectors.
+# See https://discourse.julialang.org/t/34932.
+VecOrView{T} = Union{Vector{T}, SubArray{T, 1}} where T;
+MatOrView{T} = Union{Matrix{T}, SubArray{T, 2}} where T;
 
 ## Constants & Configuration
 
@@ -71,8 +80,12 @@ end
 end
 
 
-
 # Display UIntx numbers as integers
 Base.show(io::IO, x::T) where {T<:Union{UInt, UInt128, UInt64, UInt32, UInt16, UInt8}} = Base.print(io, x);
 
 ## Auxiliary Functions
+
+## Set Init State
+
+# Check id defined or equals to `true` before running `JuliaInit.jl`
+isJuliaInit = true;

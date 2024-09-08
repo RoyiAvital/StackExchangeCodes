@@ -2,7 +2,8 @@
 # https://stackoverflow.com/questions/60113001
 # Implementation of Edge Enhancing Diffusion (EED) with Structure Tensor.
 # References:
-#   1.  Nils Olovsson - Image Smearing by Anisotropic Diffusion (https://nils-olovsson.se/articles/image_smearing_by_anisotropic_diffusion).
+#   1.  Dirk Jan Kroon - Image Edge Enhancing Coherence Filter Toolbox - https://www.mathworks.com/matlabcentral/fileexchange/25449.
+#   2.  Nils Olovsson - Image Smearing by Anisotropic Diffusion (https://nils-olovsson.se/articles/image_smearing_by_anisotropic_diffusion).
 # Remarks:
 #   1.  Use in Julia as following:
 #       -   Move to folder using `cd(raw"<PathToFolder>");`.
@@ -10,8 +11,7 @@
 #       -   Instantiate the environment using `] instantiate`.
 #   2.  fd
 # TODO:
-# 	1.  Requires verification (Gaussian Filter, Code).  
-#       May require verification vs. the Python code.
+# 	1.  Employing the Additive Operator Splitting (AOS) approach.
 # Release Notes Royi Avital RoyiAvital@yahoo.com
 # - 1.0.000     03/09/2024  Royi Avital
 #   *   First release.
@@ -99,8 +99,8 @@ function CalcImageStructureTensor( mIx :: Matrix{T}, mIy :: Matrix{T}, ρ :: T )
         mG = GenGaussianKernel(ρ, (gaussKernelRadius, gaussKernelRadius));
         for ii ∈ 1:size(mJ, 3)
             mJPad = PadArray(mJ[:, :, ii], (gaussKernelRadius, gaussKernelRadius), PAD_MODE_SYMMETRIC);
-            # Conv2D!(mJ[:, :, ii], mJPad, mG; convMode = CONV_MODE_VALID); #<! Might have a memory leak!
-            mJ[:, :, ii] = Conv2D(mJPad, mG; convMode = CONV_MODE_VALID);
+            Conv2D!(@view(mJ[:, :, ii]), mJPad, mG; convMode = CONV_MODE_VALID); #<! Requires a view
+            # mJ[:, :, ii] = Conv2D(mJPad, mG; convMode = CONV_MODE_VALID);
         end
     end
 
@@ -141,23 +141,23 @@ function CalcImageDiffusivityTensor( mJ :: Array{T, 3}, α :: T, opMode :: OpMod
     mμ₁ = T(0.5) .* (mJ11 + mJ22 + mSqrt);
     mμ₂ = T(0.5) .* (mJ11 + mJ22 - mSqrt);
 
-    if opMode == OP_MODE_EDGE_ENHANCING
+    if (opMode == OP_MODE_EDGE_ENHANCING)
         mλ₁ = ones(T, numRows, numCols);
         mλ₂ = ones(T, numRows, numCols);
         vInd = abs.(mμ₁) .> T(1e-10); #<! Make a parameter / constant
         mλ₁Tmp = one(T) .- exp.(-C ./ ((mμ₁ .^ T(4.0)) .+ T(1e-10)));
         mλ₁[vInd] = mλ₁Tmp[vInd]
-    elseif opMode == OP_MODE_COHERENCE_ENHANCING
+    elseif (opMode == OP_MODE_COHERENCE_ENHANCING)
         mλ₁ = ones(T, numRows, numCols);
         mλ₂ = ones(T, numRows, numCols);
         mDiff = abs.(mμ₁ .- mμ₂);
         vInd = mDiff .> T(1e-10); #<! Make a parameter / constant
         mλ₂Tmp = α .+ (one(T) .- α) .* exp.(-one(T) ./ (mDiff .* mDiff));
         mλ₂[vInd] = mλ₂Tmp[vInd];
-    elseif opMode == OP_MODE_DIRECTED_SMEARING_ALONG
+    elseif (opMode == OP_MODE_DIRECTED_SMEARING_ALONG)
         mλ₁ = zeros(T, numRows, numCols);
         mλ₂ = T(0.9) * ones(T, numRows, numCols);
-    elseif opMode == OP_MODE_DIRECTED_SMEARING_ACROSS
+    elseif (opMode == OP_MODE_DIRECTED_SMEARING_ACROSS)
         mλ₁ = T(0.9) * ones(T, numRows, numCols);
         mλ₂ = zeros(T, numRows, numCols);
     end
@@ -211,7 +211,6 @@ function CalcTimeUpdate( mU :: Matrix{T}, mD :: Array{T, 3}, mKx :: Matrix{T}, m
 
     return mDiv∇U + mTr∇U; #<! TODO: Optimize the allocation
 
-
 end
 
 
@@ -222,9 +221,9 @@ imgUrl = raw"https://i.imgur.com/Y6Vr4OW.png"; #<! Alternative https://i.postimg
 
 # Model
 
-σ = 1.5; #<! Gaussian Kernel Standard Deviation for Image Smoothing
-ρ = 1.5; #<! Gaussian Kernel Standard Deviation for Structure Tensor Smoothing
-α = 0.1; #<! Diffusivity parameter
+σ = 5.5; #<! Gaussian Kernel Standard Deviation for Image Smoothing
+ρ = 5.5; #<! Gaussian Kernel Standard Deviation for Structure Tensor Smoothing
+α = 0.1; #<! Diffusivity parameter (Effective only in `OP_MODE_COHERENCE_ENHANCING`)
 
 opMode = OP_MODE_DIRECTED_SMEARING_ALONG;
 
@@ -234,14 +233,14 @@ opMode = OP_MODE_DIRECTED_SMEARING_ALONG;
 mKx     = -(1.0 /  8.0) .* [-1.0 0.0 1.0; -2.0 0.0 2.0; -1.0 0.0 1.0];
 mKxx    =  (1.0 / 64.0) .* [ 1.0  0.0 -2.0 0.0 1.0; 4.0 0.0 -8.0 0.0 4.0; 6.0 0.0 -12.0 0.0 6.0; 4.0 0.0 -8.0 0.0 4.0; 1.0 0.0 -2.0 0.0 1.0];
 mKxy    = -(1.0 / 64.0) .* [-1.0 -2.0 0.0 2.0 1.0; -2.0 -4.0 0.0 4.0 2.0; 0.0 0.0 0.0 0.0 0.0; 2.0 4.0 0.0 -4.0 -2.0; 1.0 2.0 0.0 -2.0 -1.0];
-mKy     = collect(mKx');
-mKyy    = collect(mKxx');
+mKy     = collect(mKx'); #<! Explicit array
+mKyy    = collect(mKxx'); #<! Explicit array
 # Scharr Kernels
 mKx     = -(1.0 /   32.0) .* [-3.0 0.0  3.0; -10.0 0.0 10.0; -3.0 0.0 3.0];
 mKxx    =  (1.0 / 1024.0) .* [9.0 0.0 -18.0 0.0 9.0; 60.0 0.0 -120.0 0.0 60.0; 118.0 0.0 -236.0 0.0 118.0; 60.0 0.0 -120.0 0.0 60.0; 9.0 0.0 -18.0 0.0 9.0];
 mKxy    = -(1.0 / 1024.0) .* [-9.0 -30.0 0.0 30.0 9.0; -30.0 -100.0 0.0 100.0 30.0; 0.0 0.0 0.0 0.0 0.0; 30.0 100.0 0.0 -100.0 -30.0; 9.0 30.0 0.0 -30.0 -9.0];
-mKy     = collect(mKx');
-mKyy    = collect(mKxx');
+mKy     = collect(mKx'); #<! Explicit array
+mKyy    = collect(mKxx'); #<! Explicit array
 
 # Solver Parameters
 τ = 0.1; #<! Time Step Size (Must be ≤ 0.125)
@@ -269,12 +268,14 @@ numPx = numRows * numCols;
 mU = copy(mI);
 
 for ii ∈ 1:numIter
+    # Explicit method loop
     mUx, mUy = CalcImageGrad(mU, mKx, mKy, σ);
     mJ = CalcImageStructureTensor(mUx, mUy, ρ);
     mD  = CalcImageDiffusivityTensor(mJ, α, opMode);
     m∂Uₜ = CalcTimeUpdate(mU, mD, mKx, mKxx, mKy, mKyy, mKxy);
     mU .+= τ .* m∂Uₜ;
 end
+
 
 ## Display Results
 

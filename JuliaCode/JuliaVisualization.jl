@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.2.001    08/09/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Verifying the initialization happens only once.
 # - 1.2.000    03/07/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added support to display `UIntX` images.
 # - 1.1.000    01/07/2024  Royi Avital RoyiAvital@yahoo.com
@@ -27,7 +29,10 @@ using PlotlyJS;
 
 ## Constants & Configuration
 
-include("./JuliaInit.jl");
+if (!(@isdefined(isJuliaInit)) || (isJuliaInit == false))
+    # Ensure the initialization happens only once
+    include("./JuliaInit.jl");
+end
 
 ## Functions
 

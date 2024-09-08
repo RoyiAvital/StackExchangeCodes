@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.0.005     08/09/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Verifying the initialization happens only once.
 # - 1.0.004     28/06/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Updated `ADMM()` and `ADMM!()`.
 #   *   Added a function to project onto intersection of convex sets.
@@ -29,7 +31,11 @@
 
 
 ## Constants & Configuration
-include("./JuliaInit.jl");
+
+if (!(@isdefined(isJuliaInit)) || (isJuliaInit == false))
+    # Ensure the initialization happens only once
+    include("./JuliaInit.jl");
+end
 
 ## Functions
 

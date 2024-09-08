@@ -8,11 +8,11 @@
 # 	1.  Add convolution in frequency domain as in DSP `Q90036`.
 #       It should include an auxiliary function: `GenWorkSpace()` for teh buffers.  
 #       It should also be optimized for `rfft()`.
-#   2.  Check the case of inplace convolution for array of images.
-#       See `Q60113001.jl`.
 # Release Notes
 # - 1.6.000     07/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Made `PadArray()` support any type of `Number`.
+#   *   Verifying the initialization happens only once.
+#   *   Added support for `SubArray{T, 2}` (Views) for convolution.
 # - 1.5.000     03/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `GenGaussianKernel()`.
 #   *   Changed `N` in `PadArray()` and `PadArray()!` into `Integer`.
@@ -43,7 +43,10 @@ using StaticKernels;
 
 ## Constants & Configuration
 
-include("./JuliaInit.jl");
+if (!(@isdefined(isJuliaInit)) || (isJuliaInit == false))
+    # Ensure the initialization happens only once
+    include("./JuliaInit.jl");
+end
 
 ## Functions
 
@@ -164,7 +167,7 @@ function PadArray( mA :: Matrix{T}, padRadius :: N; padMode :: PadMode, padValue
 
 end
 
-function Conv2D( mI :: Matrix{T}, mK :: Matrix{T}; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat}
+function Conv2D( mI :: MatOrView{T}, mK :: MatOrView{T}; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat}
     
     if (convMode == CONV_MODE_FULL)
         mO = Matrix{T}(undef, size(mI) .+ size(mK) .- (1, 1));
@@ -180,7 +183,7 @@ function Conv2D( mI :: Matrix{T}, mK :: Matrix{T}; convMode :: ConvMode = CONV_M
 
 end
 
-function Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T}; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat}
+function Conv2D!( mO :: MatOrView{T}, mI :: MatOrView{T}, mK :: MatOrView{T}; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat}
 
     if (convMode == CONV_MODE_FULL)
         _Conv2D!(mO, mI, mK);
@@ -194,7 +197,7 @@ function Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T}; convMode ::
     
 end
 
-function _Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where {T <: AbstractFloat}
+function _Conv2D!( mO :: MatOrView{T}, mI :: MatOrView{T}, mK :: MatOrView{T} ) where {T <: AbstractFloat}
     # Full Convolution
 
     numRowsI, numColsI = size(mI);
@@ -292,7 +295,7 @@ function _Conv2D!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where {T 
 
 end
 
-function _Conv2DSame!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where {T <: AbstractFloat}
+function _Conv2DSame!( mO :: MatOrView{T}, mI :: MatOrView{T}, mK :: MatOrView{T} ) where {T <: AbstractFloat}
     # Matches MATLAB
     # Assumes size(mK) <= size(mI)
 
@@ -320,65 +323,22 @@ function _Conv2DSame!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where
 
 end
 
-function _Conv2DValid!( mO :: Matrix{T}, mI :: Matrix{T}, mK :: Matrix{T} ) where {T <: AbstractFloat}
+function _Conv2DValid!( mO :: MatOrView{T}, mI :: MatOrView{T}, mK :: MatOrView{T} ) where {T <: AbstractFloat}
 
     numRowsI, numColsI = size(mI);
     numRowsK, numColsK = size(mK);
 
     for jj ∈ 1:(numColsI - numColsK + 1)
-        @turbo for ii in 1:(numRowsI - numRowsK + 1)
+        for ii in 1:(numRowsI - numRowsK + 1)
             sumVal = zero(T);
             for nn ∈ 1:numColsK, mm ∈ 1:numRowsK
-                @inbounds sumVal += mK[mm, nn] * mI[ii - mm + numRowsK, jj - nn + numColsK];
+                sumVal += mK[mm, nn] * mI[ii - mm + numRowsK, jj - nn + numColsK];
             end
             mO[ii, jj] = sumVal;
         end
     end
 
 end
-
-
-function GenConvMtx( vK :: AbstractVector{T}, numElements :: N; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat, N <: Integer}
-    
-    kernelLength = length(vK);
-
-    if (convMode == CONV_MODE_FULL)
-        rowIdxFirst = 1;
-        rowIdxLast  = numElements + kernelLength - 1;
-        outputSize  = numElements + kernelLength - 1;
-    elseif (convMode == CONV_MODE_SAME)
-        rowIdxFirst = 1 + floor(kernelLength / 2);
-        rowIdxLast  = rowIdxFirst + numElements - 1;
-        outputSize  = numElements;
-    elseif (convMode == CONV_MODE_VALID)
-        rowIdxFirst = kernelLength;
-        rowIdxLast  = (numElements + kernelLength - 1) - kernelLength + 1;
-        outputSize  = numElements - kernelLength + 1;
-    end
-
-    mtxIdx = 0;
-    vI = ones(N, numElements * kernelLength);
-    vJ = ones(N, numElements * kernelLength);
-    vV = zeros(T, numElements * kernelLength);
-
-    for jj ∈ 1:numElements
-        for ii ∈ 1:kernelLength
-            if((ii + jj - 1 >= rowIdxFirst) && (ii + jj - 1 <= rowIdxLast))
-                # Valid output matrix row index
-                mtxIdx += 1;
-                vI[mtxIdx] = ii + jj - rowIdxFirst;
-                vJ[mtxIdx] = jj;
-                vV[mtxIdx] = vK[ii];
-            end
-        end
-    end
-
-    mK = sparse(vI, vJ, vV, outputSize, numElements);
-
-    return mK;
-
-end
-
 
 function GenConvMtx( mH :: AbstractMatrix{T}, numRows :: N, numCols :: N; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat, N <: Integer}
     

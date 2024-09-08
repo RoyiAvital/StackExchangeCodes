@@ -7,6 +7,9 @@
 # TODO:
 # 	1.  Add DFT convolution code from https://dsp.stackexchange.com/questions/90036.
 # Release Notes
+# - 1.3.000     08/09/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `GenConvMtx()` for operator view of the 1D convolution.
+#   *   Verifying the initialization happens only once.
 # - 1.2.000     07/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Made `PadArray()` support any type of `Number`.
 # - 1.1.000     03/09/2024  Royi Avital RoyiAvital@yahoo.com
@@ -24,7 +27,10 @@
 
 ## Constants & Configuration
 
-include("./JuliaInit.jl");
+if (!(@isdefined(isJuliaInit)) || (isJuliaInit == false))
+    # Ensure the initialization happens only once
+    include("./JuliaInit.jl");
+end
 
 ## Functions
 
@@ -230,6 +236,47 @@ function _Conv1DValid!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T} ) wher
 
 end
 
+function GenConvMtx( vK :: AbstractVector{T}, numElements :: N; convMode :: ConvMode = CONV_MODE_FULL ) where {T <: AbstractFloat, N <: Integer}
+    # Convolution matrix for 1D convolution.
+    
+    kernelLength = length(vK);
+
+    if (convMode == CONV_MODE_FULL)
+        rowIdxFirst = 1;
+        rowIdxLast  = numElements + kernelLength - 1;
+        outputSize  = numElements + kernelLength - 1;
+    elseif (convMode == CONV_MODE_SAME)
+        rowIdxFirst = 1 + floor(kernelLength / 2);
+        rowIdxLast  = rowIdxFirst + numElements - 1;
+        outputSize  = numElements;
+    elseif (convMode == CONV_MODE_VALID)
+        rowIdxFirst = kernelLength;
+        rowIdxLast  = (numElements + kernelLength - 1) - kernelLength + 1;
+        outputSize  = numElements - kernelLength + 1;
+    end
+
+    mtxIdx = 0;
+    vI = ones(N, numElements * kernelLength);
+    vJ = ones(N, numElements * kernelLength);
+    vV = zeros(T, numElements * kernelLength);
+
+    for jj ∈ 1:numElements
+        for ii ∈ 1:kernelLength
+            if((ii + jj - 1 >= rowIdxFirst) && (ii + jj - 1 <= rowIdxLast))
+                # Valid output matrix row index
+                mtxIdx += 1;
+                vI[mtxIdx] = ii + jj - rowIdxFirst;
+                vJ[mtxIdx] = jj;
+                vV[mtxIdx] = vK[ii];
+            end
+        end
+    end
+
+    mK = sparse(vI, vJ, vV, outputSize, numElements);
+
+    return mK;
+
+end
 
 function L1Spline( vY :: Vector{T}, λ :: T ) where {T <: Real}
     # L1 Splines for Robust, Simple, and Fast Smoothing of Grid Data (https://arxiv.org/abs/1208.2292)
@@ -247,7 +294,6 @@ function L1Spline( vY :: Vector{T}, λ :: T ) where {T <: Real}
     return vZ;
 
 end
-
 
 function L1PieceWise( vY :: Vector{T}, λ :: T, polyDeg :: N; ρ :: T = 1.0 ) where {T <: Real, N <: Integer}
     # L1 Splines for Robust, Simple, and Fast Smoothing of Grid Data (https://arxiv.org/abs/1208.2292)
