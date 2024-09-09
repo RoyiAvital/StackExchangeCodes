@@ -16,6 +16,7 @@
 ## Packages
 
 # Internal
+using LinearAlgebra; #<! For types
 
 # External
 
@@ -23,8 +24,34 @@
 
 # Support views for Matrices / Vectors.
 # See https://discourse.julialang.org/t/34932.
-VecOrView{T} = Union{Vector{T}, SubArray{T, 1}} where T;
-MatOrView{T} = Union{Matrix{T}, SubArray{T, 2}} where T;
+# Views are SubArrays: https://docs.julialang.org/en/v1/devdocs/subarrays
+# Limit their type, dimension and type of parent array.
+# One could use `Base.require_one_based_indexing` to ensure 1 based indexing.
+VecOrView{T} = Union{Vector{T}, SubArray{T, 1, <: Array{T}}} where {T};
+MatOrView{T} = Union{Matrix{T}, SubArray{T, 2, <: Array{T}}} where {T};
+
+AdjOrTrans = LinearAlgebra.AdjOrTrans;
+
+# MATLAB Like
+VectorM{T} = Union{Vector{T}, SubArray{T, 1, <: Array{T}}, AdjOrTrans{T, <: Vector{T}}, AdjOrTrans{T, <: SubArray{T, 1, <: Array{T}}}} where {T};
+MatrixM{T} = Union{Matrix{T}, SubArray{T, 2, <: Array{T}}, AdjOrTrans{T, <: Matrix{T}}, AdjOrTrans{T, <: SubArray{T, 2, <: Array{T}}}} where {T};
+
+vT = rand(4);
+vV = @view(vT[1:3]);
+typeof(vV') <: VectorM
+
+mT = rand(4, 4);
+mV = @view(mT[1:3, 1:3]);
+typeof(mV) <: MatOrView
+typeof(mV) <: MatrixM
+typeof(mT') <: MatrixM
+typeof(mV') <: MatrixM
+typeof(transpose(mT)) <: MatrixM
+typeof(transpose(mV)) <: MatrixM
+typeof(transpose(mV')) <: MatrixM
+typeof(transpose(Complex.(mV)')) <: MatrixM #<! Won't work!
+typeof(transpose(Complex.(mV)')') <: MatrixM #<! Won't work!
+
 
 ## Constants & Configuration
 

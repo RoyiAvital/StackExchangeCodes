@@ -221,8 +221,8 @@ imgUrl = raw"https://i.imgur.com/Y6Vr4OW.png"; #<! Alternative https://i.postimg
 
 # Model
 
-σ = 5.5; #<! Gaussian Kernel Standard Deviation for Image Smoothing
-ρ = 5.5; #<! Gaussian Kernel Standard Deviation for Structure Tensor Smoothing
+σ = 1.5; #<! Gaussian Kernel Standard Deviation for Image Smoothing
+ρ = 1.5; #<! Gaussian Kernel Standard Deviation for Structure Tensor Smoothing
 α = 0.1; #<! Diffusivity parameter (Effective only in `OP_MODE_COHERENCE_ENHANCING`)
 
 opMode = OP_MODE_DIRECTED_SMEARING_ALONG;
