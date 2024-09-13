@@ -21,7 +21,7 @@ using LinearAlgebra; #<! For types
 # External
 
 # Types
-
+if (!(@isdefined(isJuliaInit)) || (isJuliaInit == false))
 # Support views for Matrices / Vectors.
 # See https://discourse.julialang.org/t/34932.
 # Views are SubArrays: https://docs.julialang.org/en/v1/devdocs/subarrays
@@ -35,22 +35,23 @@ AdjOrTrans = LinearAlgebra.AdjOrTrans;
 # MATLAB Like
 VectorM{T} = Union{Vector{T}, SubArray{T, 1, <: Array{T}}, AdjOrTrans{T, <: Vector{T}}, AdjOrTrans{T, <: SubArray{T, 1, <: Array{T}}}} where {T};
 MatrixM{T} = Union{Matrix{T}, SubArray{T, 2, <: Array{T}}, AdjOrTrans{T, <: Matrix{T}}, AdjOrTrans{T, <: SubArray{T, 2, <: Array{T}}}} where {T};
+end
 
-vT = rand(4);
-vV = @view(vT[1:3]);
-typeof(vV') <: VectorM
+# vT = rand(4);
+# vV = @view(vT[1:3]);
+# typeof(vV') <: VectorM
 
-mT = rand(4, 4);
-mV = @view(mT[1:3, 1:3]);
-typeof(mV) <: MatOrView
-typeof(mV) <: MatrixM
-typeof(mT') <: MatrixM
-typeof(mV') <: MatrixM
-typeof(transpose(mT)) <: MatrixM
-typeof(transpose(mV)) <: MatrixM
-typeof(transpose(mV')) <: MatrixM
-typeof(transpose(Complex.(mV)')) <: MatrixM #<! Won't work!
-typeof(transpose(Complex.(mV)')') <: MatrixM #<! Won't work!
+# mT = rand(4, 4);
+# mV = @view(mT[1:3, 1:3]);
+# typeof(mV) <: MatOrView
+# typeof(mV) <: MatrixM
+# typeof(mT') <: MatrixM
+# typeof(mV') <: MatrixM
+# typeof(transpose(mT)) <: MatrixM
+# typeof(transpose(mV)) <: MatrixM
+# typeof(transpose(mV')) <: MatrixM
+# typeof(transpose(Complex.(mV)')) <: MatrixM #<! Won't work!
+# typeof(transpose(Complex.(mV)')') <: MatrixM #<! Won't work!
 
 
 ## Constants & Configuration
@@ -108,7 +109,7 @@ end
 
 
 # Display UIntx numbers as integers
-Base.show(io::IO, x::T) where {T<:Union{UInt, UInt128, UInt64, UInt32, UInt16, UInt8}} = Base.print(io, x);
+Base.show(io :: IO, x :: T) where {T <: Union{UInt, UInt128, UInt64, UInt32, UInt16, UInt8}} = Base.print(io, x);
 
 ## Auxiliary Functions
 

@@ -24,12 +24,12 @@ using Printf;
 using Random;
 # External
 using BenchmarkTools;
-using ColorTypes;          #<! Required for Image Processing
-using PlotlyJS;
-using FileIO;              #<! Required for loading images
-using LoopVectorization;   #<! Required for Image Processing
+using ColorTypes;        #<! Required for Image Processing
+using PlotlyJS;          #<! Use `add Kaleido_jll@v0.1` (https://github.com/JuliaPlots/PlotlyJS.jl/issues/479)
+using FileIO;            #<! Required for loading images
+using LoopVectorization; #<! Required for Image Processing
 using StableRNGs;
-using StaticKernels;       #<! Required for Image Processing
+using StaticKernels;     #<! Required for Image Processing
 
 
 ## Constants & Configuration
@@ -286,7 +286,7 @@ display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    # savefig(hP, figFileNme);
+    savefig(hP, figFileNme);
 end
 
 figureIdx += 1;
@@ -296,5 +296,5 @@ display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    # savefig(hP, figFileNme);
+    savefig(hP, figFileNme);
 end
