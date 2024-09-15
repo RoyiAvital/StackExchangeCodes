@@ -100,14 +100,14 @@ end
 function DisplayImage(mI :: BitMatrix; tuImgSize :: Tuple{N, N} = size(mI), titleStr :: String = "" ) where {N <: Integer}
     # Displays a Boolean image (Mask)
     
-    return DisplayImage(UInt8(255) .* UInt8.(mI));
+    return DisplayImage(UInt8(255) .* UInt8.(mI); tuImgSize = tuImgSize, titleStr = titleStr);
 
 end
 
 function DisplayImage(mI :: Matrix{Bool}; tuImgSize :: Tuple{N, N} = size(mI), titleStr :: String = "" ) where {N <: Integer}
     # Displays a Boolean image (Mask)
     
-    return DisplayImage(UInt8(255) .* UInt8.(mI));
+    return DisplayImage(UInt8(255) .* UInt8.(mI); tuImgSize = tuImgSize, titleStr = titleStr);
 
 end
 

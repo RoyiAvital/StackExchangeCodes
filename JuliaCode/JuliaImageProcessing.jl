@@ -8,9 +8,11 @@
 # 	1.  Add convolution in frequency domain as in DSP `Q90036`.
 #       It should include an auxiliary function: `GenWorkSpace()` for teh buffers.  
 #       It should also be optimized for `rfft()`.
+#   2.  Optimize `BoxBlur()` with a running sum method.
 # Release Notes
 # - 1.7.000     14/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `ScaleImage()`.
+#   *   Added `BoxBlur()`.
 # - 1.6.000     07/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Made `PadArray()` support any type of `Number`.
 #   *   Verifying the initialization happens only once.
@@ -549,7 +551,6 @@ function _CalcPxShiftZeros( ii :: N, jj :: N, ll :: N, kk :: N, numRows :: N, nu
 
 end
 
-
 function CalcImageLaplacian!( mO :: Matrix{T}, mI :: Matrix{T}, mB :: Matrix{T}, mV1 :: Matrix{T}, mV2 :: Matrix{T}, mKₕ :: Matrix{T}, mKᵥ :: Matrix{T} ) where {T <: AbstractFloat}
 
     _Conv2DValid!(mV1, mI, mKₕ);
@@ -586,6 +587,23 @@ function CalcImageLaplacian( mI :: Matrix{T}; mKₕ :: Matrix{T} = [one(T) -one(
 
 end
 
+function BoxBlur( mI :: Matrix{T}, tuBoxRadius :: Tuple{N, N}; padMode :: PadMode = PAD_MODE_REPLICATE, normFctr :: T = prod(T(2) .* tuBoxRadius .+ one(T)) ) where {T <: AbstractFloat, N <: Integer}
+    # Inefficient: No separability, No Constant N calculation
+
+    mK = (one(T) / normFctr) * ones(T, 2 * tuBoxRadius[1] + 1, 2 * tuBoxRadius[2] + 1);
+    mP = PadArray(mI, tuBoxRadius, padMode);
+
+    mO = Conv2D(mP, mK; convMode = CONV_MODE_VALID);
+
+    return mO;
+
+end
+
+function BoxBlur( mI :: Matrix{T}, boxRadius :: N; padMode :: PadMode = PAD_MODE_REPLICATE, normFctr :: T = ((T(2) * T(boxRadius) .+ one(T)) ^ 2) ) where {T <: AbstractFloat, N <: Integer}
+
+    return BoxBlur(mI, (boxRadius, boxRadius); padMode = padMode, normFctr = normFctr);
+
+end
 
 function ConvertColorSpace!( mO :: Array{T, 3}, mI :: Array{T, 3}, mC :: Matrix{T} ) where{T <: AbstractFloat}
 
@@ -692,7 +710,6 @@ function CalcImgGrad!( mIx :: Matrix{T}, mIy :: Matrix{T},  mI :: Matrix{T} ) wh
     return mIx, mDy;
 
 end
-
 
 function CalcImgGrad( mI :: Matrix{T} ) where {T <: AbstractFloat}
     
