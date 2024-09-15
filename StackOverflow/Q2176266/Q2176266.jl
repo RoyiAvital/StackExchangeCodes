@@ -1,6 +1,6 @@
 # StackOverflow Q2176266
 # https://stackoverflow.com/questions/2176266
-# Reduce (Qunatize) Image Colors to 256 Colors.
+# Reduce (Quantize) Image Colors to 256 Colors.
 # References:
 #   1.  A
 # Remarks:
