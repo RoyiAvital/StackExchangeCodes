@@ -1,6 +1,6 @@
 # StackOverflow Q12300628
 # https://stackoverflow.com/questions/12300628
-# Solving the Sparse Linear System of Poisson Image Editing.
+# Generating and Solving the Sparse Linear System of Poisson Image Editing.
 # References:
 #   1.  Christopher J. Tralie - Poisson Image Editing - http://www.ctralie.com/Teaching/PoissonImageEditing.
 # Remarks:
