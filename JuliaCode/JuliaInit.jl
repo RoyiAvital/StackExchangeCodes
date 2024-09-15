@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  B
 # Release Notes Royi Avital RoyiAvital@yahoo.com
+# - 1.2.000     14/09/2023  Royi Avital
+#   *   Added `ImgMat`.
 # - 1.1.000     08/09/2023  Royi Avital
 #   *   Added `VecOrView` and `MatOrView`.
 #   *   Added `isJuliaInit` to suppress multiple initializations.
@@ -35,6 +37,8 @@ AdjOrTrans = LinearAlgebra.AdjOrTrans;
 # MATLAB Like
 VectorM{T} = Union{Vector{T}, SubArray{T, 1, <: Array{T}}, AdjOrTrans{T, <: Vector{T}}, AdjOrTrans{T, <: SubArray{T, 1, <: Array{T}}}} where {T};
 MatrixM{T} = Union{Matrix{T}, SubArray{T, 2, <: Array{T}}, AdjOrTrans{T, <: Matrix{T}}, AdjOrTrans{T, <: SubArray{T, 2, <: Array{T}}}} where {T};
+
+ImgMat{T} = Union{Matrix{T}, Array{T, 3}} where{T};
 end
 
 # vT = rand(4);

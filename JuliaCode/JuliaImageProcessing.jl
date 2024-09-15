@@ -9,6 +9,8 @@
 #       It should include an auxiliary function: `GenWorkSpace()` for teh buffers.  
 #       It should also be optimized for `rfft()`.
 # Release Notes
+# - 1.7.000     14/09/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `ScaleImage()`.
 # - 1.6.000     07/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Made `PadArray()` support any type of `Number`.
 #   *   Verifying the initialization happens only once.
@@ -50,14 +52,14 @@ end
 
 ## Functions
 
-function ConvertJuliaImgArray(mI :: Matrix{<: Color{T, N}}) where {T, N}
+function ConvertJuliaImgArray( mI :: Matrix{<: Color{T, N}} ) where {T, N}
     # According to ColorTypes data always in order RGBA
 
     # println("RGB");
     
-    numRows, numCols = size(mI);
-    numChannels = N;
-    dataType = T.types[1];
+    numRows, numCols    = size(mI);
+    numChannels         = N;
+    dataType            = T.types[1];
 
     mO = permutedims(reinterpret(reshape, dataType, mI), (2, 3, 1));
 
@@ -71,16 +73,27 @@ function ConvertJuliaImgArray(mI :: Matrix{<: Color{T, N}}) where {T, N}
 
 end
 
-function ConvertJuliaImgArray(mI :: Matrix{<: Color{T, 1}}) where {T}
+function ConvertJuliaImgArray( mI :: Matrix{<: Color{T, 1}} ) where {T}
     # According to ColorTypes data always in order RGBA
     # Single Channel Image (numChannels = 1)
     
     # println("Gray");
     
-    numRows, numCols = size(mI);
-    dataType = T.types[1];
+    numRows, numCols    = size(mI);
+    dataType            = T.types[1];
 
     mO = reinterpret(reshape, dataType, mI);
+
+    return mO;
+
+end
+
+function ScaleImg( mI :: ImgMat{T}; outType :: DataType = Float64 ) where { T <: Union{<: Unsigned, <: Signed} }
+    # Scales UInt / Int images into [0, 1] / [-1, 1) range.
+    # Similar ot MATLAB's `im2double()` and `im2single()`.
+
+    mO = outType.(mI);
+    mO ./= outType(typemax(T));
 
     return mO;
 

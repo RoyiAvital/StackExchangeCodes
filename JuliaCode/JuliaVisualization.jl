@@ -5,8 +5,11 @@
 # Remarks:
 #   1.  A
 # TODO:
-# 	1.  B
+# 	1.  Make a single `DisplayImage()` for `UInt8`.  
+#       All others should convert `UInt8` to and use it.
 # Release Notes
+# - 1.3.000    14/09/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Added support to for mask (`BitMatrix` / `Matrix{Bool}`) in `DisplayImage()`.
 # - 1.2.001    08/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Verifying the initialization happens only once.
 # - 1.2.000    03/07/2024  Royi Avital RoyiAvital@yahoo.com
@@ -91,6 +94,20 @@ function DisplayImage(mI :: Array{T, 3}; tuImgSize :: Tuple{N, N} = size(mI)[1:2
     hP = Plot([oTr1], oLayout);
     
     return hP; #<! display(hP);
+
+end
+
+function DisplayImage(mI :: BitMatrix; tuImgSize :: Tuple{N, N} = size(mI), titleStr :: String = "" ) where {N <: Integer}
+    # Displays a Boolean image (Mask)
+    
+    return DisplayImage(UInt8(255) .* UInt8.(mI));
+
+end
+
+function DisplayImage(mI :: Matrix{Bool}; tuImgSize :: Tuple{N, N} = size(mI), titleStr :: String = "" ) where {N <: Integer}
+    # Displays a Boolean image (Mask)
+    
+    return DisplayImage(UInt8(255) .* UInt8.(mI));
 
 end
 
