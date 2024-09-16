@@ -31,7 +31,7 @@ numRows = size(mI, 1);
 numCols = size(mI, 2);
 
 
-%% Setings
+%% Settings
 
 horMargin = 30;
 verMargin = 60; %<! Title requires more

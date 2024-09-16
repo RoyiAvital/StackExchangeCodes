@@ -74,7 +74,6 @@ function BuildImgGraph( mI :: Matrix{T}, hW :: Function, winRadius :: N ) where 
             refPxIdx += 1;
             for nn ∈ -winRadius:winRadius
                 for mm ∈ -winRadius:winRadius
-
                     if (((ii + mm) > 0) && ((ii + mm) <= numRows) && ((jj + nn) > 0) && ((jj + nn) <= numCols))
                         # Pair is within neighborhood
                         weightVal, isValid = hW(mI[ii, jj], mI[ii + mm, jj + nn], ii, jj, mm, nn);
@@ -82,7 +81,7 @@ function BuildImgGraph( mI :: Matrix{T}, hW :: Function, winRadius :: N ) where 
                             elmIdx += 1;
                             vI[elmIdx] = refPxIdx;
                             vJ[elmIdx] = refPxIdx + (nn * numRows) + mm;
-                            vV[elmIdx] = weightVal
+                            vV[elmIdx] = weightVal;
                         end
                     end
                 end

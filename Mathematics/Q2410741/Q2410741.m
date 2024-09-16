@@ -77,9 +77,9 @@ for kk = 1:numRows
 end
 
 
-%% Analysis
+%% Analysis 
 
-disp(['Maximum Error Between Numercial Differntiation to Analytic - ', num2str(max(abs(vG - vGNumerical)))]);
+disp(['Maximum Error Between Numerical Differentiation to Analytic - ', num2str(max(abs(vG - vGNumerical)))]);
 
 
 %% Minimization
@@ -96,7 +96,7 @@ end
 [minVal, argMin] = min(mZ(:));
 [minValRowIdx, minValColIdx] = ind2sub([numSamples, numSamples], argMin);
 
-% Numercial Optimization
+% Numerical Optimization
 
 mX          = zeros([numRows, numIterations]);
 vObjFunVal  = zeros([numIterations, 1]);
