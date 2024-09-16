@@ -176,9 +176,9 @@ function PadArray( mA :: Matrix{T}, tuPadRadius :: Tuple{N, N}, padMode :: PadMo
 
 end
 
-function PadArray( mA :: Matrix{T}, padRadius :: N; padMode :: PadMode, padValue :: T = zero(T) ) where {T <: Number, N <: Integer}
+function PadArray( mA :: Matrix{T}, padRadius :: N, padMode :: PadMode; padValue :: T = zero(T) ) where {T <: Number, N <: Integer}
     
-    return PadArray(mA, (padRadius, padRadius); padMode = padMode, padValue = padValue);
+    return PadArray(mA, (padRadius, padRadius), padMode; padValue = padValue);
 
 end
 
