@@ -7,27 +7,35 @@ function [ mW ] = BuildGraphMatrix( mI, hV, hW, winRadius )
 %                           Structure: Matrix (numRows x numCols).
 %                           Type: 'Single' / 'Double'.
 %                           Range: (-inf, inf).
-%   - hW                -   Zoom Level.
-%                           The zoom level of the image.
+%   - hV                -   Connectivity (Validation) Function.
+%                           Given the indices of the 2 pixels sets whether
+%                           the graph connects them.
 %                           Structure: Scalar.
-%                           Type: 'Single' / 'Double'.
-%                           Range: (0, inf).
+%                           Type: Function Handler.
+%                           Range: NA.
+%   - hW                -   Weights Function.
+%                           Given 2 values of pixels calculates the weight
+%                           of their edge.
+%                           Structure: Scalar.
+%                           Type: Function Handler.
+%                           Range: NA.
 %   - winRadius        -   Window Radius.
 %                           The local radius.
 %                           Structure: Scalar.
 %                           Type: 'Single' / 'Double'.
-%                           Range: {0, 1, 2, ...}.
+%                           Range: {1, 2, ...}.
 % Output:
 %   - mW                -   Graph Matrix.
-%                           Structure: Sparse Matrix (numRows x numCols).
+%                           Structure: Sparse Matrix (numPx x numPx).
 %                           Type: 'Single' / 'Double'.
 %                           Range: (-inf, inf).
 % References:
 %   1.  A
 % Remarks:
-%   1.  B
+%   1.  MATLAB removes implicit zeros. So if `hW()` returns a zero value
+%       for some case it will not be included in the output of `find()`.
 % TODO:
-%   1.  C
+%   1.  Add the indices to the input of `hW()`.
 %   Release Notes:
 %   -   1.0.000     16/09/2024  Royi Avital     RoyiAvital@yahoo.com
 %       *   First release version.
@@ -71,11 +79,11 @@ for jj = 1:numCols
                     % Pair is within neighborhood
                     isValid = hV(ii, jj, mm, nn); %<! Connectivity
                     if (isValid)
-                        weightVal = hW(mI(ii, jj), mI(ii + mm, jj + nn)); %<! Value
-                        elmIdx = elmIdx + 1;
-                        vI(elmIdx) = refPxIdx;
-                        vJ(elmIdx) = refPxIdx + (nn * numRows) + mm;
-                        vV(elmIdx) = weightVal;
+                        weightVal   = hW(mI(ii, jj), mI(ii + mm, jj + nn)); %<! Value
+                        elmIdx      = elmIdx + 1;
+                        vI(elmIdx)  = refPxIdx;
+                        vJ(elmIdx)  = refPxIdx + (nn * numRows) + mm;
+                        vV(elmIdx)  = weightVal;
                     end
                 end
             end

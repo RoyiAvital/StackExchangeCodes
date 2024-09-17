@@ -34,23 +34,29 @@ CONVOLUTION_SHAPE_VALID        = 3;
 
 % Image from the paper (Cropped and resized)
 imgUrl = 'https://i.postimg.cc/85Jjs9wJ/Flowers.png'; %<! https://i.imgur.com/PckT6jF.png
+% imgUrl = 'https://i.postimg.cc/K8yNRbyd/gjTJa.png';
 
-paramK = 5; %<! Radius of the local extrema
+paramK = 3; %<! Radius of the local extrema
 paramN = 1; %<! Radius of the local Laplacian
 
-% 4 Point connectivity, excludes center for no cyclic graph
-hV = @(ii, jj, mm, nn) (mm * nn == 0) & ((mm ~= 0) || (nn ~= 0)); %<! ii, jj ref pixel location, mm, nn neighbor pixel shift
-hW = @(valI, valN) abs(valI - valN); %<! Reference value vs. neighbor (r <-> s in the paper)
-
 epsVal = 1e-5;
+
+% Validation Function: ii, jj ref pixel location, mm, nn neighbor pixel shift
+hV = @(ii, jj, mm, nn) (abs(mm) <= 1) && (abs(nn) <= 1) && ((mm ~= 0) || (nn ~= 0)); %<! 8 Point connectivity, excludes center for no cyclic graph
+% hV = @(ii, jj, mm, nn) (mm * nn == 0) && ((mm ~= 0) || (nn ~= 0)); %<! 4 Point connectivity, excludes center for no cyclic graph
+
+% Weighing Function
+% MATLAB removes zero values automatically on each value insertion.
+% Usind added value to prevent such case.
+hW = @(valI, valN) abs(valI - valN) + epsVal; %<! Reference value vs. neighbor (r <-> s in the paper)
 
 
 %% Generate / Load Data
 
 mI = im2double(imread(imgUrl));
 mI = mean(mI, 3); %<! RGB Image
-mI = imresize(mI, [256, 256]);
-mI = max(mI, 0);
+% mI = imresize(mI, [50, 50]);
+% mI = max(mI, 0);
 
 numRows = size(mI, 1);
 numCols = size(mI, 2);
@@ -74,24 +80,35 @@ mLocalMin = mI <= mLocalKValue; %<! Local Minimum
 mV = stdfilt(mI, true(2 * paramN + 1));
 mV = mV .* mV;
 
+mGV = CalcMGV(mI);
+
 mW = BuildGraphMatrix(mI, hV, hW, paramN);
-% Scaling
-% minVal = min(nnz(mW));
-% maxVal = max(nnz(mW));
-% mW = (mW - minVal) / (maxVal - minVal);
-% Apply the Gaussian Function
-% mW = mW ./ (2 * mV(:)); %<! Wont work! Converts to full
 
 [vR, vC, vVals] = find(mW);
-for ii = 1:numPx
-    vRowIndx = vR == ii;
-    localVar = max(mV(ii), 0.0001);
-    vVals(vRowIndx) = exp(vVals(vRowIndx) / (2 * localVar)); %<! Exponent function
-    vVals(vRowIndx) = vVals(vRowIndx) / sum(vVals(vRowIndx)); %<! Unit Sum
+for ii = 1:length(vR)
+    localVar  = 0.6 * mV(vR(ii)); %<! The row is the reference pixel index
+    mgVal     = mGV(vR(ii));
+    localVar  = max(localVar, -mgVal / log(0.01));
+    localVar  = max(localVar, 0.000002) / 2;
+    vVals(ii) = exp(-(vVals(ii) * vVals(ii)) / (2 * localVar)); %<! Exponent function
 end
 mW = sparse(vR, vC, vVals, numPx, numPx);
+mW = NormalizeRows(mW);
 
-% Graph Laplacian
+% tic();
+% mWW = GetGraph(mI, mLocalMax);
+% toc()
+
+% mW = full(mW);
+% mWW = full(mWW);
+% mT = mW + mWW;
+% 
+% mD = diag(sum(mW, 2)); %<! Degree Matrix
+% mL = mD - mW; %<! Laplacian Matrix
+% 
+% mTT = mL - mWW;
+
+% % Graph Laplacian
 mD = diag(sum(mW, 2)); %<! Degree Matrix
 mL = mD - mW; %<! Laplacian Matrix
 
@@ -106,10 +123,35 @@ oLu = decomposition(mLu);
 vXv  = mI(vV); %<! Anchor values
 vXu = -(oLu \ (mR * vXv));
 
+vX = zeros(numPx, 1);
+vX(vU) = vXu;
+vX(vV) = vXv;
+mXMax = reshape(vX, numRows, numCols);
+
+% Interpolate Minimum
+vV = find(mLocalMin);
+vU = setdiff(vPxInd(:), vV);
+
+mLu = mL(vU, vU); %<! The Laplacian sub matrix to optimize by
+mR  = mL(vU, vV);
+oLu = decomposition(mLu);
+
+vXv  = mI(vV); %<! Anchor values
+vXu = -(oLu \ (mR * vXv));
+
+vX = zeros(numPx, 1);
+vX(vU) = vXu;
+vX(vV) = vXv;
+mXMin = reshape(vX, numRows, numCols);
 
 
+mX = 0.5 * (mXMax + mXMin);
 
+figure();
+imshow(mI);
 
+figure();
+imshow(mX);
 
 %% Display Results
 
@@ -191,9 +233,40 @@ vXu = -(oLu \ (mR * vXv));
 
 %% Auxiliary Functions
 
-function [ mA ] = BuildA( mH, mG, paramLambda )
+function [ mW ] = NormalizeRows( mW )
 
-mA = ((mH.' * mH) + (paramLambda * (mG.' * mG)));
+numRows = size(mW, 1);
+numCols = size(mW, 2);
+numNnz  = nnz(mW);
+
+[vR, vC, vV] = find(mW);
+vRowSum = zeros(size(mW, 1), 1);
+for ii = 1:numNnz
+    vRowSum(vR(ii)) = vRowSum(vR(ii)) + vV(ii);
+end
+
+for ii = 1:numRows
+    vRowSum(ii) = ((vRowSum(ii) == 0) * 0) + ((vRowSum(ii) ~= 0) * vRowSum(ii));
+end
+
+for ii = 1:numNnz
+    vV(ii) = vV(ii) / vRowSum(vR(ii));
+end
+
+mW = sparse(vR, vC, vV, numRows, numCols);
+
+
+end
+
+
+function [ mO ] = CalcMGV( mI )
+
+mP = padarray(mI, [1, 1], 'both', 'replicate');
+mC = im2col(mP, [3, 3], 'sliding');
+mC = mC - mC(5, :);
+mC(5, :) = 1000;
+mC = mC .* mC;
+mO = col2im(min(mC), [3, 3], size(mP), 'sliding');
 
 
 end

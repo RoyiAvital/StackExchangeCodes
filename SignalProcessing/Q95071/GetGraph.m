@@ -1,4 +1,4 @@
-function [ A ] = GetGraph( mD, mI )
+function [ A ] = GetGraph( mI, mD )
 
 [n, m, d] = size(mI);
 imgSize=n*m;
@@ -40,7 +40,8 @@ for j=1:m
             end
             t_val=mI(i,j,1);
             gvals(tlen+1)=t_val; %<! Build the negihborhood pixels
-            c_var=mean((gvals(1:tlen+1)-mean(gvals(1:tlen+1))).^2);
+            % c_var=mean((gvals(1:tlen+1)-mean(gvals(1:tlen+1))).^2);
+            c_var=var(gvals);
             csig=c_var*0.6;
             mgv=min((gvals(1:tlen)-t_val).^2);
             if (csig<(-mgv/log(0.01)))

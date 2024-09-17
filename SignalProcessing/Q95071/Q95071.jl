@@ -27,6 +27,7 @@ using ColorTypes;          #<! Required for Image Processing
 using FileIO;              #<! Required for loading images
 using Krylov;
 using LoopVectorization;   #<! Required for Image Processing
+using MAT;
 using PlotlyJS;            #<! Use `add Kaleido_jll@v0.1` (See https://github.com/JuliaPlots/PlotlyJS.jl/issues/479)
 using SparseArrays;
 using StableRNGs;
@@ -152,8 +153,8 @@ end
 
 ## Parameters
 
-imgUrlGray   = raw"https://i.sstatic.net/gjTJa.png";
-imgUrlMarked = raw"https://i.sstatic.net/0oqlt.png";
+imgUrlGray   = raw"https://i.sstatic.net/gjTJa.png"; #<! https://i.imgur.com/0dRerjk.png / https://i.postimg.cc/K8yNRbyd/gjTJa.png
+imgUrlMarked = raw"https://i.sstatic.net/0oqlt.png"; #<! https://i.imgur.com/3ouPI3K.png / https://i.postimg.cc/ZKNHbRX8/0oqlt.png
 
 # Problem parameters
 
@@ -161,10 +162,10 @@ imgUrlMarked = raw"https://i.sstatic.net/0oqlt.png";
 hV(ii :: N, jj :: N, mm :: N, nn :: N) where {N <: Integer} = (abs(mm) <= N(1)) && (abs(nn) <= N(1)) && ((mm != zero(N)) || (nn != zero(N))); #<! 8 Connectivity
 # hV(ii :: N, jj :: N, mm :: N, nn :: N) where {N <: Integer} = (mm * nn == zero(N)) && ((mm != zero(N)) || (nn != zero(N))); #<! 4 Connectivity
 # Weighing Function
-hW(valI :: T, valN :: T, ii :: N, jj :: N, mm :: N, nn :: N) where {T <: AbstractFloat, N <: Integer} = abs(valI - valN); #<! Weighing function
+hW(valI :: T, valN :: T, ii :: N, jj :: N, mm :: N, nn :: N) where {T <: AbstractFloat, N <: Integer} = abs(valI - valN) + ϵ; #<! Weighing function
 # hW(valI :: T, valN :: T, ii :: N, jj :: N, mm :: N, nn :: N) where {T <: AbstractFloat, N <: Integer} = exp(-((valI - valN) ^ 2) / (T(2) * mV[ii, jj])); #<! Weighing function
 
-τ         = 0.25;
+τ         = 0.05;
 ϵ         = 1e-5;
 mC        = GenColorConversionMat(RGB_TO_YIQ); #<! Color conversion matrix
 winRadius = 1;
@@ -200,10 +201,13 @@ mK = Kernel{(-winRadius:winRadius, -winRadius:winRadius)}(@inline w -> var(Tuple
 mV = map(mK, extend(mOYiq[:, :, 1], StaticKernels.ExtensionSymmetric()));
 
 mB = sum(abs.(mI .- mM), dims = 3) .> τ;
+mB = dropdims(mB; dims = 3);
 vV = findall(mB[:]); #<! Indices of marks (Set \mathcal{V})
 
 # Distance Matrix (Graph)
+# Number of non zeros for 8 connectivity: 8 * (numRows - 2) * (numCols - 2) + 10 * (numRows - 2) + 10 * (numCols - 2) + 4 * 3
 mW = BuildImgGraph(mOYiq[:, :, 1], hV, hW, winRadius);
+
 # Scale DR linearly
 # minVal = minimum(mW.nzval);
 # maxVal = maximum(mW.nzval);
@@ -214,22 +218,35 @@ mW = BuildImgGraph(mOYiq[:, :, 1], hV, hW, winRadius);
 mK = Kernel{(-winRadius:winRadius, -winRadius:winRadius)}(@inline w -> minimum(((w[-1, -1], w[-1, 0], w[-1, 1], w[0, -1], w[0, 1], w[1, -1], w[1, 0], w[1, 1]) .- w[0, 0]) .^ 2));
 mGV = map(mK, extend(mOYiq[:, :, 1], StaticKernels.ExtensionSymmetric()));
 
+# matwrite("Test.mat", Dict("mWJulia" => mW, "mVJulia" => mV, "mGVJulia" => mGV));
+
 vR, vC, vVals = findnz(mW);
 for ii ∈ 1:length(vR)
-    localVar = 0.6 * mV[vR[ii]]; #<! The row is the reference pixel index
-    mgVal    = mGV[vR[ii]];
-    localVar = max(localVar, -mgVal / log(0.01));
-    localVar = max(localVar, 0.000002) / 2;
-    vVals[ii] = exp(-(vVals[ii] * vVals[ii]) / (2 * localVar)) + ϵ - ϵ; #<! Exponent function
+    localVar  = 0.6 * mV[vR[ii]]; #<! The row is the reference pixel index
+    mgVal     = mGV[vR[ii]];
+    localVar  = max(localVar, -mgVal / log(0.01));
+    localVar  = max(localVar, 0.000002) / 2;
+    vVals[ii] = exp(-(vVals[ii] * vVals[ii]) / (2 * localVar)); #<! Exponent function
 end
 mW = sparse(vR, vC, vVals, numPx, numPx);
+# matwrite("Test1.mat", Dict("mWJulia" => mW, "mVJulia" => mV, "mGVJulia" => mGV));
 # mW = mW + mW';
 mW = NormalizeRows(mW);
+# matwrite("Test2.mat", Dict("mWJulia" => mW, "mVJulia" => mV, "mGVJulia" => mGV));
 
 
-vD = vec(sum(mW, dims = 2));
+vD = vec(sum(mW; dims = 2));
 mD = spdiagm(0 => vD); #<! Degree Matrix (Diagonal of the sum of each row)
 mL = mD .- mW;
+
+# vB = zeros(numPx);
+
+# for ii ∈ 2:3
+#     mChn    = view(mMYiq, :, :, ii);
+#     vB[vV] .= vec(mChn)[vV];
+#     vX = mL \ vB;
+#     mOYiq[:, :, ii][:] = vX;
+# end
 
 vU = setdiff(1:numPx, vV); #<! Rest of unlabeled pixels (Set \mathcal{U})
 
