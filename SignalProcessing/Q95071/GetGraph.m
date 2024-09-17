@@ -30,7 +30,8 @@ for j=1:m
             for ii=max(1,i-wd):min(i+wd,n)
                 for jj=max(1,j-wd):min(j+wd,m)
 
-                    if (ii~=i)|(jj~=j) %<! No cyclic graph
+                    if (ii~=i)||(jj~=j) %<! No cyclic graph
+                        % Gathers the pixels in the row (Neighborhood of r)
                         len=len+1; tlen=tlen+1;
                         row_inds(len)= consts_len;
                         col_inds(len)=indsM(ii,jj);
@@ -41,18 +42,18 @@ for j=1:m
             t_val=mI(i,j,1);
             gvals(tlen+1)=t_val; %<! Build the negihborhood pixels
             % c_var=mean((gvals(1:tlen+1)-mean(gvals(1:tlen+1))).^2);
-            c_var=var(gvals);
-            csig=c_var*0.6;
-            mgv=min((gvals(1:tlen)-t_val).^2);
+            c_var=var(gvals); %<! Local Variance
+            csig=c_var*0.6; %<! Regularization on the variance
+            mgv=min((gvals(1:tlen)-t_val).^2); %<! How smoothe the neighborhood
             if (csig<(-mgv/log(0.01)))
-          	   csig=-mgv/log(0.01);
+          	   csig=-mgv/log(0.01); %<! Regularization on the variance
             end
             if (csig<0.000002)
-          	   csig=0.000002;
+          	   csig=0.000002; %<! Regularization on the variance
             end
 
             gvals(1:tlen)=exp(-(gvals(1:tlen)-t_val).^2/csig);
-            gvals(1:tlen)=gvals(1:tlen)/sum(gvals(1:tlen));
+            gvals(1:tlen)=gvals(1:tlen)/sum(gvals(1:tlen)); %<! Unis sum for the row
             vals(len-tlen+1:len)=-gvals(1:tlen);
         end
 

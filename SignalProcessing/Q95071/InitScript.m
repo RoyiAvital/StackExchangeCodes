@@ -6,6 +6,8 @@
 % TODO:
 % 	1.  A
 % Release Notes
+% - 1.0.008     17/09/2024  Royi Avital
+%   *   Added the `keepFigures` option.
 % - 1.0.008     24/11/2023  Royi Avital
 %   *   Closing figures opened with `uifigure()`.
 % - 1.0.007     08/08/2020  Royi Avital
@@ -30,9 +32,13 @@
 %
 %% General Parameters
 
-close('all');
-close(findall(0, 'type', 'figure')); %<! Closes uifigure()
-clearvars('-except', 'subStreamNumberDefault');
+clearvars('-except', 'subStreamNumberDefault', 'keepFigures');
+
+if(~exist('keepFigures', 'var') || ~keepFigures)
+    close('all');
+    close(findall(0, 'type', 'figure')); %<! Closes uifigure()
+end
+
 clc();
 
 FALSE   = 0;

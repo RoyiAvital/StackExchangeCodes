@@ -14,7 +14,8 @@
 
 %% Settings
 
-subStreamNumberDefault = 79;
+subStreamNumberDefault  = 79;
+keepFigures             = false;
 
 run('InitScript.m');
 
@@ -34,10 +35,12 @@ CONVOLUTION_SHAPE_VALID        = 3;
 
 % Image from the paper (Cropped and resized)
 imgUrl = 'https://i.postimg.cc/85Jjs9wJ/Flowers.png'; %<! https://i.imgur.com/PckT6jF.png
-% imgUrl = 'https://i.postimg.cc/K8yNRbyd/gjTJa.png';
+% imgUrl = 'https://raw.githubusercontent.com/yafangshih/EdgePreserving-Blur/refs/heads/master/data/input/taipei101.jpg';
 
 paramK = 3; %<! Radius of the local extrema
 paramN = 1; %<! Radius of the local Laplacian
+
+forceSymmetricGraph = FALSE; %<! Symmetry ruins edge preservation
 
 epsVal = 1e-5;
 
@@ -55,8 +58,6 @@ hW = @(valI, valN) abs(valI - valN) + epsVal; %<! Reference value vs. neighbor (
 
 mI = im2double(imread(imgUrl));
 mI = mean(mI, 3); %<! RGB Image
-% mI = imresize(mI, [50, 50]);
-% mI = max(mI, 0);
 
 numRows = size(mI, 1);
 numCols = size(mI, 2);
@@ -64,6 +65,7 @@ numPx = numRows * numCols;
 
 
 %% Analysis
+hRunTime = tic();
 
 vPxInd = 1:numPx;
 
@@ -84,6 +86,7 @@ mGV = CalcMGV(mI);
 
 mW = BuildGraphMatrix(mI, hV, hW, paramN);
 
+% Exponential Weights
 [vR, vC, vVals] = find(mW);
 for ii = 1:length(vR)
     localVar  = 0.6 * mV(vR(ii)); %<! The row is the reference pixel index
@@ -93,20 +96,13 @@ for ii = 1:length(vR)
     vVals(ii) = exp(-(vVals(ii) * vVals(ii)) / (2 * localVar)); %<! Exponent function
 end
 mW = sparse(vR, vC, vVals, numPx, numPx);
+
+if(forceSymmetricGraph)
+    mW = mW + mW.';
+end
+
 mW = NormalizeRows(mW);
 
-% tic();
-% mWW = GetGraph(mI, mLocalMax);
-% toc()
-
-% mW = full(mW);
-% mWW = full(mWW);
-% mT = mW + mWW;
-% 
-% mD = diag(sum(mW, 2)); %<! Degree Matrix
-% mL = mD - mW; %<! Laplacian Matrix
-% 
-% mTT = mL - mWW;
 
 % % Graph Laplacian
 mD = diag(sum(mW, 2)); %<! Degree Matrix
@@ -147,87 +143,23 @@ mXMin = reshape(vX, numRows, numCols);
 
 mX = 0.5 * (mXMax + mXMin);
 
-figure();
-imshow(mI);
+runTime = toc(hRunTime);
+disp(['Run Time: ', num2str(runTime, '%0.2f'), ' [Sec]']);
 
-figure();
-imshow(mX);
 
 %% Display Results
 
+figureIdx = figureIdx + 1;
 
-% hF = figure('Position', [100, 100, 1400, 500]);
-% 
-% hA = subplot(1, 3, 1);
-% set(hA, 'NextPlot', 'add');
-% hLineObj = plot(hA, vXFull, 'DisplayName', 'Direct Matrix Solver (Ref)');
-% set(hLineObj, 'LineStyle', 'none');
-% set(hLineObj, 'Marker', 'o');
-% hLineObj = plot(hA, vXXFull, 'DisplayName', 'Iterative Solver (Convolution)');
-% set(hLineObj, 'LineStyle', 'none');
-% set(hLineObj, 'Marker', '+');
-% set(get(hA, 'Title'), 'String', {['Solution for "full" Convolution']}, ...
-%     'FontSize', fontSizeTitle);
-% set(get(hA, 'XLabel'), 'String', {['Sample Index']}, ...
-%     'FontSize', fontSizeAxis);
-% set(get(hA, 'YLabel'), 'String', {['Sample Value']}, ...
-%     'FontSize', fontSizeAxis);
-% hLegend = ClickableLegend();
-% 
-% hA = subplot(1, 3, 2);
-% set(hA, 'NextPlot', 'add');
-% hLineObj = plot(hA, vXSame, 'DisplayName', 'Direct Matrix Solver (Ref)');
-% set(hLineObj, 'LineStyle', 'none');
-% set(hLineObj, 'Marker', 'o');
-% hLineObj = plot(hA, vXXSame, 'DisplayName', 'Iterative Solver (Convolution)');
-% set(hLineObj, 'LineStyle', 'none');
-% set(hLineObj, 'Marker', '+');
-% set(get(hA, 'Title'), 'String', {['Solution for "same" Convolution']}, ...
-%     'FontSize', fontSizeTitle);
-% set(get(hA, 'XLabel'), 'String', {['Sample Index']}, ...
-%     'FontSize', fontSizeAxis);
-% set(get(hA, 'YLabel'), 'String', {['Sample Value']}, ...
-%     'FontSize', fontSizeAxis);
-% hLegend = ClickableLegend();
-% 
-% hA = subplot(1, 3, 3);
-% set(hA, 'NextPlot', 'add');
-% hLineObj = plot(hA, vXValid, 'DisplayName', 'Direct Matrix Solver (Ref)');
-% set(hLineObj, 'LineStyle', 'none');
-% set(hLineObj, 'Marker', 'o');
-% hLineObj = plot(hA, vXXValid, 'DisplayName', 'Iterative Solver (Convolution)');
-% set(hLineObj, 'LineStyle', 'none');
-% set(hLineObj, 'Marker', '+');
-% set(get(hA, 'Title'), 'String', {['Solution for "valid" Convolution']}, ...
-%     'FontSize', fontSizeTitle);
-% set(get(hA, 'XLabel'), 'String', {['Sample Index']}, ...
-%     'FontSize', fontSizeAxis);
-% set(get(hA, 'YLabel'), 'String', {['Sample Value']}, ...
-%     'FontSize', fontSizeAxis);
-% hLegend = ClickableLegend();
-% 
-% if(generateFigures == ON)
-%     % saveas(hF, ['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
-%     print(hF, ['Figure', num2str(figureIdx, figureCounterSpec), '.png'], '-dpng', '-r0'); %<! Saves as Screen Resolution
-% end
+[hF, ~, ~] = PlotImages(permute(cat(3, mI, mXMax, mXMin, mX), [3, 1, 2]), ...
+    'cPlotTitle', {'Input Image', 'Local Maxima', 'Local Minima', 'Output (Mean)'}, ...
+    'supTitle', {['Local Extrema Edge Preserving Blur, k = ', num2str(paramK)]}, ...
+    'vSize', [2, 2]);
 
-% figureIdx = figureIdx + 1;
-% 
-% hF = figure('Position', figPosLarge);
-% hA   = axes(hF);
-% set(hA, 'NextPlot', 'add');
-% hLineObj = plot(-mU1(:, 1), 'DisplayName', 'Kernel A');
-% set(hLineObj, 'LineWidth', lineWidthNormal);
-% hLineObj = plot(-mU2(:, 1), 'DisplayName', 'Kernel B');
-% set(hLineObj, 'LineWidth', lineWidthNormal);
-% set(get(hA, 'Title'), 'String', {['Separable Filters of the Kernels']}, ...
-%     'FontSize', fontSizeTitle);
-% hLegend = ClickableLegend();
-% 
-% if(generateFigures == ON)
-%     % saveas(hF, ['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
-%     print(hF, ['Figure', num2str(figureIdx, figureCounterSpec), '.png'], '-dpng', '-r0'); %<! Saves as Screen Resolution
-% end
+if(generateFigures == ON)
+    % saveas(hF, ['Figure', num2str(figureIdx, figureCounterSpec), '.png']);
+    print(hF, ['Figure', num2str(figureIdx, figureCounterSpec), '.png'], '-dpng', '-r0'); %<! Saves as Screen Resolution
+end
 
 
 
