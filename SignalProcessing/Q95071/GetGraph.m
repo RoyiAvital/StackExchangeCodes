@@ -18,7 +18,9 @@ row_inds=zeros(imgSize*(2*wd+1)^2,1);
 vals=zeros(imgSize*(2*wd+1)^2,1);
 gvals=zeros(1,(2*wd+1)^2);
 
-
+% Builds the Laplacian Matrix:
+% - All off diagonal values are negative and sum to -1.
+% - The diagonal values are 1.
 for j=1:m
     for i=1:n
         consts_len=consts_len+1;
@@ -28,7 +30,7 @@ for j=1:m
             for ii=max(1,i-wd):min(i+wd,n)
                 for jj=max(1,j-wd):min(j+wd,m)
 
-                    if (ii~=i)|(jj~=j)
+                    if (ii~=i)|(jj~=j) %<! No cyclic graph
                         len=len+1; tlen=tlen+1;
                         row_inds(len)= consts_len;
                         col_inds(len)=indsM(ii,jj);
@@ -37,7 +39,7 @@ for j=1:m
                 end
             end
             t_val=mI(i,j,1);
-            gvals(tlen+1)=t_val;
+            gvals(tlen+1)=t_val; %<! Build the negihborhood pixels
             c_var=mean((gvals(1:tlen+1)-mean(gvals(1:tlen+1))).^2);
             csig=c_var*0.6;
             mgv=min((gvals(1:tlen)-t_val).^2);
