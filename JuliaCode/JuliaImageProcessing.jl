@@ -10,6 +10,9 @@
 #       It should also be optimized for `rfft()`.
 #   2.  Optimize `BoxBlur()` with a running sum method.
 # Release Notes
+# - 1.8.000     18/09/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `LocalVariance()`.
+#   *   Added `OrderFilter()`.
 # - 1.7.000     14/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `ScaleImage()`.
 #   *   Added `BoxBlur()`.
@@ -749,6 +752,45 @@ end
 function GenGaussianKernel( σ :: T, kernelRadius :: Tuple{N, N} ) where {T <: AbstractFloat, N <: Integer}
 
     return GenGaussianKernel((σ, σ), kernelRadius);
+
+end
+
+function LocalVariance( mI :: Matrix{T}, tuBoxRadius :: Tuple{N, N}; padMode :: PadMode = PAD_MODE_REFLECT ) where {T <: AbstractFloat, N <: Integer}
+
+    normFctr = one(T) / prod(tuBoxRadius);
+    mM = BoxBlur(mI, tuBoxRadius; padMode = padMode, normFctr = normFctr);
+    mL = max.(BoxBlur(mI .* mI, tuBoxRadius; padMode = padMode, normFctr = normFctr) .- (mM .* mM), zero(T));
+    
+    return mL;
+
+end
+
+function LocalVariance( mI :: Matrix{T}, boxRadius :: N; padMode :: PadMode = PAD_MODE_REFLECT ) where {T <: AbstractFloat, N <: Integer}
+    
+    return LocalVariance(mI, (boxRadius, boxRadius); padMode = padMode);
+
+end
+
+function OrderFilter( mI :: Matrix{T}, tuBoxRadius :: Tuple{N, N}, k :: N ) where {T <: AbstractFloat, N <: Integer}
+    # Similar to MATLAB's `ordfilt2()`.
+    # Should be used with a small radii.
+
+    numElements = (N(2) * tuBoxRadius[1] + one(N)) * (N(2) * tuBoxRadius[2] + one(N));
+    vB = zeros(T, numElements);
+
+    # Ascending order
+    mK = Kernel{(-tuBoxRadius[1]:tuBoxRadius[1], -tuBoxRadius[2]:tuBoxRadius[2])}(@inline w -> (copyto!(vB, Tuple(w)); sort!(vB)[k]));
+    mO = map(mK, extend(mI[:, :, 1], StaticKernels.ExtensionSymmetric()));
+    
+    return mO;
+
+end
+
+function OrderFilter( mI :: Matrix{T}, boxRadius :: N, k :: N ) where {T <: AbstractFloat, N <: Integer}
+    # Similar to MATLAB's `ordfilt2()`.
+    # Should be used with a small radii.
+    
+    return OrderFilter(mI, (boxRadius, boxRadius), k);
 
 end
 

@@ -8,7 +8,7 @@
 #       -   Move to folder using `cd(raw"<PathToFolder>");`.
 #       -   Activate the environment using `] activate .`.
 #       -   Instantiate the environment using `] instantiate`.
-#   2.  Working with 4 Connectivity seems to be better than 8 Connectivity.
+#   2.  A
 # TODO:
 # 	1.  Use `Krylov.jl` to support larger matrices.
 # Release Notes Royi Avital RoyiAvital@yahoo.com
@@ -27,7 +27,7 @@ using ColorTypes;          #<! Required for Image Processing
 using FileIO;              #<! Required for loading images
 using Krylov;
 using LoopVectorization;   #<! Required for Image Processing
-using MAT;
+# using MAT;
 using PlotlyJS;            #<! Use `add Kaleido_jll@v0.1` (See https://github.com/JuliaPlots/PlotlyJS.jl/issues/479)
 using SparseArrays;
 using StableRNGs;
@@ -41,6 +41,7 @@ juliaCodePath = joinpath(".", "..", "..", "JuliaCode");
 include(joinpath(juliaCodePath, "JuliaInit.jl"));
 include(joinpath(juliaCodePath, "JuliaImageProcessing.jl"));
 include(joinpath(juliaCodePath, "JuliaVisualization.jl")); #<! Display Images
+include(joinpath(juliaCodePath, "JuliaSparseArrays.jl")); #<! Sparse Arrays
 
 ## Settings
 
@@ -94,97 +95,103 @@ function BuildImgGraph( mI :: Matrix{T}, hV :: Function, hW :: Function, winRadi
 
 end
 
-function NormalizeRows( mW :: AbstractSparseMatrix{T} ) where {T <: Number}
+function LocalSparseInterpolation( mI :: Matrix{T}, mM :: BitMatrix, winRadius :: N; ϵ :: T = T(1e-5) ) where {T <: AbstractFloat, N <: Integer}
 
-    numRows = size(mW, 1);
-    numCols = size(mW, 2);
-    vI, vJ, vV = findnz(mW);
-    vRowSum = zeros(numRows);
-    numNonZero = length(vI);
+    # Validation Function
+    hV(ii :: N, jj :: N, mm :: N, nn :: N) where {N <: Integer} = (abs(mm) <= N(1)) && (abs(nn) <= N(1)) && ((mm != zero(N)) || (nn != zero(N))); #<! 8 Connectivity
+    # hV(ii :: N, jj :: N, mm :: N, nn :: N) where {N <: Integer} = (mm * nn == zero(N)) && ((mm != zero(N)) || (nn != zero(N))); #<! 4 Connectivity
+    
+    # Weighing Function
+    hW(valI :: T, valN :: T, ii :: N, jj :: N, mm :: N, nn :: N) where {T <: AbstractFloat, N <: Integer} = abs(valI - valN) + ϵ; #<! Weighing function
+    # hW(valI :: T, valN :: T, ii :: N, jj :: N, mm :: N, nn :: N) where {T <: AbstractFloat, N <: Integer} = exp(-((valI - valN) ^ 2) / (T(2) * mV[ii, jj])); #<! Weighing function
+    
+    # Distance Matrix (Graph)
+    # Number of non zeros for 8 connectivity: 8 * (numRows - 2) * (numCols - 2) + 10 * (numRows - 2) + 10 * (numCols - 2) + 4 * 3
+    mW = BuildImgGraph(mI, hV, hW, winRadius);
 
-    for ii ∈ 1:numNonZero
-        # @infiltrate
-        vRowSum[vI[ii]] += vV[ii];
+    # Local Variance Image
+    mK = Kernel{(-winRadius:winRadius, -winRadius:winRadius)}(@inline w -> var(Tuple(w)));
+    mV = map(mK, extend(mI, StaticKernels.ExtensionSymmetric()));
+
+    # Local Smoothness
+    mK = Kernel{(-winRadius:winRadius, -winRadius:winRadius)}(@inline w -> minimum(((w[-1, -1], w[-1, 0], w[-1, 1], w[0, -1], w[0, 1], w[1, -1], w[1, 0], w[1, 1]) .- w[0, 0]) .^ 2));
+    mGV = map(mK, extend(mI, StaticKernels.ExtensionSymmetric()));
+
+    # Affinity Matrix Distance -> Weights
+    vR, vC, vVals = findnz(mW);
+    for ii ∈ 1:length(vR)
+        localVar  = 0.6 * mV[vR[ii]]; #<! The row is the reference pixel index
+        mgVal     = mGV[vR[ii]];
+        localVar  = max(localVar, -mgVal / log(0.01));
+        localVar  = max(localVar, 0.000002) / 2;
+        vVals[ii] = exp(-(vVals[ii] * vVals[ii]) / (2 * localVar)); #<! Exponent function
     end
+    
+    mW = sparse(vR, vC, vVals, numPx, numPx);
+    # Rows of Sum 1
+    mW = NormalizeRows(mW);
+    
+    vV = findall(mM[:]); #<! Indices of marks (Set \mathcal{V})
 
-    for ii ∈ 1:numRows
-        vRowSum[ii] = ifelse(vRowSum[ii] != zero(T), vRowSum[ii], one(T));
-    end
+    # Pseudo Laplacian Matrix (As it is neither symmetric nor PD)
+    vD = vec(sum(mW; dims = 2));
+    mD = spdiagm(0 => vD); #<! Degree Matrix (Diagonal of the sum of each row)
+    mL = mD .- mW; #<! Pseudo Laplacian Matrix
 
-    for ii ∈ 1:numNonZero
-        vV[ii] /= vRowSum[vI[ii]];
-    end
+    # Permutation Matrix like effect by selection
+    vU = setdiff(1:numPx, vV); #<! Rest of unlabeled pixels (Set \mathcal{U})
+    
+    # Permutation of **Rows and Columns** of SPD matrix will yield SPD matrix (https://math.stackexchange.com/questions/3559710)
+    mLᵤ = mL[vU, vU]; #<! The Laplacian sub matrix to optimize by
+    mR  = mL[vU, vV];
 
-    return sparse(vI, vJ, vV, numRows, numCols);
+    vXᵥ  = mI[vV]; #<! Anchor values
+    vXᵤ = -(mLᵤ \ (mR * vXᵥ));
+
+    mO = similar(mI);
+    mO[vV] = vXᵥ;
+    mO[vU] = vXᵤ;
+
+    return mO;
 
 end
 
-function NormalizeRows!( mA :: SparseMatrixCSC{T}, vRowSum :: AbstractVector{T} ) where {T}
-    
-    vV = nonzeros(mA);
-    vR = rowvals(mA); #<! Row index
-    vRowSum .= zero(T);
-    
-    for jj in axes(mA, 2)
-        for kk in nzrange(mA, jj)
-            ii = vR[kk]; #<! Row index
-            vRowSum[ii] += vV[kk];
-        end
-    end
+function LocalExtremaSmoothing( mI :: Matrix{T}, k :: N ) where {T <: AbstractFloat, N <: Integer}
 
-    for ii ∈ 1:length(vRowSum)
-        vRowSum[ii] = ifelse(vRowSum[ii] != zero(T), vRowSum[ii], one(T));
-    end
-    
-    for jj in axes(mA, 2)
-        for kk in nzrange(mA, jj)
-            ii = vR[kk];
-            if(vRowSum[ii] == zero(T))
-                println(vRowSum[ii]);
-            end
-            vV[kk] /= vRowSum[ii];
-        end
-    end
-    
-    return mA;
+    localLen = 2k + 1; #<! k in the paper
+
+    mLocalKValue = OrderFilter(mI, k, localLen * localLen - localLen + 1);
+    mLocalMax = mI .>= mLocalKValue; #<! Local Maximum
+    mLocalKValue = OrderFilter(mI, k, localLen);
+    mLocalMin = mI .<= mLocalKValue; #<! Local Minimum
+
+    mOMax = LocalSparseInterpolation(mI, mLocalMax, k);
+    mOMin = LocalSparseInterpolation(mI, mLocalMin, k);
+
+    return 0.5 * (mOMax + mOMin);
 
 end
 
 
 ## Parameters
 
-imgUrlGray   = raw"https://i.sstatic.net/gjTJa.png"; #<! https://i.imgur.com/0dRerjk.png / https://i.postimg.cc/K8yNRbyd/gjTJa.png
-imgUrlMarked = raw"https://i.sstatic.net/0oqlt.png"; #<! https://i.imgur.com/3ouPI3K.png / https://i.postimg.cc/ZKNHbRX8/0oqlt.png
+imgUrl = raw"https://i.postimg.cc/85Jjs9wJ/Flowers.png"; #<! https://i.imgur.com/PckT6jF.png
 
 # Problem parameters
 
-# Validation Function
-hV(ii :: N, jj :: N, mm :: N, nn :: N) where {N <: Integer} = (abs(mm) <= N(1)) && (abs(nn) <= N(1)) && ((mm != zero(N)) || (nn != zero(N))); #<! 8 Connectivity
-# hV(ii :: N, jj :: N, mm :: N, nn :: N) where {N <: Integer} = (mm * nn == zero(N)) && ((mm != zero(N)) || (nn != zero(N))); #<! 4 Connectivity
-# Weighing Function
-hW(valI :: T, valN :: T, ii :: N, jj :: N, mm :: N, nn :: N) where {T <: AbstractFloat, N <: Integer} = abs(valI - valN) + ϵ; #<! Weighing function
-# hW(valI :: T, valN :: T, ii :: N, jj :: N, mm :: N, nn :: N) where {T <: AbstractFloat, N <: Integer} = exp(-((valI - valN) ^ 2) / (T(2) * mV[ii, jj])); #<! Weighing function
-
-τ         = 0.05;
-ϵ         = 1e-5;
-mC        = GenColorConversionMat(RGB_TO_YIQ); #<! Color conversion matrix
-winRadius = 1;
-β         = 200.0;
-
-# Solver Parameters
+paramK = 2; #<! Radius (The K in the paper K = 2k + 1)
 
 
 #%% Load / Generate Data
 
 # Gray / Original Image
-mI = load(download(imgUrlGray));
+mI = load(download(imgUrl));
 mI = ConvertJuliaImgArray(mI);
-mI = mI ./ 255.0;
-
-# Marked Image
-mM = load(download(imgUrlMarked));
-mM = ConvertJuliaImgArray(mM);
-mM = mM ./ 255.0;
+mI = ScaleImg(mI);
+if (ndims(mI) == 3)
+    mI = mean(mI; dims = 3);
+    mI = dropdims(mI; dims = 3);
+end
 
 numRows = size(mI, 1);
 numCols = size(mI, 2);
@@ -193,80 +200,7 @@ numPx   = numRows * numCols;
 
 ## Analysis
 
-mMYiq = ConvertColorSpace(mM, mC);
-mOYiq = ConvertColorSpace(mI, mC); #<! Check if needed
-
-# Local Variance Image
-mK = Kernel{(-winRadius:winRadius, -winRadius:winRadius)}(@inline w -> var(Tuple(w)));
-mV = map(mK, extend(mOYiq[:, :, 1], StaticKernels.ExtensionSymmetric()));
-
-mB = sum(abs.(mI .- mM), dims = 3) .> τ;
-mB = dropdims(mB; dims = 3);
-vV = findall(mB[:]); #<! Indices of marks (Set \mathcal{V})
-
-# Distance Matrix (Graph)
-# Number of non zeros for 8 connectivity: 8 * (numRows - 2) * (numCols - 2) + 10 * (numRows - 2) + 10 * (numCols - 2) + 4 * 3
-mW = BuildImgGraph(mOYiq[:, :, 1], hV, hW, winRadius);
-
-# Scale DR linearly
-# minVal = minimum(mW.nzval);
-# maxVal = maximum(mW.nzval);
-# mW.nzval .= (mW.nzval .- minVal) ./ (maxVal - minVal); 
-
-# mW.nzval .= exp.(-β .* mW.nzval) .+ ϵ; #<! Distance -> Weights
-
-mK = Kernel{(-winRadius:winRadius, -winRadius:winRadius)}(@inline w -> minimum(((w[-1, -1], w[-1, 0], w[-1, 1], w[0, -1], w[0, 1], w[1, -1], w[1, 0], w[1, 1]) .- w[0, 0]) .^ 2));
-mGV = map(mK, extend(mOYiq[:, :, 1], StaticKernels.ExtensionSymmetric()));
-
-# matwrite("Test.mat", Dict("mWJulia" => mW, "mVJulia" => mV, "mGVJulia" => mGV));
-
-vR, vC, vVals = findnz(mW);
-for ii ∈ 1:length(vR)
-    localVar  = 0.6 * mV[vR[ii]]; #<! The row is the reference pixel index
-    mgVal     = mGV[vR[ii]];
-    localVar  = max(localVar, -mgVal / log(0.01));
-    localVar  = max(localVar, 0.000002) / 2;
-    vVals[ii] = exp(-(vVals[ii] * vVals[ii]) / (2 * localVar)); #<! Exponent function
-end
-mW = sparse(vR, vC, vVals, numPx, numPx);
-# matwrite("Test1.mat", Dict("mWJulia" => mW, "mVJulia" => mV, "mGVJulia" => mGV));
-# mW = mW + mW';
-mW = NormalizeRows(mW);
-# matwrite("Test2.mat", Dict("mWJulia" => mW, "mVJulia" => mV, "mGVJulia" => mGV));
-
-
-vD = vec(sum(mW; dims = 2));
-mD = spdiagm(0 => vD); #<! Degree Matrix (Diagonal of the sum of each row)
-mL = mD .- mW;
-
-# vB = zeros(numPx);
-
-# for ii ∈ 2:3
-#     mChn    = view(mMYiq, :, :, ii);
-#     vB[vV] .= vec(mChn)[vV];
-#     vX = mL \ vB;
-#     mOYiq[:, :, ii][:] = vX;
-# end
-
-vU = setdiff(1:numPx, vV); #<! Rest of unlabeled pixels (Set \mathcal{U})
-
-# Permutation of **Rows and Columns** of SPD matrix will yield SPD matrix (https://math.stackexchange.com/questions/3559710)
-mLᵤ = mL[vU, vU]; #<! The Laplacian sub matrix to optimize by
-mR  = mL[vU, vV];
-# oFLᵤ = cholesky(mLᵤ); #<! Symbolic factorization, supports in place (https://discourse.julialang.org/t/6091).
-
-# Solving (Per channel): Lᵤ xᵤ = −R d
-for ii ∈ 1:2
-    mChn = view(mMYiq, :, :, ii + 1);
-    vXᵥ  = mChn[vV]; #<! Anchor values
-    # vXᵤ = -(oFLᵤ \ (mR * vXᵥ));
-    vXᵤ = -(mLᵤ \ (mR * vXᵥ));
-    mChn = view(mOYiq, :, :, ii + 1);
-    mChn[vV] = vXᵥ;
-    mChn[vU] = vXᵤ;
-end
-
-mO = ConvertColorSpace(mOYiq, inv(mC));
+mO = LocalExtremaSmoothing(mI, paramK);
 
 
 ## Display Results
@@ -283,35 +217,10 @@ end
 
 figureIdx += 1;
 
-hP = DisplayImage(mM; titleStr = "Marker Image");
+hP = DisplayImage(mO; titleStr = "Output Image, k = $(paramK)");
 display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
     savefig(hP, figFileNme);
 end
-
-figureIdx += 1;
-
-hP = DisplayImage(mO; titleStr = "Output Image");
-display(hP);
-
-if (exportFigures)
-    figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    savefig(hP, figFileNme);
-end
-
-figureIdx += 1;
-
-hP = PlotSparseMat(mW); #<! Too large to display
-
-if (exportFigures)
-    figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    savefig(hP, figFileNme);
-end
-
-# if (exportFigures)
-#     figFileNme = @sprintf("Figure%04d.html", figureIdx);
-#     savefig(hP, figFileNme);
-# end
-

@@ -104,9 +104,9 @@ end
 mW = NormalizeRows(mW);
 
 
-% % Graph Laplacian
+% Graph Laplacian
 mD = diag(sum(mW, 2)); %<! Degree Matrix
-mL = mD - mW; %<! Laplacian Matrix
+mL = mD - mW; %<! Laplacian Matrix (Pseudo: Assymetric, not PD)
 
 % Interpolate Maximum
 vV = find(mLocalMax);
