@@ -89,6 +89,8 @@ function BuildImgGraph( mI :: Matrix{T}, hV :: Function, hW :: Function, winRadi
         end
     end
 
+    # Julia does include explicit zeros. Hence the mapping to (1, 1) 
+    # will create an item at `mW[1, 1]` which might cause issues.
     mW = sparse(vI[1:elmIdx], vJ[1:elmIdx], vV[1:elmIdx], numPx, numPx);
 
     return mW;
@@ -176,6 +178,7 @@ end
 ## Parameters
 
 imgUrl = raw"https://i.postimg.cc/85Jjs9wJ/Flowers.png"; #<! https://i.imgur.com/PckT6jF.png
+imgUrl = raw"https://raw.githubusercontent.com/yafangshih/EdgePreserving-Blur/refs/heads/master/data/input/taipei101.jpg"; #<! For timing
 
 # Problem parameters
 
