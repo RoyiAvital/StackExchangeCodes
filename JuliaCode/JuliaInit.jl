@@ -111,6 +111,11 @@ end
     YIQ_TO_RGB
 end
 
+@enum ConnMode begin
+    CONN_MODE_4
+    CONN_MODE_8
+end
+
 
 # Display UIntx numbers as integers
 Base.show(io :: IO, x :: T) where {T <: Union{UInt, UInt128, UInt64, UInt32, UInt16, UInt8}} = Base.print(io, x);

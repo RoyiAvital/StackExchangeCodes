@@ -50,7 +50,7 @@ hV = @(ii, jj, mm, nn) (abs(mm) <= 1) && (abs(nn) <= 1) && ((mm ~= 0) || (nn ~= 
 
 % Weighing Function
 % MATLAB removes zero values automatically on each value insertion.
-% Usind added value to prevent such case.
+% Using added value to prevent such case.
 hW = @(valI, valN) abs(valI - valN) + epsVal; %<! Reference value vs. neighbor (r <-> s in the paper)
 
 
@@ -106,7 +106,7 @@ mW = NormalizeRows(mW);
 
 % Graph Laplacian
 mD = diag(sum(mW, 2)); %<! Degree Matrix
-mL = mD - mW; %<! Laplacian Matrix (Pseudo: Assymetric, not PD)
+mL = mD - mW; %<! Laplacian Matrix (Pseudo: Asymmetric, not PD)
 
 % Interpolate Maximum
 vV = find(mLocalMax);

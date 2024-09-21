@@ -68,7 +68,7 @@ function ConvertJuliaImgArray( mI :: Matrix{<: Color{T, N}} ) where {T, N}
 
     mO = permutedims(reinterpret(reshape, dataType, mI), (2, 3, 1));
 
-    if numChannels > 1
+    if (numChannels > 1)
         mO = permutedims(reinterpret(reshape, dataType, mI), (2, 3, 1));
     else
         mO = reinterpret(reshape, dataType, mI);
@@ -87,7 +87,7 @@ function ConvertJuliaImgArray( mI :: Matrix{<: Color{T, 1}} ) where {T}
     numRows, numCols    = size(mI);
     dataType            = T.types[1];
 
-    mO = reinterpret(reshape, dataType, mI);
+    mO = collect(reinterpret(reshape, dataType, mI));
 
     return mO;
 
