@@ -54,7 +54,7 @@ function [ vX ] = ConsensusAdmm( cProxFun, numElements, paramRho, numIterations,
 %   1.  C
 % Release Notes:
 %   -   1.0.001     28/12/2020  Royi Avital
-%       *   Updated ot the scaled form of the ADMM.
+%       *   Updated to the scaled form of the ADMM.
 %   -   1.0.000     25/03/2020  Royi Avital
 %       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
@@ -68,7 +68,7 @@ ON      = 1;
 numSets     = size(cProxFun, 1);
 % numElements = size(vX, 1);
 
-% The prox is usally given by: \arg \min_x 0.5 * || x - v ||^2 + paramLambda * g(x).
+% The prox is usually given by: \arg \min_x 0.5 * || x - v ||^2 + paramLambda * g(x).
 % The ADMM form is: \arg \min_x (rho / 2) * || x - v ||^2 + g(x). 
 % Which means paramLamba = 1 / paramRho.
 paramRhoInv = 1 / paramRho; %<! Basically paramLambda above.
