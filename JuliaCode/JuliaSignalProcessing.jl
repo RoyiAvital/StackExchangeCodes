@@ -378,13 +378,16 @@ function BeadsFilter( vY :: Vector{T}, modelDeg :: N, fₛ :: T, asyRatio :: T, 
     This function performs baseline estimation and denoising on a signal `vY` using sparsity.
     It is based on the BEADS algorithm, commonly used for processing noisy signals with asymmetric peaks.
     BEADS provides a smooth baseline estimation while preserving the peak information.  
-    The BEADS algorithm solves a Convex problem.
+    The algorithm is optimized for a train of positive peaks.
+    The BEADS algorithm solves a Convex problem using Majorization Minimization. 
     
     Arguments:
       - `vY::Vector{T}`: The input signal as a vector of type `T`.
       - `modelDeg::N`: Degree of the polynomial model (integer).
-      - `fₛ::T`: Cutoff frequency for the baseline filter. In the range [0, 0.5].
+      - `fₛ::T`: Cutoff frequency for the baseline filter. In the range [0, 0.5].  
+        Commonly in the range `[0, 0.05]`.
       - `asyRatio::T`: Asymmetry ratio for penalizing peaks of different polarity.
+         Higher value promotes more positive peaks. Range in (0, ∞).
       - `λ₀::T`: Regularization parameter for baseline sparsity.
       - `λ₁::T`: Regularization parameter for the first order difference (Smoothness).
       - `λ₂::T`: Regularization parameter for the second order difference (Smoothness).
@@ -435,7 +438,7 @@ function BeadsFilter( vY :: Vector{T}, modelDeg :: N, fₛ :: T, asyRatio :: T, 
       - Chromatogram baseline estimation and denoising using sparsity (BEADS).
     """
 
-    ϕ(vY :: Vector{T}) = abs.(vY) .- ϵ₁ .* log.(abs.(vY) .+ ϵ₁);
+    ϕ(vY :: Vector{T}) = abs.(vY) .- ϵ₁ .* log.(abs.(vY) .+ ϵ₁); #<! Differentiable approximation of L1
     ψ(vY :: Vector{T}) = inv.(abs.(vY) .+ ϵ₁); #<! wfun on MATLAB
     
     function θ(vY :: Vector{T}) # where {T <: AbstractFloat} 
