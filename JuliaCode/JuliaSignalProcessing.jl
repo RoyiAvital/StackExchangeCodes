@@ -415,7 +415,9 @@ function BeadsFilter( vY :: Vector{T}, modelDeg :: N, fₛ :: T, asyRatio :: T, 
     
     Remarks:
       - Results differ from MATLAB (Small values, RMSE of ~0.03).
-    
+      - Works well when the signal goes to zero on both ends.  
+        A trick to achieve it is by padding a smooth roll to 0.  
+        One way to achieve smooth roll is by using Sigmoid.    
     
     Example Usage:
     ```julia
