@@ -780,7 +780,7 @@ function OrderFilter( mI :: Matrix{T}, tuBoxRadius :: Tuple{N, N}, k :: N ) wher
 
     # Ascending order
     mK = Kernel{(-tuBoxRadius[1]:tuBoxRadius[1], -tuBoxRadius[2]:tuBoxRadius[2])}(@inline w -> (copyto!(vB, Tuple(w)); sort!(vB)[k]));
-    mO = map(mK, extend(mI[:, :, 1], StaticKernels.ExtensionSymmetric()));
+    mO = map(mK, extend(mI, StaticKernels.ExtensionSymmetric()));
     
     return mO;
 

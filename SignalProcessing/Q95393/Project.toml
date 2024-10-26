@@ -1,5 +1,7 @@
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
+ECOS = "e2685f51-7e38-5353-a97d-a921fd2c8199"
 Kaleido_jll = "f7e6163d-2fa5-5f23-b69c-1db539e41963"
 Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
 LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"

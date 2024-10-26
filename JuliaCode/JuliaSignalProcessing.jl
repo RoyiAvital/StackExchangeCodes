@@ -6,7 +6,11 @@
 #   1.  A
 # TODO:
 # 	1.  Add DFT convolution code from https://dsp.stackexchange.com/questions/90036.
+# 	2.  Remove dependency on `Convex.jl` by using solvers from `JuliaOptimization.jl`.
 # Release Notes
+# - 1.4.000     26/10/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `OrderFilter()`.
+#   *   Added packages in use to be explicitly imported.
 # - 1.3.000     08/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `GenConvMtx()` for operator view of the 1D convolution.
 #   *   Verifying the initialization happens only once.
@@ -22,8 +26,12 @@
 ## Packages
 
 # Internal
+using SparseArrays;
 
 # External
+using Convex;
+using ECOS;
+using StaticKernels;
 
 ## Constants & Configuration
 
@@ -296,7 +304,8 @@ function L1Spline( vY :: Vector{T}, λ :: T ) where {T <: Real}
 end
 
 function L1PieceWise( vY :: Vector{T}, λ :: T, polyDeg :: N; ρ :: T = 1.0 ) where {T <: Real, N <: Integer}
-    # L1 Splines for Robust, Simple, and Fast Smoothing of Grid Data (https://arxiv.org/abs/1208.2292)
+    # Piece Wise Model with Auto Know Selection: https://dsp.stackexchange.com/questions/1227.
+
 
     numSamples = length(vY);
 
@@ -329,6 +338,20 @@ function GenGaussianKernel( σ :: T, kernelRadius :: N ) where {T <: AbstractFlo
     vK ./= sum(mK);
 
     return vK;
+
+end
+
+function OrderFilter( vX :: Vector{T}, localRadius :: N, k :: N ) where {T <: AbstractFloat, N <: Integer}
+    # Should be used with a small radii.
+
+    numElements = (N(2) * localRadius[1]) + one(N);
+    vB = zeros(T, numElements);
+
+    # Ascending order
+    vK = Kernel{(-localRadius:localRadius, )}(@inline w -> (copyto!(vB, Tuple(w)); sort!(vB)[k]));
+    vY = map(vK, extend(vX, StaticKernels.ExtensionSymmetric()));
+    
+    return vY;
 
 end
 
