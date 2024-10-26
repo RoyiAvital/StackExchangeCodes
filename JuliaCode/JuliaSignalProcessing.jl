@@ -10,6 +10,8 @@
 # Release Notes
 # - 1.4.000     26/10/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `OrderFilter()`.
+#   *   Added `MedianFilter()`.
+#   *   Added `BeadsFilter()`.
 #   *   Added packages in use to be explicitly imported.
 # - 1.3.000     08/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `GenConvMtx()` for operator view of the 1D convolution.
@@ -30,6 +32,7 @@ using SparseArrays;
 
 # External
 using Convex;
+using Infiltrator;
 using ECOS;
 using StaticKernels;
 
@@ -144,7 +147,7 @@ function _Conv1D!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T} ) where {T 
     # Optimized for the case the kernel is in vB (Shorter)
     J < K && return _Conv1D!(vO, vB, vA);
     
-    I = JJ + K - 1; #<! Output length
+    I = J + K - 1; #<! Output length
 	
     @simd ivdep for ii in 1:(K - 1) #<! Head
         sumVal = zero(T);
@@ -365,4 +368,160 @@ function OrderFilter( vX :: Vector{T}, localRadius :: N, k :: N ) where {T <: Ab
     return vY;
 
 end
+
+function BeadsFilter( vY :: Vector{T}, modelDeg :: N, fₛ :: T, asyRatio :: T, λ₀ :: T, λ₁ :: T, λ₂ :: T, numIter :: N; ϵ₀ :: T = T(1e-6), ϵ₁ :: T = T(1e-6) ) where {T <: AbstractFloat, N <: Integer}
+    """
+    BeadsFilter(vY::Vector{T}, modelDeg::N, fₛ::T, asyRatio::T, λ₀::T, λ₁::T, λ₂::T, numIter::N; ϵ₀::T = T(1e-6), ϵ₁::T = T(1e-6)) where {T <: AbstractFloat, N <: Integer}
+    
+    BEADS: Baseline Estimation And Denoising with Sparsity
+    
+    This function performs baseline estimation and denoising on a signal `vY` using sparsity.
+    It is based on the BEADS algorithm, commonly used for processing noisy signals with asymmetric peaks.
+    BEADS provides a smooth baseline estimation while preserving the peak information.  
+    The BEADS algorithm solves a Convex problem.
+    
+    Arguments:
+      - `vY::Vector{T}`: The input signal as a vector of type `T`.
+      - `modelDeg::N`: Degree of the polynomial model (integer).
+      - `fₛ::T`: Cutoff frequency for the baseline filter. In the range [0, 0.5].
+      - `asyRatio::T`: Asymmetry ratio for penalizing peaks of different polarity.
+      - `λ₀::T`: Regularization parameter for baseline sparsity.
+      - `λ₁::T`: Regularization parameter for the first order difference (Smoothness).
+      - `λ₂::T`: Regularization parameter for the second order difference (Smoothness).
+      - `numIter::N`: Number of iterations to run the optimization process.
+      
+    Keyword Arguments:
+      - `ϵ₀::T = T(1e-6)`: Small threshold for handling very small values in the asymmetry constraint.
+      - `ϵ₁::T = T(1e-6)`: Small threshold for handling very small values in the sparsity function.
+      
+    Returns:
+      - `vX::Vector{T}`: Filtered signal (Denoised version of `vY` with baseline removed).
+      - `vF::Vector{T}`: Estimated baseline signal.
+      - `vC::Vector{T}`: Cost function values at each iteration, indicating convergence.
+    
+    Details:
+    The BEADS algorithm operates by balancing between sparsity and smoothness constraints to isolate the baseline from the signal.  
+    It includes the following main steps:
+    
+      1. **Asymmetry-based Sparsity**: The function `θ` penalizes signal values based on an asymmetry ratio (`asyRatio`). It discourages peaks in the baseline, adapting for positive and negative peaks differently.
+      2. **Regularization with Sparsity and Smoothness**: 
+        - The first-order difference term (`λ₁`) penalizes rapid changes, helping smooth the baseline.
+        - The second-order difference term (`λ₂`) penalizes curvature, maintaining a smoother baseline profile.
+      3. **Model Matrix Generation**: `GenModelMat` creates the system matrices `mA` and `mB` for the polynomial model specified by `modelDeg`.
+      4. **Iterative Optimization**: The algorithm iteratively minimizes a cost function, `hCost`, balancing baseline smoothness and signal sparsity.
+    
+    Remarks:
+      - Results differ from MATLAB (Small values, RMSE of ~0.03).
+    
+    
+    Example Usage:
+    ```julia
+    # Sample noisy signal
+    vY = rand(Float64, 100) .+ sin.(range(0, 2π, length = 100));
+    
+    # Parameters
+    modelDeg = 2;
+    fₛ = 0.05;
+    asyRatio = 0.5;
+    λ₀ = 1.0;
+    λ₁ = 1.0;
+    λ₂ = 1.0;
+    numIter = 100;
+    
+    # Run BEADS filter
+    vX, vF, vC = BeadsFilter(vY, modelDeg, fₛ, asyRatio, λ₀, λ₁, λ₂, numIter);
+
+    Reference:
+      - Chromatogram baseline estimation and denoising using sparsity (BEADS).
+    """
+
+    ϕ(vY :: Vector{T}) = abs.(vY) .- ϵ₁ .* log.(abs.(vY) .+ ϵ₁);
+    ψ(vY :: Vector{T}) = inv.(abs.(vY) .+ ϵ₁); #<! wfun on MATLAB
+    
+    function θ(vY :: Vector{T}) # where {T <: AbstractFloat} 
+        valSum = zero(T);
+
+        for ii ∈ 1:length(vY)
+            valSum += ifelse(vY[ii] > ϵ₀, vY[ii], zero(T));
+            valSum += ifelse(vY[ii] < -ϵ₀, -asyRatio * vY[ii], zero(T));
+            valSum += ifelse(abs(vY[ii]) < ϵ₀, ((one(T) + asyRatio) / (T(4)ϵ₀)) * vY[ii] * vY[ii], zero(T));
+            valSum += ifelse(abs(vY[ii]) < ϵ₀, ((one(T) - asyRatio) / T(2)) * vY[ii] + (ϵ₀ * (one(T) + asyRatio) / T(4)), zero(T));
+        end
+
+        return valSum;
+    end
+    
+    function GenModelMat(modelDeg :: N, fₛ :: T, numSamples :: N) # where {T <: AbstractFloat, N <: Integer} 
+
+        vB1 = [one(T), -one(T)];
+        vB2 = [-one(T), T(2), -one(T)];
+        for _ ∈ one(N):(modelDeg - one(N))
+            vB1 = Conv1D(vB1, vB2);
+        end
+        vB = Conv1D(vB1, [-one(T), one(T)]);
+
+        valArg = 2π * fₛ;
+        valT = ((one(T) - cos(valArg)) / (one(T) + cos(valArg))) ^ modelDeg;
+
+        vA = ones(T, 1);
+        vA1 = [one(T), T(2), one(T)];
+        for _ ∈ one(N):modelDeg
+            vA = Conv1D(vA, vA1);
+        end
+
+        vA = vB + valT * vA;
+
+        vDiag = [dd => vA[ii] * ones(T, numSamples - abs(dd)) for (ii, dd) ∈ enumerate(-modelDeg:modelDeg)];
+        mA = spdiagm(numSamples, numSamples, vDiag...);
+
+        vDiag = [dd => vB[ii] * ones(T, numSamples - abs(dd)) for (ii, dd) ∈ enumerate(-modelDeg:modelDeg)];
+        mB = spdiagm(numSamples, numSamples, vDiag...);
+
+        return mA, mB;
+        
+    end
+    
+    vX = copy(vY);
+    vC = zeros(T, numIter); #<! Cost per iteration
+    numSamples = length(vY);
+
+    mA, mB = GenModelMat(modelDeg, fₛ, numSamples);
+
+    hH(vX :: Vector{T}) = mB * (mA \ vX);
+    hCost(vX :: Vector{T}) = T(0.5) * sum(abs2, hH(vY - vX)) + λ₀ * θ(vX) + λ₁ * sum(ϕ(diff(vX))) + λ₂ * sum(ϕ(diff(diff(vX))));
+    vE = ones(T, numSamples - one(N));
+    mD1 = spdiagm(numSamples - one(N), numSamples, 0 => -vE, 1 => vE);
+    mD2 = spdiagm(numSamples - N(2), numSamples, 0 => vE[1:(end - 1)], 1 => -T(2) * vE[1:(end - 1)], 2 => vE[1:(end - 1)]);
+
+    mD = cat(mD1, mD2; dims = 1);
+    mBB = mB' * mB;
+
+    vW = cat(λ₁ * ones(T, numSamples - one(N)), λ₂ * ones(T, numSamples - N(2)); dims = 1);
+    mΛ = spdiagm(vW .* ψ(mD * vX)); #<! Shape (2 * numSamples - 3, 2 * numSamples - 3)
+    vB = T(0.5) * (one(T) - asyRatio) * ones(numSamples);
+    vD = mBB * (mA \ vY) - λ₀ * (mA' * vB);
+    vΓ = ones(T, numSamples);
+    mΓ = spdiagm(vΓ); #<! TODO: Check using Diagonal
+
+    vC[1] = hCost(vX);
+
+    for ii ∈ N(1):numIter
+        mΛ.nzval[:] = vW .* ψ(mD * vX);
+        for jj ∈ 1:numSamples
+            vΓ[jj] = ((one(T) + asyRatio) / T(4)) / ifelse(abs(vX[jj]) > ϵ₀, abs(vX[jj]), ϵ₀);
+        end
+
+        mΓ.nzval[:] = vΓ[:]; #<! Update diagonal
+        mM = T(2) * λ₀ * mΓ + (mD' * mΛ * mD); #<! TODO: Optimize (No need for `mΛ`)
+        vX = mA * ((mBB + (mA' * mM * mA)) \ vD);
+
+        vC[ii] = hCost(vX);
+    end
+
+    vF = vY - vX - hH(vY - vX);
+    
+    return vX, vF, vC;
+
+end
+
 

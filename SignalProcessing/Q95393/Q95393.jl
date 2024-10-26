@@ -99,8 +99,8 @@ mD = mD[1:(end - paramK), :];
 
 # Trend and Detrend Signal
 if (detrendMode == DETREND_MODE_DC_BLOCKER)
-    vB = [1, -1];
-    vA = [1, -α];
+    vB = [1.0, -1.0];
+    vA = [1.0, -α];
     
     # The `filtfilt(vB, vA, vY)` does not work (https://github.com/JuliaDSP/DSP.jl/issues/573)
     vZ = filtfilt(PolynomialRatio(vB, vA), vY);
