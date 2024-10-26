@@ -341,6 +341,17 @@ function GenGaussianKernel( σ :: T, kernelRadius :: N ) where {T <: AbstractFlo
 
 end
 
+function MedianFilter( vX :: Vector{T}, localRadius :: N ) where {T <: AbstractFloat, N <: Integer}
+    # Should be used with a small radii.
+    
+    # https://github.com/stev47/StaticKernels.jl/discussions/12
+    vK = Kernel{(-localRadius:localRadius, )}(@inline w -> median(Tuple(w)));
+    vY = map(vK, extend(vX, StaticKernels.ExtensionSymmetric()));
+    
+    return vY;
+
+end
+
 function OrderFilter( vX :: Vector{T}, localRadius :: N, k :: N ) where {T <: AbstractFloat, N <: Integer}
     # Should be used with a small radii.
 

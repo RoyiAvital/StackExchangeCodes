@@ -24,6 +24,7 @@ using Printf;
 using Random;
 # External
 using BenchmarkTools;
+using DSP;
 using ECOS;                #<! Required for Signal Processing
 using LoopVectorization;   #<! Required for Image Processing
 # using MAT;
@@ -42,6 +43,10 @@ include(joinpath(juliaCodePath, "JuliaSignalProcessing.jl")); #<! Signal Process
 include(joinpath(juliaCodePath, "JuliaSparseArrays.jl")); #<! Sparse Arrays
 include(joinpath(juliaCodePath, "JuliaVisualization.jl")); #<! Display Images
 
+@enum DetrendMode begin
+    DETREND_MODE_DC_BLOCKER
+    DETREND_MODE_MEDIAN
+end
 
 ## Settings
 
@@ -63,7 +68,10 @@ dataUrl = "Data.csv"; #<! Local
 
 paramK      = 3; #<! Derivative order
 localRadius = 4; #<! Radius
-λ           = 0.15; #<! Smoothing balance
+detrendMode = DETREND_MODE_DC_BLOCKER;
+medRadius   = 25; #<! Radius for Median Filter
+α           = 0.995; #<! DC Blocker
+λ           = 500; #<! Smoothing balance
 
 
 ## Load / Generate Data
@@ -73,13 +81,6 @@ vY = readdlm(dataUrl)[:]; #<! Data is a vector
 # vY = readdlm(download(dataUrl))[:]; #<! Use when data is not local
 numSamples = length(vY);
 
-# Display Data
-oTr = scatter(; x = 1:numSamples, y = vY, mode = "lines+markers");
-oLayout = Layout(title = "Input Signal", width = 600, height = 400, 
-                 hovermode = "closest", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0));
-hP = Plot([oTr], oLayout);
-display(hP);
-
 
 ## Analysis
 
@@ -88,14 +89,7 @@ numElementsN = 2 * localRadius + 1; #<! Number of elements in the window
 vO = OrderFilter(vY, localRadius, numElementsN - (floor(Int, sqrt(localRadius)) + 1) + 1);
 vP = vY .>= vO;
 
-oTr1 = scatter(; x = 1:numSamples, y = vY, mode = "lines+markers", name = "Signal");
-oTr2 = scatter(; x = (1:numSamples)[vP], y = vY[vP], mode = "markers", name = "Local Peak Set");
-oLayout = Layout(title = "Input Signal", width = 600, height = 400, 
-                 hovermode = "closest", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0));
-hP = Plot([oTr1, oTr2], oLayout);
-display(hP);
-
-
+# Build the Finite Differences Operator
 mD  = spdiagm(numSamples, numSamples, 0 => -ones(numSamples), 1 => ones(numSamples - 1));
 mDD = copy(mD);
 for kk in 1:(paramK - 1)
@@ -103,23 +97,99 @@ for kk in 1:(paramK - 1)
 end
 mD = mD[1:(end - paramK), :];
 
-vZ = zeros(numSamples);
-vPi = findall(vP);
+# Trend and Detrend Signal
+if (detrendMode == DETREND_MODE_DC_BLOCKER)
+    vB = [1, -1];
+    vA = [1, -α];
+    
+    # The `filtfilt(vB, vA, vY)` does not work (https://github.com/JuliaDSP/DSP.jl/issues/573)
+    vZ = filtfilt(PolynomialRatio(vB, vA), vY);
+    vT = vY - vZ;
+elseif (detrendMode == DETREND_MODE_MEDIAN)
+    vT = MedianFilter(vY, medRadius);
+    vZ = vY - vT;
+end
+
+# Solving the Convex Problem
+vPi = findall(vP); #<! Convex.jl does not support boolean indexing (https://github.com/jump-dev/Convex.jl/issues/707)
 
 vX = Variable(numSamples);
-sConvProb = minimize( 0.5 * sumsquares(vX - vY) + λ * norm(mD * vX, 1), [vX[vPi] == vY[vPi]] );
+sConvProb = minimize( 0.5 * sumsquares(vX - vZ) + λ * norm(mD * vX, 1), [vX[vPi] == vY[vPi]] );
 solve!(sConvProb, ECOS.Optimizer; silent = true);
-# vX = vec(vX.value);
+vX = vec(vX.value);
 
 
 ## Display Results
 
-oTr1 = scatter(; x = 1:numSamples, y = vY, mode = "lines", name = "Signal");
-oTr2 = scatter(; x = (1:numSamples)[vP], y = vY[vP], mode = "markers", name = "Local Peak Set");
-oTr3 = scatter(; x = 1:numSamples, y = vX.value[:], mode = "lines", name = "Reconstruction");
+# Display Data
+figureIdx += 1;
+
+oTr = scatter(; x = 1:numSamples, y = vY, mode = "lines+markers");
 oLayout = Layout(title = "Input Signal", width = 600, height = 400, 
+                 hovermode = "closest", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0));
+hP = Plot([oTr], oLayout);
+display(hP);
+
+if (exportFigures)
+    figFileNme = @sprintf("Figure%04d.png", figureIdx);
+    savefig(hP, figFileNme);
+end
+
+# Display the Local Peak Set
+figureIdx += 1;
+
+oTr1 = scatter(; x = 1:numSamples, y = vY, mode = "lines+markers", name = "Signal");
+oTr2 = scatter(; x = (1:numSamples)[vP], y = vY[vP], mode = "markers", name = "Local Peak Set");
+oLayout = Layout(title = "Input Signal", width = 600, height = 400, 
+                 hovermode = "closest", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0));
+hP = Plot([oTr1, oTr2], oLayout);
+display(hP);
+
+if (exportFigures)
+    figFileNme = @sprintf("Figure%04d.png", figureIdx);
+    savefig(hP, figFileNme);
+end
+
+# Display the Trend Signal
+figureIdx += 1;
+
+if (detrendMode == DETREND_MODE_DC_BLOCKER)
+    detrendStr = @sprintf(", Detrend by DC Blocker with α = %0.2f", α);
+elseif (detrendMode == DETREND_MODE_MEDIAN)
+    detrendStr = @sprintf(", Detrend by Median Filter with radius = %d", medRadius);
+end
+
+titleStr = "Input & Trend Signals" * detrendStr;
+
+oTr1 = scatter(; x = 1:numSamples, y = vY, mode = "lines", name = "Signal");
+oTr2 = scatter(; x = 1:numSamples, y = vT, mode = "lines", name = "Trend");
+oTr3 = scatter(; x = 1:numSamples, y = vZ, mode = "lines", name = "DeTrend");
+oLayout = Layout(title = titleStr, width = 600, height = 400, 
                  hovermode = "closest", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0));
 hP = Plot([oTr1, oTr2, oTr3], oLayout);
 display(hP);
+
+if (exportFigures)
+    figFileNme = @sprintf("Figure%04d.png", figureIdx);
+    savefig(hP, figFileNme);
+end
+
+# Display Reconstruction
+figureIdx += 1;
+
+titleStr = "Reconstructed Signal" * detrendStr;
+
+oTr1 = scatter(; x = 1:numSamples, y = vY, mode = "lines", name = "Signal");
+oTr2 = scatter(; x = (1:numSamples)[vP], y = vY[vP], mode = "markers", name = "Local Peak Set");
+oTr3 = scatter(; x = 1:numSamples, y = vX, mode = "lines", name = "Reconstruction");
+oLayout = Layout(title = titleStr, width = 600, height = 400, 
+                 hovermode = "closest", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0));
+hP = Plot([oTr1, oTr2, oTr3], oLayout);
+display(hP);
+
+if (exportFigures)
+    figFileNme = @sprintf("Figure%04d.png", figureIdx);
+    savefig(hP, figFileNme);
+end
 
 
