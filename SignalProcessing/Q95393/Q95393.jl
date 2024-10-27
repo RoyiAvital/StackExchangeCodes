@@ -24,6 +24,7 @@ using Printf;
 using Random;
 # External
 using BenchmarkTools;
+using Convex;              #<! Required for Signal Processing
 using DSP;
 using ECOS;                #<! Required for Signal Processing
 using LoopVectorization;   #<! Required for Image Processing
