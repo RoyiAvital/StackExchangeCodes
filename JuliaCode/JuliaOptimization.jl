@@ -7,6 +7,9 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.0.006     04/11/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Fixes issued with `GradientDescentBackTracking()`.
+#   *   Made explicit package usage.
 # - 1.0.005     08/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Verifying the initialization happens only once.
 # - 1.0.004     28/06/2024  Royi Avital RoyiAvital@yahoo.com
@@ -26,8 +29,10 @@
 ## Packages
 
 # Internal
+using LinearAlgebra;
 
 # External
+using FastLapackInterface;
 
 
 ## Constants & Configuration
@@ -71,7 +76,7 @@ function CalcFunGrad!( vG :: AbstractVecOrMat{T}, vP :: AbstractVecOrMat{T}, vX 
         DiffFun = vP -> (hFun(vX + vP) - funValRef) / ε;
     end
 
-    # Using actual function defintion (Equivaklent to the anonymous above).
+    # Using actual function definition (Equivalent to the anonymous above).
     # Functions are processed as objects and then assigned.
     # if (diffMode == DIFF_MODE_BACKWARD)
     #     DiffFun = function( vP :: AbstractVecOrMat{T} ) 
@@ -141,15 +146,14 @@ function GradientDescentBackTracking!( vX :: AbstractVecOrMat{T}, vG :: Abstract
         vG .= ∇ObjFun(vX);
         objFunVal = ObjFun(vX);
         vZ .= vX .- η .*  vG;
-        while ((hObjFun(vZ) > objFunVal) && (α > β))
+        while ((ObjFun(vZ) > objFunVal) && (η > β))
             η *= α;
-            vZ .= vX .- η .*  vG;
+            vZ .= vX .- η .* vG;
         end
         vG .*= η;
         η   /= α;
         vX .-= vG;
     
-        vX .= mX .- (η .* ∇vX);
         vX = ProjFun(vX);
     end
 
@@ -161,7 +165,9 @@ function GradientDescentBackTracking( vX :: AbstractVecOrMat{T}, numIter :: S, �
     vG = copy(vX);
     vZ = copy(vX);
 
-    GradientDescentBackTracking(vX, vG, vZ, numIter, η, ObjFun, ∇ObjFun; ProjFun = ProjFun, α = α, β = β);
+    GradientDescentBackTracking!(vX, vG, vZ, numIter, η, ObjFun, ∇ObjFun; ProjFun = ProjFun, α = α, β = β);
+
+    return vX;
 
 end
 
