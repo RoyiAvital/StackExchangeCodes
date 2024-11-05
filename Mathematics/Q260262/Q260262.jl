@@ -68,7 +68,8 @@ function GetImageHistCount( mI :: Matrix{T}  ) where {T <: AbstractFloat}
 end
 
 function Expect( hF :: Function, vX :: Vector{T}, vF :: Vector{T}, lowerBnd :: T, upperBnd :: T ) where {T <: AbstractFloat}
-    # Replication of SciPy `expect()` for discrete distribution
+    # Calculates `E[f(x)]`.
+    # Replication of SciPy `expect()` for discrete distribution.
 
     valE = zero(T);
     for (valX, valF) in zip(vX, vF)
@@ -90,6 +91,8 @@ function QunatizeImage( mI :: Matrix{T}, vT :: Vector{T}, vR :: Vector{T} ) wher
     for jj ∈ 1:numCols, ii ∈ 1:numRows
         # lvlIdx = max(findfirst(x -> x >= (mO[ii, jj]), vT) - 1, 1);
         lvlIdx = max(findfirst(>=(mO[ii, jj]), vT) - 1, 1);
+        # `searchsortedfirst()` On unique sorted array behaves like NumPy's `digitize()`
+        # lvlIdx = searchsortedfirst(vT[2:(end - 1)], mO[ii, jj]);
         mO[ii, jj] = vR[lvlIdx];
     end
 

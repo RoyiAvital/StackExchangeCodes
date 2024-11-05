@@ -3,7 +3,7 @@
 # References:
 #   1.  
 # Remarks:
-#   1.  A
+#   1.  Optimize `@inbounds` and `@fastmath` for convolution.
 # TODO:
 # 	1.  Add DFT convolution code from https://dsp.stackexchange.com/questions/90036.
 # 	2.  Remove dependency on `Convex.jl` by using solvers from `JuliaOptimization.jl`.
@@ -32,7 +32,6 @@ using SparseArrays;
 
 # External
 using Convex;
-using Infiltrator;
 using ECOS;
 using StaticKernels;
 
@@ -308,7 +307,6 @@ end
 
 function L1PieceWise( vY :: Vector{T}, λ :: T, polyDeg :: N; ρ :: T = 1.0 ) where {T <: Real, N <: Integer}
     # Piece Wise Model with Auto Know Selection: https://dsp.stackexchange.com/questions/1227.
-
 
     numSamples = length(vY);
 
