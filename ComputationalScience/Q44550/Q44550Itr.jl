@@ -39,9 +39,9 @@ RNG_SEED = 1234;
 
 juliaCodePath = joinpath(".", "..", "..", "JuliaCode");
 include(joinpath(juliaCodePath, "JuliaInit.jl"));
+include(joinpath(juliaCodePath, "JuliaSparseArrays.jl")); #<! Arrays
 include(joinpath(juliaCodePath, "JuliaImageProcessing.jl"));
 include(joinpath(juliaCodePath, "JuliaVisualization.jl")); #<! Display Images
-include(joinpath(juliaCodePath, "JuliaSparseArrays.jl")); #<! Sparse Arrays
 
 ## Settings
 

@@ -15,7 +15,7 @@ function [ vX ] = ProjectL1Ball( vY, ballRadius, stopThr )
 %                       Type: 'Single' / 'Double'.
 %                       Range: (0, inf).
 %   - stopThr       -   Stopping Threshold.
-%                       Sets the trheold of the Newton Iteration. The
+%                       Sets the threshold of the Newton Iteration. The
 %                       absolute value of the Objective Function will be
 %                       below the threshold.
 %                       Structure: Scalar.

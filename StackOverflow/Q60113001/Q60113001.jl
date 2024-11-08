@@ -4,6 +4,10 @@
 # References:
 #   1.  Dirk Jan Kroon - Image Edge Enhancing Coherence Filter Toolbox - https://www.mathworks.com/matlabcentral/fileexchange/25449.
 #   2.  Nils Olovsson - Image Smearing by Anisotropic Diffusion (https://nils-olovsson.se/articles/image_smearing_by_anisotropic_diffusion).
+#   3.  KipTool Manual - Advanced Filter Modules (https://github.com/neutronimaging/imagingsuite/wiki/KipTool-manual:-AdvancedFilterModules).
+#   4.  Tomi Sariola - Anisotropic Diffusion in Image Processing (https://core.ac.uk/download/pdf/237212356.pdf).
+#   5.  Serena Morigi - Nonlinear Parabolic PDE in Image Restoration (https://www.dm.unibo.it/~morigi/homepage_file/courses_file/file_dl/nonlineari_s.pdf).
+#   6.  Francisco Javier Sayas - A Gentle Introduction to the Finite Element Method (https://team-pancho.github.io/documents/anIntro2FEM_2015.pdf).
 # Remarks:
 #   1.  Use in Julia as following:
 #       -   Move to folder using `cd(raw"<PathToFolder>");`.

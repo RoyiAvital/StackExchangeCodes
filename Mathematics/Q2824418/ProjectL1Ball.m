@@ -1,7 +1,7 @@
 function [ vX ] = ProjectL1Ball( vY, ballRadius, vLowerBound, vUpperBound )
 % ----------------------------------------------------------------------------------------------- %
 % [ vX ] = ProjectL1Ball( vY, ballRadius, vLowerBound, vUpperBound )
-%   Solving the Orthogonal Porjection Problem of the input vector onto the
+%   Solving the Orthogonal Projection Problem of the input vector onto the
 %   L1 Ball with Box Constraints using KKT Conditions.
 % Input:
 %   - vY            -   Input Vector.
@@ -76,7 +76,7 @@ end
 % vanish) is the solution
 
 % The vector vS should be vS = sign(vX). Using some basic logic the sign of
-% the solution could be infered without having it explicitly. By default it
+% the solution could be inferred without having it explicitly. By default it
 % is given by the initialization
 vS = sign(vY);
 
@@ -112,10 +112,10 @@ if(DEBUG_MODE == ON)
     plot(vParamLambda, vObjVal);
 end
 
-paramLambda = fzero(hObjFun, paramLambda); %<! Objective Function isn't smooth hence can't use Newotin Method
+paramLambda = fzero(hObjFun, paramLambda); %<! Objective Function isn't smooth hence can't use Newton Method
 paramLambda = max(paramLambda, 0);
 
-% Solution as derived for the updated forumaltion of the problem.
+% Solution as derived for the updated formulation of the problem.
 vX = hProjFun(vY - (paramLambda * vS));
 
 

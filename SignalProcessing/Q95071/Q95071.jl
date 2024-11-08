@@ -144,6 +144,13 @@ function LocalSparseInterpolation( mI :: Matrix{T}, mM :: BitMatrix, winRadius :
     vU = setdiff(1:numPx, vV); #<! Rest of unlabeled pixels (Set \mathcal{U})
     
     # Permutation of **Rows and Columns** of SPD matrix will yield SPD matrix (https://math.stackexchange.com/questions/3559710)
+    # Actually permutation is not needed, as the choice of indices in the graph is arbitrary.
+    # Hence the system can be shown as:
+    # [ mLu, mLv ] * [ vXu ] = [  0  ]
+    # [  0 ,  I  ] * [ vXv ] = [ vXv ]
+    # The first row means: mLu * vXu + mLv * vXv = 0 => mLu * vXu = -mLv * vXv.
+    # Hence one can solve: vXu = mLu \ (-mLv * vXv).
+    # Here `mR` is `mLv`.
     mLᵤ = mL[vU, vU]; #<! The Laplacian sub matrix to optimize by
     mR  = mL[vU, vV];
 

@@ -12,6 +12,8 @@
 # TODO:
 # 	1.  Use `Krylov.jl` to support larger matrices.
 # Release Notes Royi Avital RoyiAvital@yahoo.com
+# - 1.1.000     24/09/2024  Royi Avital
+#   *   Added solving the `mA` thin system (As in `Q95071.jl` [https://github.com/RoyiAvital/StackExchangeCodes/blob/f46513fa2836615032be000da07686629f8a51e1/SignalProcessing/Q95071/Q95071.jl#L151]).
 # - 1.0.000     21/09/2024  Royi Avital
 #   *   First release.
 
@@ -39,9 +41,9 @@ RNG_SEED = 1234;
 
 juliaCodePath = joinpath(".", "..", "..", "JuliaCode");
 include(joinpath(juliaCodePath, "JuliaInit.jl"));
+include(joinpath(juliaCodePath, "JuliaArrays.jl")); #<! Arrays
 include(joinpath(juliaCodePath, "JuliaImageProcessing.jl"));
 include(joinpath(juliaCodePath, "JuliaVisualization.jl")); #<! Display Images
-include(joinpath(juliaCodePath, "JuliaSparseArrays.jl")); #<! Sparse Arrays
 
 ## Settings
 
@@ -122,6 +124,41 @@ function BuildImgGraphAE( mI :: Matrix{T}, mM :: BitMatrix, connMode :: ConnMode
 
 end
 
+function SolveASystem( mA :: AbstractSparseMatrix{T}, mI :: Matrix{T}, mM :: BitMatrix ) where {T <: AbstractFloat}
+    # Originally: mA * vX = vB
+    # Can be partitioned:
+    #
+    # [ mAu, mAv ] * [ vXu ] = [  0  ]
+    # [  0 ,  I  ] * [ vXv ] = [ vXv ]
+    # 
+    # The first row means: mAu * vXu + mAv * vXv = 0 => mAu * vXu = -mAv * vXv.
+    # Hence one can solve: vXu = mAu \ (-mAv * vXv).
+    #
+    # Similar to `SolveBSystem()`.
+    # 
+    # Ideas for optimization:
+    # 1. Build `mAu`, `mAv` while building teh affinity graph.
+    # 2. Pre allocated buffers.
+    # 3. Inplace multiplication.
+    # 4. Use views.
+
+    vM = vec(mM);
+    # Partitioning by U, V
+    mAu = mA[.!vM, .!vM];
+    mAv = mA[.!vM, vM];
+
+    vXv = mI[vM];
+
+    vXu = mAu \ (-mAv * vXv);
+
+    vX = zeros(T, length(mI));
+    vX[vM] = mI[vM];
+    vX[.!vM] = vXu;
+
+    return vX;
+
+end
+
 function SolveBSystem( mA :: AbstractSparseMatrix{T}, mI :: Matrix{T}, mM :: BitMatrix ) where {T <: AbstractFloat}
 
     vM = vec(mM);
@@ -132,6 +169,10 @@ function SolveBSystem( mA :: AbstractSparseMatrix{T}, mI :: Matrix{T}, mM :: Bit
 
     vXv = mI[vM];
     
+    # `mBu` is rank deficient SPSD matrix. 
+    # USing `false` might be risky.
+    # The solution is valid only if `-mC * vXv` is in range of `mBu`.
+    # See https://discourse.julialang.org/t/119655.
     oFac = cholesky(mBu; check = false);
     vXu = oFac \ (-mC * vXv);
 
@@ -189,20 +230,30 @@ numPx   = numRows * numCols;
 mAE = BuildImgGraphAE(mI, mM, connMode; ε = ε);
 mA  = mAE[.!mM[:], :];
 
-vXA = SolveAESystem(mAE, mI, mM);
-vXB = SolveBSystem(mA, mI, mM);
+vXAE = SolveAESystem(mAE, mI, mM); #<! Direct (Reference)
+vXA  = SolveASystem(mAE, mI, mM);  #<! Thin A
+vXB  = SolveBSystem(mA, mI, mM);   #<! LS
 
 # Reshape to image
-mXA = collect(reshape(vXA, (numRows, numCols)));
-mXB = collect(reshape(vXB, (numRows, numCols)));
+mXAE = collect(reshape(vXAE, (numRows, numCols)));
+mXA  = collect(reshape(vXA, (numRows, numCols)));
+mXB  = collect(reshape(vXB, (numRows, numCols)));
 
-maxAbsDev = maximum(abs.(vXA - vXB));
+maxAbsDev = maximum(abs.(vXAE - vXA));
+resAnalysis = @sprintf("Thin <-> Direct Maximum Absolute Deviation: %0.12f", maxAbsDev);
+println(resAnalysis);
+
+maxAbsDev = maximum(abs.(vXAE - vXB));
 resAnalysis = @sprintf("LS <-> Direct Maximum Absolute Deviation: %0.12f", maxAbsDev);
 println(resAnalysis);
 
 # Timing Operators
 runTime = @belapsed SolveAESystem($(mAE), $(mI), $(mM)) seconds = 2;
 resAnalysis = @sprintf("Direct Solution run time: %0.5f [Sec]", runTime);
+println(resAnalysis);
+
+runTime = @belapsed SolveASystem($(mAE), $(mI), $(mM)) seconds = 2;
+resAnalysis = @sprintf("Thin Solution run time: %0.5f [Sec]", runTime);
 println(resAnalysis);
 
 runTime = @belapsed SolveBSystem($(mA), $(mI), $(mM)) seconds = 2;
@@ -235,6 +286,16 @@ end
 figureIdx += 1;
 
 hP = DisplayImage(mXB; titleStr = "Direct Solution");
+display(hP);
+
+if (exportFigures)
+    figFileNme = @sprintf("Figure%04d.png", figureIdx);
+    savefig(hP, figFileNme);
+end
+
+figureIdx += 1;
+
+hP = DisplayImage(mXA; titleStr = "Thin Solution");
 display(hP);
 
 if (exportFigures)

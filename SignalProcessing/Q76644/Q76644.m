@@ -31,7 +31,7 @@ generateFigures = ON;
 numSamples      = 100;
 samplingFreq    = 1; %<! The CRLB is for Normalized Frequency
 
-% Sine Signal Parameters (Non integeres divsiors of N requires much more realizations).
+% Sine Signal Parameters (Non integers divisors of N requires much more realizations).
 sineFreq    = 0.25; %<! Do for [0.05, 0.10, 0.25] For no integer use 0.37.
 sineAmp     = 10; %<! High value to allow high SNR
 
@@ -72,7 +72,7 @@ for estType = 1:2
             vX = vS + vW;
             % tFreqErr(ii, jj, estType) = sineFreq - EstimateSineFreqKay(vX, samplingFreq, estType);
             % It seems to be biased estimator for Sine / Cosine. With
-            % Hilbert Transfrom it makes it work just as in theory.
+            % Hilbert Transform it makes it work just as in theory.
             tFreqErr(ii, jj, estType) = sineFreq - EstimateHarmonicFreqKay(hilbert(vX), samplingFreq, estType);
         end
     end

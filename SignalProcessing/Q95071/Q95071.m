@@ -24,6 +24,7 @@ figureCounterSpec   = '%04d';
 
 generateFigures = ON;
 
+
 %% Constants
 
 CONVOLUTION_SHAPE_FULL         = 1;

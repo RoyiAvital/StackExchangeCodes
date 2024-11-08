@@ -1,7 +1,7 @@
 function [ vX ] = ProjectL1Ball( vY, ballRadius, stopThr )
 % ----------------------------------------------------------------------------------------------- %
 % [ vX ] = ProjectL1Ball( vY, ballRadius, stopThr )
-%   Solving the Orthoginal Porjection Problem of the input vector onto the
+%   Solving the Orthogonal Projection Problem of the input vector onto the
 %   L1 Ball using Dual Function and Newton Iteration.
 % Input:
 %   - vY            -   Input Vector.
@@ -15,7 +15,7 @@ function [ vX ] = ProjectL1Ball( vY, ballRadius, stopThr )
 %                       Type: 'Single' / 'Double'.
 %                       Range: (0, inf).
 %   - stopThr       -   Stopping Threshold.
-%                       Sets the trheold of the Newton Iteration. The
+%                       Sets the threshold of the Newton Iteration. The
 %                       absolute value of the Objective Function will be
 %                       below the threshold.
 %                       Structure: Scalar.

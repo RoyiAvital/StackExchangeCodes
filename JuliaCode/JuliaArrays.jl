@@ -1,5 +1,5 @@
-# StackExchange Code - Julia Sparse Arrays
-# Set of functions for Sparse Arrays.
+# StackExchange Code - Julia  Arrays
+# Set of functions for Dense Arrays and Sparse Arrays.
 # References:
 #   1.  
 # Remarks:
@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.1.000     22/09/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `ReshapeArray()` as a faster alternative to `reshape()`.
 # - 1.0.000     18/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   First release.
 
@@ -87,6 +89,38 @@ function NormalizeRows!( mA :: SparseMatrixCSC{T}, vRowSum :: AbstractVector{T} 
     end
     
     return mA;
+
+end
+
+function ScaleRowsCols!( mA :: SparseMatrixCSC{T}, vC :: AbstractVector{T}, vR :: AbstractVector{T} ) where {T <: AbstractFloat}
+    
+    # A[i,j] = r[i] * A[i,j] * c[j]
+    # See https://discourse.julialang.org/t/115956
+    # TODO: Check and verify!
+    
+    vI = rowvals(mA);
+    vV = nonzeros(mA);
+    numCols = size(mA, 2);
+    for jj ∈ 1:numCols
+        c = vC[jj];
+        for ii in nzrange(mA, jj)
+            rr = vI[ii];
+            vV[ii] *= vR[rr] * c;
+        end
+    end
+
+    return mA;
+
+end
+
+function ReshapeArray( inArr :: AbstractArray{T, N}, tuDim :: NTuple{M, K} ) where {T, N, K <: Integer, M}
+
+    # @assert (N >= one(N) && (M >= one(M))) "The input and output arrays must have at least one dimension"
+    # @assert (length(inArr) == prod(tuDim)) "The number of elements in `inArr` $(length(inArr)) does not match the output number of elements $(prod(tuDim))"
+    
+    # return Base.__reshape((inArr, IndexLinear()), tuDim);
+
+    return invoke(Base._reshape, Tuple{AbstractArray, typeof(tuDim)}, inArr, tuDim);
 
 end
 
