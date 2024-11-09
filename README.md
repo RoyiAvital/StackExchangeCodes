@@ -26,9 +26,6 @@ If you're interested in using them otherwise, please contact me at: ![](EmailAdd
 
  *	[The Kernel in the Guided Image Filter](https://dsp.stackexchange.com/questions/42415).  
 	Try again using the equations in [Guided Image Filtering](https://www.scribd.com/document/421510148/Guided-Image-Filtering).
- *	[AR Model Estimation Using LMS](https://dsp.stackexchange.com/questions/59325).
- *	[System Identification with a Limited Bandwidth Input Signal and Region of Interest](https://dsp.stackexchange.com/questions/59664).  
-	Try to come up with regularization (Maybe in the frequency domain?) to solve this.
  *	[Estimate Instantaneous Frequency Using LMS Algorithm](https://dsp.stackexchange.com/questions/63886).  
 	Check if it works for really low frequencies.
  *	[Sequential Form of the Least Squares Estimator for Linear Least Squares Model](https://dsp.stackexchange.com/questions/54730).  
