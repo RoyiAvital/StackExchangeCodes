@@ -49,20 +49,19 @@ function GenDftMatrix( numRows :: N, numCols :: N, :: Type{T} = Float64; normMat
 end
 
 function FftPad( vX :: Vector{T}; numSamples :: N = length(vX) ) where {T <: AbstractFloat, N <: Integer}
+    # Matches MATLAB's `fft(vX, n);`.
 
 	numSamplesX = length(vX);
+    numSamplesY = min(numSamplesX, numSamples);
 
-	if (numSamples > numSamplesX)
-		vXX = zeros(T, numSamples);
-		vXX[1:numSamplesX] = vX;
+	if (numSamples != numSamplesX)
+        vXX = zeros(T, numSamples);
+		vXX[1:numSamplesY] = vX[1:numSamplesY];
 	else
 		vXX = vX;
 	end
-	vF = fft(vXX);
-
-	if (numSamples < numSamplesX)
-		#TODO: Implement.
-	end
+	
+    vF = fft(vXX);
 
 	return vF;
 
