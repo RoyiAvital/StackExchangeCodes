@@ -25,7 +25,7 @@ using Random;
 # External
 using BenchmarkTools;
 using FastLapackInterface; #<! Required for Optimization
-using PlotlyJS;            #<! Use `add Kaleido_jll@v0.1` (See https://github.com/JuliaPlots/PlotlyJS.jl/issues/479)
+using PlotlyJS;            #<! Use `add Kaleido_jll@v0.1;` (See https://github.com/JuliaPlots/PlotlyJS.jl/issues/479)
 using SparseArrays;
 using StableRNGs;
 
