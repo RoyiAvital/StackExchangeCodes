@@ -89,12 +89,12 @@ vMeasure    = vMeasNoise + vDist;
 
 # L2 Squared, L2 Squared
 hObjFun( vX :: Vector{T} ) where {T <: AbstractFloat} = sum(abs2, norm(vX - mAccPtLoc[ii, :]) ^ 2 - vMeasure[ii] ^ 2 for ii ∈ 1:numAnchors);
-# L2 Squared, L2
+# L2 , L2 Squared
 hObjFun( vX :: Vector{T} ) where {T <: AbstractFloat} = sum(abs2, norm(vX - mAccPtLoc[ii, :]) - vMeasure[ii] for ii ∈ 1:numAnchors);
-# L1, L2
+# L2, L1
 hObjFun( vX :: Vector{T} ) where {T <: AbstractFloat} = sum(abs, norm(vX - mAccPtLoc[ii, :]) - vMeasure[ii] for ii ∈ 1:numAnchors);
 # L1, L1
-hObjFun( vX :: Vector{T} ) where {T <: AbstractFloat} = sum(abs, norm(vX - mAccPtLoc[ii, :], 1) - vMeasure[ii] for ii ∈ 1:numAnchors);
+# hObjFun( vX :: Vector{T} ) where {T <: AbstractFloat} = sum(abs, norm(vX - mAccPtLoc[ii, :], 1) - vMeasure[ii] for ii ∈ 1:numAnchors);
 
 # Grid Search 
 
@@ -126,7 +126,7 @@ display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    savefig(hP, figFileNme);
+    savefig(hP, figFileNme, width = hP.layout["width"], height = hP.layout["height"]);
 end
 
 figureIdx += 1;
@@ -150,7 +150,7 @@ display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    savefig(hP, figFileNme);
+    savefig(hP, figFileNme, width = hP.layout["width"], height = hP.layout["height"]);
 end
 
 
