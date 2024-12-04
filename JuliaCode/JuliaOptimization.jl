@@ -42,6 +42,8 @@ if (!(@isdefined(isJuliaInit)) || (isJuliaInit == false))
     include("./JuliaInit.jl");
 end
 
+include("./JuliaProxOperators.jl");
+
 ## Functions
 
 function CalcFunGrad!( vG :: AbstractVecOrMat{T}, vP :: AbstractVecOrMat{T}, vX :: AbstractVecOrMat{T}, hFun :: Function; diffMode :: DiffMode = DIFF_MODE_CENTRAL, ε :: T = T(1e-6) ) where {T <: AbstractFloat}
