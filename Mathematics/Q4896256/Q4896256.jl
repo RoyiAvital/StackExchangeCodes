@@ -1,6 +1,6 @@
 # StackExchange Mathematics Q4896256
 # https://math.stackexchange.com/questions/4896256
-# Solve Quadratic Form with Unit Simplex Constraint.
+# Solve a Quadratic Form with a Unit Simplex Constraint.
 # References:
 #   1.  A
 # Remarks:
@@ -23,6 +23,8 @@ using Printf;
 using Random;
 # External
 using BenchmarkTools;
+using Convex;
+using ECOS;
 using FastLapackInterface; #<! Required for Optimization
 using PlotlyJS;            #<! Use `add Kaleido_jll@v0.1;` (See https://github.com/JuliaPlots/PlotlyJS.jl/issues/479)
 using SparseArrays;
@@ -48,42 +50,25 @@ oRng = StableRNG(1234);
 
 ## Functions
 
-function f( vX :: Vector{T}, tA :: Array{T, 3}, vY :: Vector{T} ) where {T <: AbstractFloat}
+function f( vX :: Vector{T}, mA :: Matrix{T} ) where {T <: AbstractFloat}
 
-    numEqs = size(tA, 3);
-
-    f = zero(T);
-
-    for ii ∈ 1:numEqs
-        mA = view(tA, :, :, ii);
-        f += (dot(vX, mA, vX) - vY[ii]) ^ 2;
-    end
-
-    return f;
+    return dot(vX, mA, vX);
     
 end
 
-function ∇f( vX :: Vector{T}, tA :: Array{T, 3}, vY :: Vector{T} ) where {T <: AbstractFloat}
-    # Assumes `tA[:, :, ii]` is symmetric
+function ∇f( vX :: Vector{T}, mA :: Matrix{T} ) where {T <: AbstractFloat}
+    # Does not assume `mA` is symmetric
 
-    numElements = length(vX);
-    numEqs = size(tA, 3);
-    vG = zeros(T, numElements)
-
-    for ii ∈ 1:numEqs
-        mA = view(tA, :, :, ii);
-        vG += T(4.0) * (dot(vX, mA, vX) - vY[ii]) * (mA * vX);
-    end
-
-    return vG;
+    return (mA * vX) + (mA' * vX);
 
 end
 
 
 ## Parameters
 
+# Data
 numElements = 2; #<! Number of elements
-numEqs      = 10; #<! Number of equations
+forcePsd    = false;
 ϵ           = 1e-5;
 
 # Solver
@@ -96,49 +81,56 @@ numGridPts = 500;
 
 ## Load / Generate Data
 
-vXRef = randn(oRng, numElements);
-tA    = randn(oRng, numElements, numElements, numEqs); #<! Each slice on 3rd dimension is `mAi`
-vY    = zeros(numEqs);
+mA = randn(oRng, numElements, numElements); #<! Each slice on 3rd dimension is `mAi`
 
-for ii ∈ 1:numEqs
-    mA = view(tA, :, :, ii);
-    # mA .+= mA';
-    mA[:] = mA' * mA + I;
-    mA .+= mA';
-    vY[ii] = dot(vXRef, mA, vXRef);
+if forcePsd
+    mA = mA' * mA;
+    mA = 0.5 * (mA' * mA);
 end
 
 
 ## Analysis
 
-hF( vX :: Vector{T} ) where {T <: AbstractFloat} = f(vX, tA, vY);
-h∇f( vX :: Vector{T} ) where {T <: AbstractFloat} = ∇f(vX, tA, vY);
+hF( vX :: Vector{T} ) where {T <: AbstractFloat} = f(vX, mA);
+h∇f( vX :: Vector{T} ) where {T <: AbstractFloat} = ∇f(vX, mA);
+hProjFun( vX :: Vector{T}, λ :: T ) where {T <: AbstractFloat} = ProjSimplexBall(vX); 
 
 # Validate Gradient
 vX = randn(oRng, numElements);
-# @assert (maximum(abs.(h∇f(vX) - CalcFunGrad(vX, hF))) <= ϵ) "The gradient calculation is not verified";
+@assert (maximum(abs.(h∇f(vX) - CalcFunGrad(vX, hF))) <= ϵ) "The gradient calculation is not verified";
 
-vX = rand(numElements);
-vX = GradientDescentBackTracking(vX, numIter, η, hF, h∇f);
+# Validate Projection
+ballRadius = 1.35;
+vY = randn(21);
+vB = ProjSimplexBall(vY; ballRadius = ballRadius);
 
+vC = Variable(length(vY));
+sConvProb = minimize( Convex.sumsquares(vC - vY), [vC >= 0.0, sum(vC) == ballRadius] );
+solve!(sConvProb, ECOS.Optimizer; silent = true);
+vC = vC.value[:];
+optVal = sConvProb.optval;
 
-mÂ = permutedims(reshape(tA, (numElements * numElements, numEqs)), (2, 1));
-vX̂ = mÂ \ vY;
-mR = reshape(vX̂, (numElements, numElements));
-oSvdFac = svd(mR);
-if (oSvdFac.S[1] / (oSvdFac.S[2] + 1e-6) > 4e5)
-    println("Method worked");
-    vXX = sqrt(oSvdFac.S[1]) * oSvdFac.U[:, 1];
-    hF(vXX)
+@assert (abs(sum(vB) - ballRadius) <= ϵ) "The projection calculation is not verified";
+@assert (-minimum(vB) <= ϵ) "The projection calculation is not verified";
+@assert (abs(sum(abs2, vB - vY) - sum(abs2, vC - vY)) <= ϵ) "The projection calculation is not verified";
+
+# Solve
+
+vZ = ProximalGradientDescentAcc(hProjFun(zeros(numElements), 0.0), h∇f, hProjFun, η, numIter);
+
+# Path
+mX = zeros(numElements, numIter);
+mX[:, 1] = hProjFun(mX[:, 1], 0.0); #<! Make it feasible
+for ii ∈ 2:numIter
+    mX[:, ii] = hProjFun(mX[:, ii - 1] - η * h∇f(mX[:, ii - 1]), 0.0);
 end
-
 
 
 ## Display Analysis
 
 if (numElements == 2)
 figureIdx += 1;
-vG = LinRange(-2, 2, numGridPts);
+vG = LinRange(-0.1, 1.1, numGridPts);
 mO = zeros(numGridPts, numGridPts);
 vT = zeros(2);
 
@@ -149,11 +141,16 @@ for jj ∈ 1:numGridPts, ii ∈ 1:numGridPts
     mO[ii, jj] = hF(vT);
 end
 
-oTr = heatmap(; x = vG, y = vG, z = log1p.(mO));
+if forcePsd
+    oTr1 = heatmap(; x = vG, y = vG, z = log1p.(mO));
+else
+    oTr1 = heatmap(; x = vG, y = vG, z = mO);
+end
+oTr2 = scatter(; x = mX[1, :], y = mX[2, :], mode = "markers", name = "Path");
 oLayout = Layout(title = "Objective Function - Log Scale", width = 600, height = 600, 
                  xaxis_title = 'x', yaxis_title = 'y',
                  hovermode = "closest", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0));
-hP = Plot([oTr], oLayout);
+hP = Plot([oTr1, oTr2], oLayout);
 display(hP);
 
 if (exportFigures)

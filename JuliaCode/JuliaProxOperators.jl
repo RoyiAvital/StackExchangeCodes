@@ -28,6 +28,7 @@ end
 ## Functions
 
 function ProjSimplexBall!( vX :: AbstractVector{T}, vY :: AbstractVector{T}; ballRadius :: T = T(1.0), ε :: T = T(1e-7) ) where {T <: AbstractFloat}
+    #TODO: Make zero allocations
     
     numElements = length(vY);
 
@@ -44,16 +45,16 @@ function ProjSimplexBall!( vX :: AbstractVector{T}, vY :: AbstractVector{T}; bal
 
     sort!(vX); #<! TODO: Make inplace
 
-    vμ         = [vX[1] - ballRadius, vX, vX[numElements] + ballRadius];
-    hObjFun(μ) = sum(max.(vY - μ, zero(T))) - ballRadius;
+    vμ         = [vX[1] - ballRadius, vX..., vX[numElements] + ballRadius];
+    hObjFun(μ) = sum(max.(vY .- μ, zero(T))) - ballRadius;
 
     vObjVal = zeros(numElements + 2);
     for ii = 1:(numElements + 2)
         vObjVal[ii] = hObjFun(vμ[ii]);
     end
 
-    if (any(vObjVal .== 0))
-        μ = vμ(vObjVal .== 0);
+    if (any(vObjVal .== zero(T)))
+        μ = vμ(vObjVal .== zero(T));
     else
         # Working on when an Affine Function have the value zero
         valX1Idx = findlast(>(zero(T)), vObjVal);
@@ -72,6 +73,17 @@ function ProjSimplexBall!( vX :: AbstractVector{T}, vY :: AbstractVector{T}; bal
 
     @. vX = max(vY - μ, zero(T));
 
+    return vX;
+
+end
+
+function ProjSimplexBall( vY :: AbstractVector{T}; ballRadius :: T = T(1.0), ε :: T = T(1e-7) ) where {T <: AbstractFloat}
+    
+    numElements = length(vY);
+    vX = zeros(T, numElements);
+
+    return ProjSimplexBall!(vX, vY; ballRadius = ballRadius, ε = ε);
+
 end
 
 function ProjectL1Ball!(vX :: Vector{T}, vY :: Vector{T}, ballRadius :: T) where {T <: AbstractFloat}
@@ -81,7 +93,7 @@ function ProjectL1Ball!(vX :: Vector{T}, vY :: Vector{T}, ballRadius :: T) where
     if(sum(abs, vY) <= ballRadius)
         # The input is already within the L1 Ball.
         vX .= vY;
-        return
+        return vX;
     end
 
     vX .= abs.(vY);
@@ -98,7 +110,7 @@ function ProjectL1Ball!(vX :: Vector{T}, vY :: Vector{T}, ballRadius :: T) where
             break;
         end
 
-        if (objVal < 0)
+        if (objVal < zero(T))
             paramA = (objVal - objValPrev) / (vX[ii] - xPrev);
             paramB = objValPrev - (paramA * xPrev);
             λ = -paramB / paramA;
@@ -116,7 +128,7 @@ function ProjectL1Ball!(vX :: Vector{T}, vY :: Vector{T}, ballRadius :: T) where
         λ = -paramB / paramA;
     end
     
-    @. vX = sign(vY) * max(abs(vY) - λ, 0);
+    @. vX = sign(vY) * max(abs(vY) - λ, zero(T));
 
     return vX;
 
@@ -126,11 +138,20 @@ function ProjectL1BallObj( vZ :: Vector{T}, λ :: T, ballRadius :: T ) where {T 
 
     objVal = zero(T);
     for ii in 1:length(vY)
-        objVal += max(vZ[ii] - λ, 0);
+        objVal += max(vZ[ii] - λ, zero(T));
     end
 
     objVal -= ballRadius;
 
     return objVal;
     
+end
+
+function ProjectL1Ball( vY :: AbstractVector{T}; ballRadius :: T = T(1.0), ε :: T = T(1e-7) ) where {T <: AbstractFloat}
+    
+    numElements = length(vY);
+    vX = zeros(T, numElements);
+
+    return ProjectL1Ball!(vX, vY; ballRadius = ballRadius, ε = ε);
+
 end

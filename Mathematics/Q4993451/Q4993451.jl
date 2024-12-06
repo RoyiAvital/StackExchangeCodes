@@ -69,7 +69,7 @@ function ∇f( vX :: Vector{T}, tA :: Array{T, 3}, vY :: Vector{T} ) where {T <:
 
     numElements = length(vX);
     numEqs = size(tA, 3);
-    vG = zeros(T, numElements)
+    vG = zeros(T, numElements);
 
     for ii ∈ 1:numEqs
         mA = view(tA, :, :, ii);
@@ -130,7 +130,7 @@ oSvdFac = svd(mR);
 if (oSvdFac.S[1] / (oSvdFac.S[2] + 1e-6) > 4e5)
     println("Method worked");
     vXX = sqrt(oSvdFac.S[1]) * oSvdFac.U[:, 1];
-    hF(vXX)
+    hF(vXX);
 end
 
 
