@@ -38,14 +38,15 @@ function ProjSimplexBall!( vX :: AbstractVector{T}, vY :: AbstractVector{T}; bal
     
     copy!(vX, vY);
 
-    if ((abs(sum(vY) - ballRadius) < ε) && all(vY .>= 0))
+    if ((abs(sum(vY) - ballRadius) < ε) && all(vY .>= zero(T)))
         # The input is already within the Simplex.        
         return vX;
     end
 
     sort!(vX); #<! TODO: Make inplace
 
-    vμ         = [vX[1] - ballRadius, vX..., vX[numElements] + ballRadius];
+    # Breakpoints of the piecewise function happens at xᵢ - μ = 0α → Search for points xᵢ - 0 
+    vμ         = vcat(vX[1] - ballRadius, vX, vX[numElements] + ballRadius);
     hObjFun(μ) = sum(max.(vY .- μ, zero(T))) - ballRadius;
 
     vObjVal = zeros(numElements + 2);
