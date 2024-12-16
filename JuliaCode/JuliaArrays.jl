@@ -124,6 +124,34 @@ function ReshapeArray( inArr :: AbstractArray{T, N}, tuDim :: NTuple{M, K} ) whe
 
 end
 
+# See https://discourse.julialang.org/t/14666/21
+# ind2sub(tuShape, indices) = Tuple.(CartesianIndices(shape)[indices])
+# sub2ind(shape, indices) = LinearIndices(shape)[CartesianIndex.(indices)]
+
+function LinearToSubScripts( tuShape :: NTuple{K, N}, linIdx :: N ) where {N <: Integer, K}
+    
+    return Tuple(CartesianIndices(tuShape)[linIdx]);
+
+end
+
+function LinearToSubScripts( tuShape :: NTuple{K, N}, vLinIdx :: Vector{N} ) where {N <: Integer, K}
+    
+    return Tuple.(CartesianIndices(tuShape)[vLinIdx]);
+
+end
+
+function SubScriptsToLinear( tuShape :: NTuple{K, N}, tuSubScriptIdx :: NTuple{K, N} ) where {N <: Integer, K}
+    
+    return LinearIndices(tuShape)[CartesianIndex(tuSubScriptIdx)];
+
+end
+
+function SubScriptsToLinear( tuShape :: NTuple{2, N}, vSubScriptIdx :: Vector{NTuple{K, N}} ) where {N <: Integer, K}
+    
+    return LinearIndices(tuShape)[CartesianIndex.(vSubScriptIdx)];
+
+end
+
 
 
 
