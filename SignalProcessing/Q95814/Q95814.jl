@@ -12,6 +12,8 @@
 # TODO:
 # 	1.  AA.
 # Release Notes Royi Avital RoyiAvital@yahoo.com
+# - 1.0.001     21/12/2024  Royi Avital
+#   *   Added support for RGBA images.
 # - 1.0.000     16/12/2024  Royi Avital
 #   *   First release.
 
@@ -24,6 +26,7 @@ using Random;
 # External
 using BenchmarkTools;
 using ColorTypes;          #<! Required for Image Processing
+# using Downloads;
 using FileIO;              #<! Required for loading images
 using LoopVectorization;   #<! Required for Image Processing
 # using MAT;
@@ -113,8 +116,8 @@ end
 
 ## Parameters
 
-imgUrl = raw"fh5cmfav.png"; #<! Local
-# imgUrl = raw"https://i.sstatic.net/z1FZ6ea5.png"; #<! https://i.imgur.com/lonCgZl.png
+imgFileName = "fh5cmfav.png"
+imgUrl      = raw"https://i.sstatic.net/z1FZ6ea5.png"; #<! https://i.imgur.com/lonCgZl.png
 
 # Problem parameters
 σ = 7.5;
@@ -122,9 +125,15 @@ imgUrl = raw"fh5cmfav.png"; #<! Local
 ## Load / Generate Data
 
 # Load the Image
-mI = load(imgUrl); #<! Local
-# mI = load(download(imgUrl));
+if !isfile(imgFileName)
+    download(imgUrl, imgFileName);
+end
+mI = load(imgFileName); #<! Local
 mI = ConvertJuliaImgArray(mI);
+if (size(mI, 3) > 3)
+    # Drop Alpha channel
+    mI = mI[:, :, 1:3];
+end
 mI = ScaleImg(mI);
 
 mO = copy(mI); #<! Output

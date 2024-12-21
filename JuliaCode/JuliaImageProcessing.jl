@@ -10,6 +10,8 @@
 #       It should also be optimized for `rfft()`.
 #   2.  Optimize `BoxBlur()` with a running sum method.
 # Release Notes
+# - 1.8.001     21/12/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Added Support for RGBA / ARGB images in `ConvertJuliaImgArray()`.
 # - 1.8.000     18/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `LocalVariance()`.
 #   *   Added `OrderFilter()`.
@@ -75,6 +77,15 @@ function ConvertJuliaImgArray( mI :: Matrix{<: Color{T, N}} ) where {T, N}
     end
 
     return mO;
+
+end
+
+function ConvertJuliaImgArray( mI :: Matrix{<: TransparentColor{C, T, N}} ) where {C, T, N}
+    # Extract the RGB
+    
+    dataType            = T.types[1];
+    return cat(ConvertJuliaImgArray(RGB.(mI)), collect(reinterpret(reshape, dataType, alpha.(mI))); dims = 3);
+    # return ConvertJuliaImgArray(RGB.(mI));
 
 end
 
