@@ -109,7 +109,7 @@ mO = QuantizeP!(mO);
 
 ## Display Results
 
-# resAnalysis = @sprintf("The maximum absolute deivation between the reference solution and the numerical solution is: %0.5f", norm(mX - mXRef, 1));
+# resAnalysis = @sprintf("The maximum absolute deviation between the reference solution and the numerical solution is: %0.5f", norm(mX - mXRef, 1));
 # println(resAnalysis);
 # resAnalysis = @sprintf("The reference solution optimal value is: %0.5f", sum(abs2, mXRef - mY));
 # println(resAnalysis);

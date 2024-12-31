@@ -96,7 +96,7 @@ vX = OrthogonalProjectionOntoConvexSets(vY, vProjFun);
 
 ## Display Results
 
-resAnalysis = @sprintf("The maximum absolute deivation between the reference solution and the numerical solution is: %0.5f", norm(vX - vXRef, 1));
+resAnalysis = @sprintf("The maximum absolute deviation between the reference solution and the numerical solution is: %0.5f", norm(vX - vXRef, 1));
 println(resAnalysis);
 resAnalysis = @sprintf("The reference solution optimal value is: %0.5f", sum(abs2, vXRef - vY));
 println(resAnalysis);

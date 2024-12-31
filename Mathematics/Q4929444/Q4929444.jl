@@ -119,7 +119,7 @@ hProxClamp( vX :: AbstractVector{T}, _ :: T ) where {T <: AbstractFloat} = clamp
 # Composing the projection onto the constraint onto the ProxG.
 hProxFun( vX :: AbstractVector{T}, λ :: T ) where {T <: AbstractFloat} = hProxClamp(hProxL1(vX, λ), λ);
 
-mX = zeros(numCols, numIterations)
+mX = zeros(numCols, numIterations);
 vG = zeros(numCols);
 vZ = zeros(numCols);
 vW = zeros(numCols);
@@ -143,7 +143,7 @@ hProxF( vZ :: AbstractVector{T}, ρ :: T ) where {T <: AbstractFloat} = oCholK \
 
 mA = 1.0I(numRows);
 
-mX = zeros(size(mA, 2), numIterations)
+mX = zeros(size(mA, 2), numIterations);
 vZ = hProxFun(mA * mX[:, 1] + vU, ε / ρ);
 vU = mA * mX[:, 1] - vZ;
 for ii = 2:numIterations
@@ -166,7 +166,7 @@ vTr = Vector{GenericTrace{Dict{Symbol, Any}}}(undef, length(dSolvers));
 
 for (ii, methodName) in enumerate(keys(dSolvers))
     vTr[ii] = scatter(x = 1:numIterations, y = 20 * log10.(abs.(dSolvers[methodName] .- optVal) ./ abs(optVal)), 
-               mode = "lines", text = methodName, name = methodName, line = attr(width = 3.0))
+               mode = "lines", text = methodName, name = methodName, line = attr(width = 3.0));
 end
 oLayout = Layout(title = "Objective Function", width = 600, height = 600, hovermode = "closest",
                  xaxis_title = "Iteration", yaxis_title = raw"$\frac{ \left| {f}^{\star} - {f}_{i} \right| }{ \left| {f}^{\star} \right| }$ [dB]");
@@ -183,7 +183,7 @@ figureIdx += 1;
 
 for (ii, methodName) in enumerate(keys(dSolvers))
     vTr[ii] = scatter(x = 1:numIterations, y = dSolvers[methodName], 
-               mode = "lines", text = methodName, name = methodName, line = attr(width = 3.0))
+               mode = "lines", text = methodName, name = methodName, line = attr(width = 3.0));
 end
 oLayout = Layout(title = "Objective Function", width = 600, height = 600, hovermode = "closest",
                  xaxis_title = "Iteration", yaxis_title = "Objective Value");

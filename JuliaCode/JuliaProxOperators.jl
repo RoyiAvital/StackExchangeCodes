@@ -7,7 +7,9 @@
 # TODO:
 # 	1.  B
 # Release Notes
-# - 1.0.000     09/07/2023  Royi Avital RoyiAvital@yahoo.com
+# - 1.1.000     31/12/2024  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `ProjectL2Ball()`.
+# - 1.0.000     04/12/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   First release.
 
 ## Packages
@@ -154,5 +156,22 @@ function ProjectL1Ball( vY :: AbstractVector{T}; ballRadius :: T = T(1.0), ε ::
     vX = zeros(T, numElements);
 
     return ProjectL1Ball!(vX, vY; ballRadius = ballRadius, ε = ε);
+
+end
+
+function ProjectL2Ball!( vX :: AbstractVector{T}, vY :: AbstractVector{T}; ballRadius :: T = T(1.0) ) where {T <: AbstractFloat}
+    
+    vX .= min.((ballRadius / norm(vY, 2)), one(T)) .* vY;
+
+    return vX;
+
+end
+
+function ProjectL2Ball( vY :: AbstractVector{T}; ballRadius :: T = T(1.0) ) where {T <: AbstractFloat}
+    
+    numElements = length(vY);
+    vX = zeros(T, numElements);
+
+    return ProjectL2Ball!(vX, vY; ballRadius = ballRadius);
 
 end
