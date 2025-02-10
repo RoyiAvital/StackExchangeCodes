@@ -51,6 +51,7 @@
 # Python Files
 *.npy
 *.npz
+*.pyc
 
 # MATLAB Files
 *.asv
