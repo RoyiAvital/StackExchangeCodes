@@ -8,6 +8,8 @@
 # 	1.  Make a single `DisplayImage()` for `UInt8`.  
 #       All others should convert `UInt8` to and use it.
 # Release Notes
+# - 1.4.000    13/02/2025  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `PlotLine()`.
 # - 1.3.000    14/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added support to for mask (`BitMatrix` / `Matrix{Bool}`) in `DisplayImage()`.
 # - 1.2.001    08/09/2024  Royi Avital RoyiAvital@yahoo.com
@@ -130,6 +132,30 @@ function PlotSparseMat( mM :: AbstractSparseMatrix )
 
 end
 
+function PlotLine( vX :: Vector{T1}, vY :: VecOrMat{T2}; plotTitle :: String = "", signalName :: String = "", xTitle :: String = "x", yTitle :: String = "y" ) where {T1 <: Real, T2 <: Real}
+
+    numLines = size(vY, 2);
+    
+    vTr = Vector{GenericTrace{Dict{Symbol, Any}}}(undef, numLines);
+
+    for ii ∈ 1:numLines
+        vTr[ii] = scatter(; x = vX, y = vY[:, ii], mode = "lines", name = signalName);
+    end
+
+    oLayout = Layout(title = plotTitle, width = 600, height = 600, hovermode = "closest",
+                  xaxis_title = xTitle, yaxis_title = yTitle);
+    
+    hP = Plot(vTr, oLayout);
+
+    return hP; #<! display(hP);
+
+end
+
+function PlotLine( vY :: VecOrMat{T}; plotTitle :: String = "", signalName :: String = "", xTitle = "x", yTitle = "y" ) where {T <: Real}
+
+    return PlotLine(T.(collect(1:size(vY, 1))), vY; plotTitle, signalName, xTitle = xTitle, yTitle = yTitle);
+
+end
 
 
 

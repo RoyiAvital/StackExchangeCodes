@@ -1,0 +1,10 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+FastLapackInterface = "29a986be-02c6-4525-aec4-84b980013641"
+Kaleido_jll = "f7e6163d-2fa5-5f23-b69c-1db539e41963"
+LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
+MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
+PlotlyJS = "f0f68f2c-4968-5e81-91da-67840de0976a"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+StableRNGs = "860ef19b-820b-49d6-a774-d7a799459cd3"
+StaticKernels = "4c63dfa8-a427-4548-bd2f-4c19e87a7dc7"
