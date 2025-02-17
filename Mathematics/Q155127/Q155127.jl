@@ -2,7 +2,13 @@
 # https://math.stackexchange.com/questions/155127
 # Calculate the Maximal Volume Ellipsoid (MVE) in a Polyhedron.
 # References:
-#   1.  A
+#   1.  Yin Zhang and Liyan Gao - On Numerical Solution of the Maximum Volume Ellipsoid Problem.
+#   2.  Jianzhe Zhen, Dick den Hertog - Computing the Maximum Volume Inscribed Ellipsoid of a Polytopic Projection.
+#   3.  Stephen Boyd, Lieven Vandenberghe - Convex Optimization, Geometric Problems (Center of Polytope / Polyhedron).
+#   4.  Largest Ellipse Inscribed in a Polygon - Brute Force (https://discourse.mcneel.com/t/128264).
+#   5.  [Xin Li - Numerical Methods for Engineering Design and Optimization](https://users.ece.cmu.edu/~xinli/classes/cmu_18660/Lec14.pdf).
+#   6.  Linus Kallberg - Minimum Enclosing Balls and Ellipsoids in General Dimensions (https://www.es.mdu.se/pdf_publications/5687.pdf).
+#   7.  Find a Large Inscribed Ellipsoid - Points Cloud, within Convex Hull, Contain No Point (https://github.com/hongkai-dai/large_inscribed_ellipsoid).
 # Remarks:
 #   1.  Use in Julia as following:
 #       -   Move to folder using `cd(raw"<PathToFolder>");`.
@@ -131,6 +137,7 @@ function SolveMVE( vX0 :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}; numIter :
         # @printf("  Iteration: %3i  ", ii);
         # @printf("%9.3f %9.3f %9.3f  %9.3f\n", r2, r1, r3, objVal);
 
+        # The `(rμ <= minμ)` seems not well defined as `rμ = max(rμ, minμ)`.
         if (resVal < (ϵ * (one(T) + normB))) && (rμ <= minμ)
             # Converged
             vX += vX0;
