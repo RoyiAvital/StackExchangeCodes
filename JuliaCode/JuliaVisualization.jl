@@ -157,5 +157,3 @@ function PlotLine( vY :: VecOrMat{T}; plotTitle :: String = "", signalName :: St
 
 end
 
-
-

@@ -68,3 +68,6 @@
 
 # Output Figures Files
 Figure*.png
+
+# Temporary Files
+*TMP*.*
