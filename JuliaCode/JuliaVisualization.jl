@@ -132,14 +132,21 @@ function PlotSparseMat( mM :: AbstractSparseMatrix )
 
 end
 
-function PlotLine( vX :: Vector{T1}, vY :: VecOrMat{T2}; plotTitle :: String = "", signalName :: String = "", xTitle :: String = "x", yTitle :: String = "y" ) where {T1 <: Real, T2 <: Real}
+function PlotLine( vX :: Vector{T1}, vY :: VecOrMat{T2}; plotTitle :: String = "", signalName :: String = "", vSigNames :: Vector{String} = [""], xTitle :: String = "x", yTitle :: String = "y" ) where {T1 <: Real, T2 <: Real}
 
     numLines = size(vY, 2);
     
     vTr = Vector{GenericTrace{Dict{Symbol, Any}}}(undef, numLines);
+    sigName = signalName;
+    if length(vSigNames) == 1
+        vSigNames = repeat(vSigNames, numLines);
+    end
 
     for ii ∈ 1:numLines
-        vTr[ii] = scatter(; x = vX, y = vY[:, ii], mode = "lines", name = signalName);
+        if (numLines > 1)
+            sigName = vSigNames[ii];
+        end
+        vTr[ii] = scatter(; x = vX, y = vY[:, ii], mode = "lines", name = sigName);
     end
 
     oLayout = Layout(title = plotTitle, width = 600, height = 600, hovermode = "closest",
@@ -151,9 +158,9 @@ function PlotLine( vX :: Vector{T1}, vY :: VecOrMat{T2}; plotTitle :: String = "
 
 end
 
-function PlotLine( vY :: VecOrMat{T}; plotTitle :: String = "", signalName :: String = "", xTitle = "x", yTitle = "y" ) where {T <: Real}
+function PlotLine( vY :: VecOrMat{T}; plotTitle :: String = "", signalName :: String = "", vSigNames :: Vector{String} = [""], xTitle = "x", yTitle = "y" ) where {T <: Real}
 
-    return PlotLine(T.(collect(1:size(vY, 1))), vY; plotTitle, signalName, xTitle = xTitle, yTitle = yTitle);
+    return PlotLine(T.(collect(1:size(vY, 1))), vY; plotTitle, signalName, vSigNames = vSigNames, xTitle = xTitle, yTitle = yTitle);
 
 end
 
