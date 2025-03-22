@@ -71,6 +71,12 @@ Given:
 $${Z}_{i} = {X}_{i} + {Y}_{i}, \; {X}_{i} \sim \mathbb{U}_{\left[ a - r, a + r \right]}, \, {Y}_{i} \sim \mathbb{U}_{\left[ b - r, b + r \right]}$$
 
 Estimate $r$ for $\left\{ {Z}_{i} \right\}_{i = 1}^{n}$ using the _Maximum Likelihood Estimator_.
+
+Resources:
+
+ - [Fitting a Triangular Distribution via MLE](https://real-statistics.com/distribution-fitting/distribution-fitting-via-maximum-likelihood/fitting-a-triangular-distribution-via-mle).
+ - [Maximum Likelihood Estimation of Triangular and Polygonal Distributions](https://arxiv.org/abs/1602.03692).
+ - [StackExchange Statistics (Cross Validated) - MLE for Triangular Distribution](https://stats.stackexchange.com/questions/64102).
 """
 
 # ╔═╡ c32031d0-a6a5-416c-952d-bf49fa9088ca
@@ -103,18 +109,18 @@ end
 
 function PdfSumUniform( valT :: T, X :: Uniform{T}, Y :: Uniform{T} ) where {T <: AbstractFloat}
     # Analytic Solution
-    #                                                  
-    #               │                  │               
-    #               │                  │               
-    #              x│xxxxxxxxxxxxxxxxxx│x              
-    #             xx│                  │xxx            
-    #           xxx │                  │  xx           
-    #          xx   │                  │    xx         
-    #        xxx    │                  │     xxx       
-    #      xxx      │                  │       xx      
-    #     xx        │                  │        xxx    
-    # ───x──────────┼──────────────────┼──────────x─   
-    #   a+c        c+b                a+d         b+d  
+    #                                                 
+    #              │                  │               
+    #              │                  │               
+    #             x│xxxxxxxxxxxxxxxxxx│x              
+    #            xx│                  │xx            
+    #          xxx │                  │ xxx           
+    #         xx   │                  │   xx         
+    #       xxx    │                  │    xxx       
+    #     xxx      │                  │      xxx      
+    #    xx        │                  │        xx    
+    # ──x──────────┼──────────────────┼──────────x──   
+    #  a+c        c+b                a+d        b+d  
     #                                                  
     # Assuming X ~ U[a, b], Y ~ U[c, d] with (d - c) >= (b - a).
     
