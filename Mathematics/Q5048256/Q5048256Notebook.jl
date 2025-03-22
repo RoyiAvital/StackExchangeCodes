@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.46
+# v0.20.5
 
 using Markdown
 using InteractiveUtils
@@ -56,7 +56,7 @@ html"""
 			})
 		})
 	})
-	button.innerText = "Restart process"
+	button.innerText = "Restart Notebook"
 
 	return button
 </script>
@@ -70,7 +70,7 @@ Given:
 
 $${Z}_{i} = {X}_{i} + {Y}_{i}, \; {X}_{i} \sim \mathbb{U}_{\left[ a - r, a + r \right]}, \, {Y}_{i} \sim \mathbb{U}_{\left[ b - r, b + r \right]}$$
 
-Estimate $r$ for $\left\{ {Z}_{i} \right\}_{i = 1}^{n}$.
+Estimate $r$ for $\left\{ {Z}_{i} \right\}_{i = 1}^{n}$ using the _Maximum Likelihood Estimator_.
 """
 
 # ╔═╡ c32031d0-a6a5-416c-952d-bf49fa9088ca
@@ -213,7 +213,7 @@ paramR = 1.0;
 # Solver
 numGridPts = 20_001;
 
-end
+end;
 
 # ╔═╡ c3b837d6-2364-410d-bdb8-cfa220f5beb1
 ## Load / Generate Data
@@ -232,7 +232,7 @@ pdfZ = hPdfZ.(vG);
 vX = rand(oRng, X, numSamples);
 vY = rand(oRng, Y, numSamples);
 vZ = vX + vY;
-end
+end;
 
 # ╔═╡ e5399666-e8b3-4b72-91ce-54ccb0eaa407
 ## Analysis
@@ -244,7 +244,7 @@ minR = ceil(maximum(abs.(vZ .- paramA .- paramB)) / 2.0; digits = 3);
 vRGrid = LinRange(minR, minR + 0.5, 1_000);
 vR = [CalLogLikelihood(vZ, valR, paramA, paramB) for valR ∈ vRGrid];
 
-end
+end;
 
 # ╔═╡ d92d74dd-253a-4e54-987a-0f2a4fc2374a
 ## Display Analysis
@@ -253,14 +253,14 @@ begin
 
 mA = [pdfX;; pdfY;; pdfZ];
 
-hP = PlotLine(collect(vG), mA; plotTitle = "The PDF's", vSigNames = ["X", "Y", "Z"]);
-display(hP);
+hP1 = PlotLine(collect(vG), mA; plotTitle = "The PDF's", vSigNames = ["X", "Y", "Z"]);
+display(hP1);
 
 if (exportFigures)
-    savefig(hP, YieldFigFileName(sFigureIdx));
+    savefig(hP1, YieldFigFileName(sFigureIdx));
 end
 
-hP
+hP1
 
 end
 
@@ -277,14 +277,14 @@ oTrace2 = scatter(x = [vRGrid[argmax(vR)]], y = [maximum(vR)],
 
 oLayout = Layout(title = "The Log Likelihood Function", width = 600, height = 600, hovermode = "closest",
                   xaxis_title = "R", yaxis_title = "L(z; R)");
- hP = plot([oTrace1, oTrace2], oLayout);
- display(hP);
+ hP2 = Plot([oTrace1, oTrace2], oLayout);
+ display(hP2);
 
 if (exportFigures)
-    savefig(hP, YieldFigFileName(sFigureIdx));
+    savefig(hP2, YieldFigFileName(sFigureIdx));
 end
 
-hP
+hP2
 
 end
 
@@ -297,7 +297,7 @@ end
 # ╠═c32031d0-a6a5-416c-952d-bf49fa9088ca
 # ╠═6644718c-ce08-49c3-aa04-83a1e2a6aae7
 # ╠═9db16a21-78ee-4ce5-84f6-7cd5081db994
-# ╠═b1b36cd1-45a1-4326-aff4-e89275ff1d61
+# ╟─b1b36cd1-45a1-4326-aff4-e89275ff1d61
 # ╠═bb57860f-6210-4ee5-b201-70c47d8fca3b
 # ╠═c3b837d6-2364-410d-bdb8-cfa220f5beb1
 # ╠═e5399666-e8b3-4b72-91ce-54ccb0eaa407
