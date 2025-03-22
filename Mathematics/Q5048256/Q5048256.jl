@@ -73,17 +73,17 @@ end
 function PdfSumUniform( valT :: T, X :: Uniform{T}, Y :: Uniform{T} ) where {T <: AbstractFloat}
     # Analytic Solution
     #                                                  
-    #               │                  │               
-    #               │                  │               
-    #              x│xxxxxxxxxxxxxxxxxx│x              
-    #             xx│                  │xxx            
-    #           xxx │                  │  xx           
-    #          xx   │                  │    xx         
-    #        xxx    │                  │     xxx       
-    #      xxx      │                  │       xx      
-    #     xx        │                  │        xxx    
-    # ───x──────────┼──────────────────┼──────────x─   
-    #   a+c        c+b                a+d         b+d  
+    #              │                  │               
+    #              │                  │               
+    #             x│xxxxxxxxxxxxxxxxxx│x              
+    #            xx│                  │xx            
+    #          xxx │                  │ xxx           
+    #         xx   │                  │   xx         
+    #       xxx    │                  │    xxx       
+    #     xxx      │                  │      xxx      
+    #    xx        │                  │        xx    
+    # ──x──────────┼──────────────────┼──────────x──   
+    #  a+c        c+b                a+d        b+d  
     #                                                  
     # Assuming X ~ U[a, b], Y ~ U[c, d] with (d - c) >= (b - a).
     
