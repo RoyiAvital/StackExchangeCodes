@@ -127,14 +127,18 @@ function PdfSumUniform( valT :: T, X :: Uniform{T}, Y :: Uniform{T} ) where {T <
     
 end
 
-function CalcLogLikelihood( vZ :: Vector{T}, paramR :: T, valA :: T, valB :: T ) where {T <: AbstractFloat}
+function CalcLogLikelihood( vθ :: Vector{T}, vZ :: Vector{T} ) where {T <: AbstractFloat}
+    # This variant tries to optimize for `paramR` and `paramAB = paramA + paramB`
+
+    paramR  = vθ[1];
+    paramAB = vθ[2];
 
     numSamples = length(vZ);
 
     logLik = zero(T);
 
     for ii ∈ 1:numSamples
-        logLik += log(T(2) * paramR - abs(vZ[ii] - valA - valB));
+        logLik += log(T(2) * paramR - abs(vZ[ii] - paramAB));
     end
 
     logLik -= T(2) * numSamples * log(T(2) * paramR);
@@ -153,17 +157,25 @@ paramB = 5.0;
 paramR = 1.0;
 
 # Solver
-numGridPts = 20_001;
+paramABRadius = 0.25; #<! Should be by the credible interval of the estimator of the mean
+paramRRadius  = 0.25;
+numGridPtsPdf = 20_001;
+numGridPtsLik = 2_001;
 
 
 ## Load / Generate Data
 
 X = Uniform(paramA - paramR, paramA + paramR);
 Y = Uniform(paramB - paramR, paramB + paramR);
+
 hPdfZ(valT :: T) where {T <: AbstractFloat} = PdfSumUniform(valT, X, Y);
+
 minG = min(paramA - paramR - 1.0 , paramA + paramB - 2paramR - 1.0);
 maxG = max(paramB + paramR + 1.0, paramA + paramB + 2paramR + 1.0);
+
+# Grid for the PDF
 vG = LinRange(minG, maxG, numGridPts);
+
 pdfX = pdf(X, vG);
 pdfY = pdf(Y, vG);
 pdfZ = hPdfZ.(vG);
@@ -176,10 +188,14 @@ vZ = vX + vY;
 
 ## Analysis
 
+# Starting Point
+paramAB = mean(vZ);
+
 # The minimum value of R must match the data
-minR   = ceil(maximum(abs.(vZ .- paramA .- paramB)) / 2.0; digits = 3);
-vRGrid = LinRange(minR, minR + 0.5, 1_000);
-vR     = [CalcLogLikelihood(vZ, valR, paramA, paramB) for valR ∈ vRGrid];
+minR    = ceil(maximum(abs.(vZ .- (paramAB + paramABRadius + paramRRadius)) / 2.0; digits = 3);
+vABGrid = LinRange(paramAB - paramABRadius, paramAB + paramABRadius, numGridPtsLik);
+vRGrid  = LinRange(minR, minR + 0.5, 1_000);
+vR      = [CalLogLikelihood(vZ, valR, paramA, paramB) for valR ∈ vRGrid];
 
 
 ## Display Analysis
