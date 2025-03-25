@@ -147,6 +147,12 @@ function CalcLogLikelihood( vθ :: Vector{T}, vZ :: Vector{T} ) where {T <: Abst
     
 end
 
+function LinearToSubScripts( tuShape :: NTuple{K, N}, linIdx :: N ) where {N <: Integer, K}
+    
+    return Tuple(CartesianIndices(tuShape)[linIdx]);
+
+end
+
 
 ## Parameters
 
@@ -157,10 +163,10 @@ paramB = 5.0;
 paramR = 1.0;
 
 # Solver
-paramABRadius = 0.25; #<! Should be by the credible interval of the estimator of the mean
-paramRRadius  = 0.25;
+paramABRadius = 0.125; #<! Should be by the credible interval of the estimator of the mean
+paramRRadius  = 0.15;
 numGridPtsPdf = 20_001;
-numGridPtsLik = 2_001;
+numGridPtsLik = 501;
 
 
 ## Load / Generate Data
@@ -174,7 +180,7 @@ minG = min(paramA - paramR - 1.0 , paramA + paramB - 2paramR - 1.0);
 maxG = max(paramB + paramR + 1.0, paramA + paramB + 2paramR + 1.0);
 
 # Grid for the PDF
-vG = LinRange(minG, maxG, numGridPts);
+vG = LinRange(minG, maxG, numGridPtsPdf);
 
 pdfX = pdf(X, vG);
 pdfY = pdf(Y, vG);
@@ -192,10 +198,30 @@ vZ = vX + vY;
 paramAB = mean(vZ);
 
 # The minimum value of R must match the data
-minR    = ceil(maximum(abs.(vZ .- (paramAB + paramABRadius + paramRRadius)) / 2.0; digits = 3);
+minR    = ceil(maximum(abs.(vZ .- paramAB)) / 2.0; digits = 3);
 vABGrid = LinRange(paramAB - paramABRadius, paramAB + paramABRadius, numGridPtsLik);
-vRGrid  = LinRange(minR, minR + 0.5, 1_000);
-vR      = [CalLogLikelihood(vZ, valR, paramA, paramB) for valR ∈ vRGrid];
+vRGrid  = LinRange(minR, minR + paramRRadius, numGridPtsLik);
+# vR      = [CalLogLikelihood(vZ, valR, paramA, paramB) for valR ∈ vRGrid];
+
+mL = fill(NaN, numGridPtsLik, numGridPtsLik);
+vθ = zeros(2);
+
+# https://discourse.julialang.org/t/75659
+for jj ∈ 1:numGridPtsLik, ii ∈ 1:numGridPtsLik
+    vθ[1] = vRGrid[jj]; #<! Setting `paramR`
+    vθ[2] = vABGrid[ii]; #<! Setting `paramAB`
+
+    if ((maximum(abs, vZ .- vθ[2]) / 2.0) <= vθ[1])
+        mL[ii, jj] = CalcLogLikelihood(vθ, vZ);
+    end
+end
+
+
+mLL = copy(mL);
+mLL[isnan.(mL)] .= minimum(x -> isnan(x) ? Inf : x, mL); #<! https://discourse.julialang.org/t/17481
+maxIdx = argmax(mLL[:]);
+tuMaxSubScript = LinearToSubScripts(size(mLL), maxIdx);
+# tuMaxSubScript = argmax(mLL);
 
 
 ## Display Analysis
@@ -209,25 +235,26 @@ display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    savefig(hP, figFileNme);
+    savefig(hP, figFileNme, width = hP.layout["width"], height = hP.layout["height"]); #<! https://github.com/JuliaPlots/PlotlyJS.jl/issues/491
 end
 
 figureIdx += 1;
 
-oTrace1 = scatter(x = vRGrid, y = vR, mode = "lines", text = "Log Likelihood", name = "Log Likelihood",
-                  line = attr(width = 3.0));
-oTrace2 = scatter(x = [vRGrid[argmax(vR)]], y = [maximum(vR)], 
-                  mode = "markers", text = "Maximum Value", name = "Maximum Value",
-                  marker = attr(size = 12, color = "r"));
-
-oLayout = Layout(title = "The Log Likelihood Function", width = 600, height = 600, hovermode = "closest",
-                  xaxis_title = "R", yaxis_title = "L(z; R)");
- hP = plot([oTrace1, oTrace2], oLayout);
- display(hP);
+oTr1 = heatmap(x = vRGrid, y = vABGrid, z = mL, showscale = false, colorscale = "RdBlu");
+oTr2 = scatter(x = [vRGrid[tuMaxSubScript[2]]], y = [vABGrid[tuMaxSubScript[1]]],
+               mode = "markers", name = "Maximum Likelihood", marker_size = 16, marker_color = "cyan");
+oTr3 = scatter(x = [paramR], y = [paramA + paramB],
+               mode = "markers", name = "Ground Truth", marker_size = 16, marker_color = "magenta");
+oLayout = Layout(title = "The Likelihood Function", xaxis_title = "r", yaxis_title = "a + b", 
+                 width = 800, height = 800,
+                 xaxis_range = [vRGrid[1], vRGrid[end]], yaxis_range = [vABGrid[1], vABGrid[end]],
+                 hovermode = "closest", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0));
+hP = Plot([oTr1, oTr2, oTr3], oLayout);
+display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    savefig(hP, figFileNme);
+    savefig(hP, figFileNme, width = hP.layout["width"], height = hP.layout["height"]); #<! https://github.com/JuliaPlots/PlotlyJS.jl/issues/491
 end
 
 

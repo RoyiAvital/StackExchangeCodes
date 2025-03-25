@@ -113,6 +113,38 @@ function DisplayImage(mI :: Matrix{Bool}; tuImgSize :: Tuple{N, N} = size(mI), t
 
 end
 
+function PlotMatrix( vX :: Vector, vY :: Vector, mI :: Matrix{T}; titleStr :: String = "", colorMap :: String = "RdBu" ) where {T <: Real}
+    # Displays a Matrix
+    # `colorMap`: Blackbody,Bluered,Blues,Cividis,Earth,Electric,Greens,Greys,Hot,Jet,Picnic,Portland,Rainbow,RdBu,Reds,Viridis,YlGnBu,YlOrRd
+    # https://plotly.com/python/builtin-colorscales
+    # https://community.plotly.com/t/11730
+    
+    oTr1 = heatmap(x = vX, y = vY, z = mI, showscale = false, colorscale = colorMap);
+    oLayout = Layout(title = titleStr, width = size(mI, 2) + 100, height = size(mI, 1) + 100, 
+                hovermode = "closest", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0));
+                
+    hP = Plot([oTr1], oLayout);
+    
+    return hP; #<! display(hP);
+
+end
+
+function PlotMatrix( mI :: Matrix{T}; titleStr :: String = "", colorMap :: String = "RdBu" ) where {T <: Real}
+    # Displays a Matrix
+    # `colorMap`: Blackbody,Bluered,Blues,Cividis,Earth,Electric,Greens,Greys,Hot,Jet,Picnic,Portland,Rainbow,RdBu,Reds,Viridis,YlGnBu,YlOrRd
+    # https://plotly.com/python/builtin-colorscales
+    # https://community.plotly.com/t/11730
+                
+    oTr1 = heatmap(z = mI, showscale = false, colorscale = colorMap);
+    oLayout = Layout(title = titleStr, width = size(mI, 2) + 100, height = size(mI, 1) + 100, 
+                hovermode = "closest", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0));
+                
+    hP = Plot([oTr1], oLayout);
+    
+    return hP; #<! display(hP);
+
+end
+
 function PlotSparseMat( mM :: AbstractSparseMatrix )
     # Works with up to ~100K elements
 

@@ -206,8 +206,8 @@ oTrace2 = scatter(x = [vRGrid[argmax(vR)]], y = [maximum(vR)],
 
 oLayout = Layout(title = "The Log Likelihood Function", width = 600, height = 600, hovermode = "closest",
                   xaxis_title = "R", yaxis_title = "L(z; R)");
- hP = plot([oTrace1, oTrace2], oLayout);
- display(hP);
+hP = plot([oTrace1, oTrace2], oLayout);
+display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
