@@ -234,7 +234,6 @@ function _Conv1DValid!( vO :: Vector{T}, vA :: Vector{T}, vB :: Vector{T} ) wher
     J < K && return;
     
     I = J - K + 1; #<! Output length
-	
 
     @simd ivdep for ii in 1:I #<! Middle
         sumVal = zero(T);
