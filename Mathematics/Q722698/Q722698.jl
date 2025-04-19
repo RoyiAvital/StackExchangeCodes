@@ -116,7 +116,7 @@ oTr2 = scatter(; x = [vPtLocation[1]], y = [vPtLocation[2]], mode = "markers",
                 marker_size = 12, text = "Reference Point", name = "Reference Point");
 oShp = [circle(x0 = mAccPtLoc[ii, 1] - vMeasure[ii], y0 = mAccPtLoc[ii, 2] - vMeasure[ii], 
                 x1 = mAccPtLoc[ii, 1] + vMeasure[ii], y1 = mAccPtLoc[ii, 2] + vMeasure[ii];
-                opacity = 0.15, fillcolor = "black", line_color = "white") for ii ∈ 1:numAnchors]
+                opacity = 0.15, fillcolor = "black", line_color = "white") for ii ∈ 1:numAnchors];
 oLayout = Layout(title = "Localization by Range Measurements: Scenario", width = 600, height = 600, 
                 xaxis_range = [0, tuGridSize[1]], yaxis_range = [0, tuGridSize[2]], xaxis_title = 'x', yaxis_title = 'y',
                 hovermode = "closest", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0),
