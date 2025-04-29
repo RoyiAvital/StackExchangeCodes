@@ -8,6 +8,8 @@
 # 	1.  Make a single `DisplayImage()` for `UInt8`.  
 #       All others should convert `UInt8` to and use it.
 # Release Notes
+# - 1.5.000    29/04/2025  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `PlotDft()`.
 # - 1.4.000    13/02/2025  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `PlotLine()`.
 # - 1.3.000    14/09/2024  Royi Avital RoyiAvital@yahoo.com
@@ -38,6 +40,19 @@ if (!(@isdefined(isJuliaInit)) || (isJuliaInit == false))
     # Ensure the initialization happens only once
     include("./JuliaInit.jl");
 end
+
+vPlotlyDefColors = [
+    "#636EFA",
+    "#EF553B",
+    "#00CC96",
+    "#AB63FA",
+    "#FFA15A",
+    "#19D3F3",
+    "#FF6692",
+    "#B6E880",
+    "#FF97FF",
+    "#FECB52",
+]; #<! See https://stackoverflow.com/questions/40673490
 
 ## Functions
 
@@ -196,3 +211,33 @@ function PlotLine( vY :: VecOrMat{T}; plotTitle :: String = "", signalName :: St
 
 end
 
+function PlotDft( vK :: VecOrMat{T}, samplingFrequency :: T, numSamples :: N; singleSideFlag :: Bool = true, logScaleFlag :: Bool = true, normalizeData :: Bool = true, plotTitle :: String = "DFT" ) where {T <: AbstractFloat, N <: Integer}
+    # vK - Real (Absolute Value) of the DFT
+
+    if singleSideFlag
+        numFreqBins = size(vK, 1);
+    else
+        numFreqBins = numSamples;
+    end
+
+    # The frequency grid
+    vF = LinRange(0, samplingFrequency, numSamples + 1);
+    vF = vF[1:numFreqBins];
+
+    numSignals = size(vK, 2);
+
+    vTr = Vector{GenericTrace{Dict{Symbol, Any}}}(undef, numSignals);
+    
+    for ii ∈ 1:numSignals
+        vTr[ii] = scatter(; x = vF, y = vK[:, ii], mode = "lines");
+    end
+
+    oLayout = Layout(title = plotTitle, width = 600, height = 600, hovermode = "closest",
+                  xaxis_title = "Frequency", yaxis_title = "Amplitude");
+    
+    hP = Plot(vTr, oLayout);
+
+    return hP; #<! display(hP);
+
+
+end
