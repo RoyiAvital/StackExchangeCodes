@@ -68,7 +68,6 @@ circRadius = Variable(1);
 sConvProb = minimize( circRadius, [Convex.norm(vX - vC) <= circRadius for vX in eachcol(mX)] );
 solve!(sConvProb, ECOS.Optimizer; silent = true);
 
-
 vC         = vec(vC.value);
 circRadius = circRadius.value;
 
