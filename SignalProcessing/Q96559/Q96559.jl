@@ -54,8 +54,8 @@ function GenModelMatrix( valF :: T, numSamples :: N ) where {T <: AbstractFloat,
     
     mS = zeros(T, numSamples, 2);
     for nn ∈ 1:numSamples
-        mS[nn, 1] = cospi(T(2) * valF * nn);
-        mS[nn, 2] = sinpi(T(2) * valF * nn);
+        mS[nn, 1] = cospi(T(2) * valF * (nn - 1));
+        mS[nn, 2] = sinpi(T(2) * valF * (nn - 1));
     end
 
     return mS;
@@ -130,6 +130,20 @@ for ii ∈ 1:numPeaks
 end
 
 # mP = mP[:, sortperm(mP[3, :])];
+
+# Optimal Cosine Parameters
+peakIdx = argmin(mP[3, :]);
+paramF  = mP[2, peakIdx];
+mS      = GenModelMatrix(paramF, numSamples);
+vW      = mS \ vX;
+paramA  = norm(vW);
+θ       = atan(-vW[2], vW[1])
+
+# The question uses vW[1] + cos(2π * f * n) - vW[2] sin(2π * f * n)
+# The model in the code (`GenModelMatrix()`) uses vW[1] + cos(2π * f * n) + vW[2] sin(2π * f * n)
+mean(abs2, paramA .* cos.(2π .* paramF .* (0:(numSamples - 1)) .+ θ) .- vX)
+
+mean(abs2, paramA .* real.(cis.(2π .* paramF .* (0:(numSamples - 1)) .+ θ)) .- vX)
 
 ## Display Results
 
