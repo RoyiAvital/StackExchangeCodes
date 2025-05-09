@@ -76,7 +76,9 @@ end
 
 ## Parameters
 
-fileName = "Signal.csv" #<! From https://gist.github.com/cdboschen/cb9d1cb6976101e22d0295c5c16b64c8 (By @Dan Boschen)
+fileName = "Signal001.csv" #<! From https://gist.github.com/cdboschen/cb9d1cb6976101e22d0295c5c16b64c8 (By @Dan Boschen)
+fileName = "Signal002.csv" #<! From https://gist.github.com/cdboschen/b10b644817f323f9772b150c990ae479 (By @Dan Boschen)
+
 
 # Problem parameters
 samplingFreq  = 10e6;
@@ -89,11 +91,16 @@ numGridPts = 5_000;
 ## Load / Generate Data
 
 # Load the Signal
+
+# Signal 001
 # Bandlimited noise waveform extending from 1 to 3 MHz.
 # 3 Tones:
 # - peak = 2.2, freq = 501 kHz, phase = 0.35 radians.
 # - peak = 1.6, freq = 2.1 MHz, phase = 0.1 radians.
 # - peak = 0.5, freq = 4.1 MHz, phase = -2.1 radians.
+# Sampling Rate at 10 MHz.
+# Signal 002
+# Similar to 001 without the harmonic signals.
 # Sampling Rate at 10 MHz.
 vX = vec(readdlm(fileName));
 
