@@ -76,14 +76,14 @@ circRadius = circRadius.value;
 
 figureIdx += 1;
 
-oTr1 = scatter(x = mX[1, :], y = mX[2, :], mode = "markers", name = "Date Samples");
+oTr1 = scatter(x = mX[1, :], y = mX[2, :], mode = "markers", name = "Data Samples");
 oTr2 = scatter(x = [vC[1]], y = [vC[2]], mode = "markers", name = "Circle Center");
 
 vShp = [circle(x0 = vC[1] - circRadius, y0 = vC[2] - circRadius, 
                 x1 = vC[1] + circRadius, y1 = vC[2] + circRadius;
                 opacity = 0.15, fillcolor = "red", line_color = "red")]
 
-oLayout = Layout(title = "Date Samples and Enclosing Circle", width = 600, height = 600, hovermode = "closest", 
+oLayout = Layout(title = "Data Samples and Enclosing Circle", width = 600, height = 600, hovermode = "closest", 
                  xaxis_title = "x", yaxis_title = "y", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0),
                  legend = attr(x = 0.025, y = 0.975), shapes = vShp);
 
