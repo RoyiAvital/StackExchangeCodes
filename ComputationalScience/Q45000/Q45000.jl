@@ -51,17 +51,16 @@ oRng = StableRNG(1234);
 ## Parameters
 
 # Data
+dataDim    = 2;
 numSamples = 100;
 
 
 #%% Load / Generate Data
 
-mX = randn(oRng, 2, numSamples);
+mX = randn(oRng, dataDim, numSamples);
 
 
 ## Analysis
-
-dataDim = size(mX, 1);
 
 vC = Variable(dataDim);
 circRadius = Variable(1);
