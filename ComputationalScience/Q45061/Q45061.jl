@@ -54,13 +54,13 @@ function RadiusConstrainedKMedoids( mX :: Matrix{T}, valR :: T ) where {T <: Abs
     numSamples = size(mX, 2);
 
     # Distance Matrix: Squared Euclidean Distance
-    # mD = (sum(abs2, mX; dims = 1) .+ sum(abs2, mX; dims = 1)) .- T(2.0) * (mX' * mX);
-    mD = zeros(T, numSamples, numSamples);
-    for ii ∈ 1:numSamples
-        for jj ∈ 1:numSamples
-            mD[ii, jj] = sum(abs2, mX[:, ii] - mX[:, jj]);
-        end
-    end
+    mD = (sum(abs2, mX; dims = 1) .+ sum(abs2, mX; dims = 1)') .- T(2.0) * (mX' * mX);
+    # mD = zeros(T, numSamples, numSamples);
+    # for ii ∈ 1:numSamples
+    #     for jj ∈ 1:numSamples
+    #         mD[ii, jj] = sum(abs2, mX[:, ii] - mX[:, jj]);
+    #     end
+    # end
 
     # The value B_ij represents whether element i belongs to the cluster centered on element j
     mB = Variable(numSamples, numSamples, BinVar); #<! Indicator matrix
@@ -112,7 +112,7 @@ mX = hcat(mX...);
 mC, vL, vSIdx, _ = RadiusConstrainedKMedoids(mX, maxRadius);
 vI = unique(vL);
 for ii ∈ 1:length(vI)
-    vL[vL .== vI[ii]] .= ii;
+    vL[vL .== vI[ii]] .= ii - 1;
 end
 mC = mX[:, vSIdx]; #<! K-Medoid Centroids
 
@@ -141,8 +141,8 @@ end
 
 figureIdx += 1;
 
-sTr1 = scatter(x = mX[1, :], y = mX[2, :], marker_color = vL, marker_size = 8, mode = "markers", name = "Date Samples");
-sTr2 = scatter(x = mC[1, :], y = mC[2, :], marker_size = 5, marker_symbol = "cross", mode = "markers", name = "Centroids");
+sTr1 = scatter(x = mX[1, :], y = mX[2, :], marker_colorscale = "Jet", marker_color = vL, marker_size = 9, mode = "markers", name = "Date Samples");
+sTr2 = scatter(x = mC[1, :], y = mC[2, :], marker_size = 6, marker_symbol = "cross", mode = "markers", name = "Centroids");
 
 vShp = [circle(x0 = vC[1] - maxRadius, y0 = vC[2] - maxRadius, 
                 x1 = vC[1] + maxRadius, y1 = vC[2] + maxRadius;
@@ -150,6 +150,7 @@ vShp = [circle(x0 = vC[1] - maxRadius, y0 = vC[2] - maxRadius,
 
 oLayout = Layout(title = "Data Samples and Clusters", width = 600, height = 600, hovermode = "closest", 
                  xaxis_title = "x", yaxis_title = "y", margin = attr(l = 50, r = 50, b = 50, t = 50, pad = 0),
+                #  scene_aspectmode = "manual", scene_aspectratio = attr(x = 2, y = 1),
                  legend = attr(x = 0.025, y = 0.975), shapes = vShp);
 
 vTr = [sTr1, sTr2];
