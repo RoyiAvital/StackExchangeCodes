@@ -11,6 +11,8 @@
 *.tar*
 *.zip
 
+# Binary Files
+*.exe
 
 # Media Files
 *.avi
