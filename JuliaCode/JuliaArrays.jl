@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.1.001     21/06/2025  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `SqueezeArray()` which imitates MATLAB's `squeeze()`.
 # - 1.1.000     22/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `ReshapeArray()` as a faster alternative to `reshape()`.
 # - 1.0.000     18/09/2024  Royi Avital RoyiAvital@yahoo.com
@@ -152,6 +154,11 @@ function SubScriptsToLinear( tuShape :: NTuple{2, N}, vSubScriptIdx :: Vector{NT
 
 end
 
+function SqueezeArray( mA :: Array )
+    
+    tuSingletonDim = tuple((d for d in 1:ndims(mA) if size(mA, d) == 1)...);
+    return dropdims(mA; dims = tuSingletonDim);
 
+end
 
 

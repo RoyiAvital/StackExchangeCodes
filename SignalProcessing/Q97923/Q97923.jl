@@ -1,6 +1,6 @@
-# StackExchange Signal Processing Q97939
-# https://dsp.stackexchange.com/questions/97939
-# Deriving the Batch Recursive Least Squares (Batch RLS) / Batch Sequential Least Squares with Limited Memory.
+# StackExchange Signal Processing Q97923
+# https://dsp.stackexchange.com/questions/97923
+# Robust Extraction of Local Peaks in Noisy Signal with a Trend.
 # References:
 #   1.  A
 # Remarks:
@@ -12,20 +12,25 @@
 # TODO:
 # 	1.  AA.
 # Release Notes Royi Avital RoyiAvital@yahoo.com
-# - 1.0.000     20/06/2025  Royi Avital
+# - 1.0.000     21/06/2025  Royi Avital
 #   *   First release.
 
 ## Packages
 
 # Internal
+using DelimitedFiles;      #<! Read CSV
 using LinearAlgebra;
 using Printf;
 using Random;
 # External
 # using BenchmarkTools;
-# using Peaks;
+using Convex;              #<! Required for Signal Processing
+using ECOS;                #<! Required for Signal Processing
+using LoopVectorization;   #<! Required for Image Processing
 using PlotlyJS;            #<! Use `add Kaleido_jll@v0.1;` (See https://github.com/JuliaPlots/PlotlyJS.jl/issues/479)
+using SparseArrays;        #<! Required for Arrays
 using StableRNGs;
+using StaticKernels;       #<! Required for Image / Signal Processing
 
 
 ## Constants & Configuration
@@ -33,6 +38,8 @@ RNG_SEED = 1234;
 
 juliaCodePath = joinpath(".", "..", "..", "JuliaCode");
 include(joinpath(juliaCodePath, "JuliaInit.jl"));
+include(joinpath(juliaCodePath, "JuliaArrays.jl")); #<! Sparse Arrays
+include(joinpath(juliaCodePath, "JuliaSignalProcessing.jl")); #<! Signal Processing
 include(joinpath(juliaCodePath, "JuliaVisualization.jl")); #<! Display Images
 
 ## Settings
@@ -46,82 +53,44 @@ oRng = StableRNG(1234);
 
 ## Functions
 
-function SqueezeArray( mA :: Array )
-    
-    tuSingletonDim = tuple((d for d in 1:ndims(mA) if size(mA, d) == 1)...);
-    mAA = dropdims(mA; dims = tuSingletonDim);
-
-    if ndims(mAA) == 0
-        return mAA[1];
-    else
-        return mAA;
-    end
-end
-
-
-function GenVandermondeMat!( mV :: Matrix{T}, vV :: Vector{T} ) where {T <: AbstractFloat}
-    
-    numRows = size(mV, 1);
-    numCols = size(mV, 2);
-    numRows == length(vV) || throw(DimensionMismatch("The number of rows of `mV` must match the number of elements in `vV`"));
-    
-    for ii = 1:numRows
-        @inbounds mV[ii, 1] = one(T);
-    end
-    for jj = 2:numCols, ii = 1:numRows
-        @inbounds mV[ii, jj] = vV[ii] * mV[ii, jj - 1];
-    end
-    
-    return mV;
-
-end
-
-GenVandermondeMat( vV :: Vector{T}, numCols :: N) where {T <: AbstractFloat, N <: Integer} = GenVandermondeMat!(Matrix{T}(undef, length(vV), numCols), vV);
-
-function SequentialLeastSquares!( vθ :: Vector{T}, vX :: Vector{T}, mR :: Matrix{T}, mH :: Matrix{T} ) where {T <: AbstractFloat}
-    
-    mR .-= mR * mH' * inv(I + mH * mR * mH') * mH * mR;
-    mK   = mR * mH';
-    vθ .+= mK * (vX - mH * vθ);
-
-    return vθ, mR;
-
-end
-
-function SequentialLeastSquares( vθ :: Vector{T}, vX :: Vector{T}, mR :: Matrix{T}, mH :: Matrix{T} ) where {T <: AbstractFloat}
-
-    mRR = mR - mR * mH' * inv(I + mH * mR * mH') * mH * mR;
-    mK  = mRR * mH';
-    vθθ = vθ + mK * (vX - mH * vθ);
-
-    return vθθ, mRR;
-
-end
 
 ## Parameters
 
-modelOrder     = 3;
-numSamples     = 35;
-numSamplesInit = 5;
-batchSize      = 5;
-σ              = 2;
+# Data
+dataUrl = "Signal.csv"; #<! Local
+# dataUrl = raw"https://github.com/RoyiAvital/StackExchangeCodes/raw/refs/heads/master/SignalProcessing/Q97923/Signal.csv";
+
+# BEDS Algorithm
+modelDeg    = 1; #<! Derivative order
+fₛ           = 0.015; #<! Cut Off Frequency
+asyRatio    = 5.0 #<! Positive / Negative Peak Ratio
+λ₀          = 0.25;
+λ₁          = 0.035;
+λ₂          = 0.015;
+numIter     = 31;
+ϵ₀          = 5e-5;
+ϵ₁          = 5e-5;
+
+numSamplesTapering = 50;
 
 ## Load / Generate Data
 
 # Load the Signal
+mD = readdlm(dataUrl, ';'; skipstart = 1); #<! Data is a vector
+vX = mD[:, 1]; #<! Sampling grid
+vY = mD[:, 2]; #<! Samples
 
-vH = collect(LinRange(0.0, 1.0, numSamples)); #<! Grid
-mH = GenVandermondeMat(vH, modelOrder + 1); #<! Model Matrix
-vθ = 3 * randn(oRng, modelOrder + 1); #<! Parameters (Ground truth)
-vN = σ * randn(oRng, numSamples);
-vY = mH * vθ; #<! Model Data
-vX = vY + vN; #<! Measurements
 
 ## Analysis
 
-vθLs  = mH \ vX; #<! LS Estimation
-vθSls = mH[1:numSamplesInit, :] \ vX[1:numSamplesInit]; #<! Sequential LS initialization
-mR    = inv(mH[1:numSamplesInit, :]' * mH[1:numSamplesInit, :]); #<! Sequential LS initialization
+# The BEADS algorithm treat the filters matrices as commutative.  
+# Which implies Circulant Matrices (Commutative discrete convolution).
+# Circulant Matrices applies periodic convolution (Multiplication of DFT's).
+# Hence assume both ends of the signal create some smoothness (Periodic).
+# To have the assumption valid, the signal should be tapered.
+# In this case, using Sigmoid function to have a roll off to zero.
+
+vXX, vFF, vCC = BeadsFilter(vY, modelDeg, fₛ, asyRatio, λ₀, λ₁, λ₂, numIter; ϵ₀ = ϵ₀, ϵ₁ = ϵ₁);
 
 ## Display Results
 
@@ -215,6 +184,5 @@ end
 
 # Generate the Animation
 # 1. Download APNG Assembler.
-# 2. Make `apngasm` available on `$PATH`.
 # 2. Delete the first figure (`Figure0001.png`).
-# 3. Run on command line: `apngasm out.png Figure0002.png 7 8 -l0`.
+# 3. Run on command line: `apngasm64 out.png Figure0002.png 7 8 -l0`.
