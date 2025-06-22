@@ -77,8 +77,8 @@ numSamplesTapering = 50;
 
 # Load the Signal
 mD = readdlm(dataUrl, ';'; skipstart = 1); #<! Data is a vector
-vX = mD[:, 1]; #<! Sampling grid
-vY = mD[:, 2]; #<! Samples
+vX = Float64.(mD[:, 1]); #<! Sampling grid
+vY = Float64.(mD[:, 2]); #<! Samples
 
 
 ## Analysis
