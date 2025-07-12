@@ -1,6 +1,6 @@
 # StackExchange Mathematics Q4989670
 # https://math.stackexchange.com/questions/4989670
-# Curve Fit with 2 Exponential Terms.
+# Least Squares Curve Fit with 2 Exponential Terms.
 # References:
 #   1.  A
 # Remarks:
