@@ -184,7 +184,7 @@ display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    savefig(hP, figFileNme);
+    savefig(hP, figFileNme; width = hP.layout[:width], height = hP.layout[:height]);
 end
 
 figureIdx += 1;
@@ -206,5 +206,5 @@ display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    savefig(hP, figFileNme);
+    savefig(hP, figFileNme; width = hP.layout[:width], height = hP.layout[:height]);
 end

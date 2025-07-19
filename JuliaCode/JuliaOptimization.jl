@@ -367,10 +367,11 @@ function OrthogonalProjectionOntoConvexSets( vY :: AbstractVecOrMat{T}, vProjFun
 end
 
 function IRLS!( vX :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vW :: Vector{T}, mWA :: Matrix{T}, mC :: Matrix{T}, vT :: Vector{T}, sBKWorkSpace :: BunchKaufmanWs{T}; normP :: T = one(T), numItr :: N = UInt32(100), ϵ :: T = T(1e-6) ) where {T <: AbstractFloat, N <: Unsigned}
-    # Solves ||A * x - y||ₚ
+    # Solves ||A * x - b||ₚ
+    # TODO: Optimize for the case m >> n.
 
     errThr = T(1e-6); #<! Should be adaptive per iteration
-    effNorm = ((normP - T(2)) / T(2));
+    effNorm = ((normP - T(2)) / T(2)); #<! Solving the Normal Equations (Doubling vW -> Power divided by 2)
     
     for _ in 1:numItr
         mul!(vW, mA, vX);
