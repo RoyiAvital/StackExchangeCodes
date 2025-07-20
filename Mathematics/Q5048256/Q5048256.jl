@@ -198,15 +198,15 @@ end
 
 figureIdx += 1;
 
-oTrace1 = scatter(x = vRGrid, y = vR, mode = "lines", text = "Log Likelihood", name = "Log Likelihood",
+sTr1 = scatter(x = vRGrid, y = vR, mode = "lines", text = "Log Likelihood", name = "Log Likelihood",
                   line = attr(width = 3.0));
-oTrace2 = scatter(x = [vRGrid[argmax(vR)]], y = [maximum(vR)], 
+sTr2 = scatter(x = [vRGrid[argmax(vR)]], y = [maximum(vR)], 
                   mode = "markers", text = "Maximum Value", name = "Maximum Value",
                   marker = attr(size = 12, color = "r"));
 
-oLayout = Layout(title = "The Log Likelihood Function", width = 600, height = 600, hovermode = "closest",
+sLayout = Layout(title = "The Log Likelihood Function", width = 600, height = 600, hovermode = "closest",
                   xaxis_title = "R", yaxis_title = "L(z; R)");
-hP = plot([oTrace1, oTrace2], oLayout);
+hP = plot([sTr1, sTr2], sLayout);
 display(hP);
 
 if (exportFigures)

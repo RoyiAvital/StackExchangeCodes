@@ -7,8 +7,10 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.0.007     20/07/2025  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `FindZeroBinarySearch()`.
 # - 1.0.006     04/11/2024  Royi Avital RoyiAvital@yahoo.com
-#   *   Fixes issued with `GradientDescentBackTracking()`.
+#   *   Fixed issued with `GradientDescentBackTracking()`.
 #   *   Made explicit package usage.
 # - 1.0.005     08/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Verifying the initialization happens only once.
@@ -423,3 +425,32 @@ function IRLS( mA :: Matrix{T}, vB :: Vector{T}; normP :: T = one(T), numItr :: 
     
 end
 
+function FindZeroBinarySearch( hF :: Function, valA :: T, valB :: T; tolValue :: T = T(1e-8), maxIter :: N = 100 ) where {T <: AbstractFloat, N <: Integer}
+    
+    valFA = hF(valA);
+    valFB = hF(valB);
+
+    if valFA * valFB > zero(T)
+        error("Function must have opposite signs at valA and valB: f(valA) = $valFA, f(valB) = $valFB");
+    end
+
+    for ii in 1:maxIter
+        midPoint = (valA + valB) / T(2);
+        valFMid  = hF(midPoint);
+
+        if (abs(valFMid) < tolValue) || (((valB - valA) / T(2)) < tolValue)
+            return midPoint;
+        end
+
+        if valFA * valFMid < zero(T)
+            valB = midPoint;
+            valFB = valFMid;
+        else
+            valA = midPoint;
+            valFA = valFMid;
+        end
+    end
+
+    return (valA + valB) /  T(2);
+
+end
