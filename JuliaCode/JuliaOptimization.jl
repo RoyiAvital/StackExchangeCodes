@@ -9,6 +9,7 @@
 # Release Notes
 # - 1.0.007     20/07/2025  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `FindZeroBinarySearch()`.
+#   *   Added `LsqBox()`.
 # - 1.0.006     04/11/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Fixed issued with `GradientDescentBackTracking()`.
 #   *   Made explicit package usage.
@@ -452,5 +453,54 @@ function FindZeroBinarySearch( hF :: Function, valA :: T, valB :: T; tolValue ::
     end
 
     return (valA + valB) /  T(2);
+
+end
+
+function LsqBox( mA :: AbstractMatrix{T}, vB :: AbstractVector{T}, vL :: AbstractVector{T}, vU :: AbstractVector{T}; numIter :: N = 100, relTol :: T = T(-1), absTol :: T = T(0)) where {T <: AbstractFloat, N <: Integer}
+    # Based on Steven G. Johnson code (See https://discourse.julialang.org/t/35611/13)
+    # Similar to Dimitri P. Bertsekas - Projected Newton Methods for Optimization Problems with Simple Constraints (https://ieeexplore.ieee.org/document/4047042).
+    
+    Base.require_one_based_indexing(mA, vB, vL, vU);
+    numRows = size(mA, 1);
+    numCols = size(mA, 2);
+    
+    if relTol < zero(T)
+        # Default
+        relTol = eps(T) * sqrt(T(numCols));
+    end
+    
+    vX = mA \ vB;
+    @. vX = clamp(vX, vL, vU); #<! Make a feasible candidate
+    # Pre calculation
+    AᵀA = mA' * mA;
+    Aᵀb = mA' * vB;
+    # Gradient ∇ₓ of ½‖Ax - b‖²
+    vG = AᵀA*vX;
+    vG .-= Aᵀb;
+    # Inactive constraints mask
+    vInactive = Bool[vL[i] < vU[i] && (vX[i] != vL[i] || vG[i] ≤ T(0)) && (vX[i] != vU[i] || vG[i] ≥ T(0)) for i in eachindex(vX)];
+    all(vInactive) && return vX, true; #<! All constraints are inactive, the unconstrained solution is valid
+    vActive = map(!, vInactive);
+    vXPrev  = copy(vX);
+    for ii in 1:numIter
+        vXa = mA[:, vInactive] \ (vB - mA[:, vActive] * vX[vActive]); #<! Working on the residual
+        vX[vInactive] = vXa;
+        @. vX = clamp(vX, vL, vU);
+        # Update the gradient
+        mul!(vG, AᵀA, vX);
+        vG .-=  Aᵀb;
+        # Update the inactive mask
+        for jj in eachindex(vX)
+            vInactive[jj] = vL[jj] < vU[jj] && (vX[jj] != vL[jj] || vG[jj] ≤ T(0)) && (vX[jj] != vU[jj] || vG[jj] ≥ T(0));
+        end
+        # Check for convergence
+        all(i -> vInactive[i] == !vActive[i], eachindex(vActive)) && return vX, true; #<! Convergence: active set unchanged 
+        norm(vX - vXPrev) ≤ max(relTol * norm(vX), absTol) && return vX, true; #<! Convergence: `vX` not changing much
+        vXPrev .= vX; #<! Keep current candidate as a previous for next step
+        @. vActive = !vInactive; #<! Update active mask
+    end
+    
+    # No convergence
+    return vX, false;
 
 end

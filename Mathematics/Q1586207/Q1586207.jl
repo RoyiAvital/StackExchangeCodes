@@ -115,7 +115,7 @@ vV = [hϕ(λ) for λ ∈ vλ];
 
 ## Display Results
 
-# figureIdx += 1;
+figureIdx += 1;
 
 sTr1 = scatter(; x = vλ, y = vV, mode = "lines", 
               line_width = 2.75,
