@@ -7,6 +7,9 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.2.000     22/07/2025  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `ProjectSimplexBall()` (Made `ProjSimplexBall()` obsolete).
+#   *   Added `ProjectL∞Ball()`.
 # - 1.1.000     31/12/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `ProjectL2Ball()`.
 # - 1.0.000     04/12/2024  Royi Avital RoyiAvital@yahoo.com
@@ -29,7 +32,49 @@ end
 
 ## Functions
 
+function ProjectSimplexBall!( vX :: AbstractVector{T}, vY :: AbstractVector{T}; ballRadius :: T = T(1) ) where {T <: AbstractFloat}
+    # See http://arxiv.org/abs/1101.6081
+    # Sorting vector in descending order, hence looping forward (Paper loops backward)
+    # TODO: Make it the go to Projection onto simplex (In `JuliaProxOperators.jl`).
+    
+    numElements = length(vY);
+    
+    copy!(vX, vY);
+    sort!(vY; rev = true);
+    sumT = zero(T); #<! Cumulative sum
+    tᵢ   = zero(T); #<! Running sum
+    isT  = false; #<! Is ̂t found before loop ends
+
+    for ii = 1:(numElements - 1)
+        sumT = sumT + vX[ii];
+        tᵢ   = (sumT - ballRadius) / T(ii);
+        if tᵢ >= vX[ii + 1]
+            isT = true;
+            break;
+        end
+    end
+
+    if !(isT)
+        tᵢ = (sumT + vX[numElements] - ballRadius) / T(numElements);
+    end
+
+    # The value of tᵢ is ̂t in the paper
+    @. vX = max(vY - tᵢ, T(0)); #<! Subtract from the unsorted array
+
+    return vX;
+
+end
+
+function ProjectSimplexBall( vY :: AbstractVector{T}; ballRadius :: T = T(1.0) ) where {T <: AbstractFloat}
+    
+    vX = zero(vY);
+
+    return ProjectSimplexBall!(vX, vY; ballRadius = ballRadius);
+
+end
+
 function ProjSimplexBall!( vX :: AbstractVector{T}, vY :: AbstractVector{T}; ballRadius :: T = T(1.0), ε :: T = T(1e-7) ) where {T <: AbstractFloat}
+    #!!! Obsolete (Replaced by `ProjectSimplexBall!()`)
     #TODO: Make zero allocations
     
     numElements = length(vY);
@@ -81,6 +126,7 @@ function ProjSimplexBall!( vX :: AbstractVector{T}, vY :: AbstractVector{T}; bal
 end
 
 function ProjSimplexBall( vY :: AbstractVector{T}; ballRadius :: T = T(1.0), ε :: T = T(1e-7) ) where {T <: AbstractFloat}
+    #!!! Obsolete (Replaced by `ProjectSimplexBall()`)
     
     numElements = length(vY);
     vX = zeros(T, numElements);
@@ -171,6 +217,22 @@ function ProjectL2Ball( vY :: AbstractVector{T}; ballRadius :: T = T(1.0) ) wher
     
     numElements = length(vY);
     vX = zeros(T, numElements);
+
+    return ProjectL2Ball!(vX, vY; ballRadius = ballRadius);
+
+end
+
+function ProjectL∞Ball!( vX :: AbstractVector{T}, vY :: AbstractVector{T}; ballRadius :: T = T(1.0) ) where {T <: AbstractFloat}
+    
+    vX .= clamp.(vY, -ballRadius, ballRadius);
+
+    return vX;
+
+end
+
+function ProjectL∞Ball( vY :: AbstractVector{T}; ballRadius :: T = T(1.0) ) where {T <: AbstractFloat}
+    
+    vX = zero(vY);
 
     return ProjectL2Ball!(vX, vY; ballRadius = ballRadius);
 

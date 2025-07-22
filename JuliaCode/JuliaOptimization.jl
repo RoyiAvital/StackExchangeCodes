@@ -200,6 +200,8 @@ function GradientDescentAccelerated( vX :: AbstractVecOrMat{T}, numIter :: S, η
         vZ .= vX .+ (fistaStepSize .* (vX .- vW));
     end
 
+    return vX;
+
 end
 
 function GradientDescentAccelerated!( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, vW :: AbstractVecOrMat{T}, vZ :: AbstractVecOrMat{T}, ∇vZ :: AbstractVecOrMat{T}, ∇ObjFun! :: Function; ProjFun! :: Function = identity ) where {T <: AbstractFloat, S <: Integer}

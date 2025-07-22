@@ -12,7 +12,7 @@
 # TODO:
 # 	1.  AA.
 # Release Notes Royi Avital RoyiAvital@yahoo.com
-# - 1.0.000     21/07/2025  Royi Avital
+# - 1.0.000     22/07/2025  Royi Avital
 #   *   First release.
 
 ## Packages
@@ -25,7 +25,6 @@ using Random;
 using BenchmarkTools;
 using Convex;
 using FastLapackInterface; #<! Required for Optimization
-using JuMP;
 using PlotlyJS;            #<! Use `add Kaleido_jll@v0.1;` (See https://github.com/JuliaPlots/PlotlyJS.jl/issues/479)
 using SCS;                 #<! Seems to support more cases for Continuous optimization than ECOS
 using StableRNGs;
@@ -95,6 +94,18 @@ function GenEllipseDataAlgebric( vP :: Vector{T}; numPts :: N = 100, σ :: T = T
     
 end
 
+function AddOutliers( vX :: Vector{T}, vY :: Vector{T}; outRatio = 0.25 ) where {T <: AbstractFloat}
+
+    numSamples = length(vX);
+    vOutIdx    = rand(1:numSamples, Int(round(outRatio * numSamples)));
+
+    vX[vOutIdx] .+= 0.5;
+    vY[vOutIdx] .+= 0.5;
+
+    return vX, vY;
+
+end
+
 function GenMatD( vX :: Vector{T}, vY :: Vector{T} ) where {T <: AbstractFloat}
 
     mD = [(vX .^ 2) (vX .* vY) (vY .^ 2) vX vY ones(length(vX))];
@@ -108,30 +119,16 @@ function CVXSolver( mD :: Matrix{T} ) where {T <: AbstractFloat}
     vP = Variable(6); #<! [a, b, c, d, e, f]
     
     # Problem is formulated into SDP (Solvers: SCS, Clarabel, COSMO)
-    sConvProb = minimize( Convex.sumsquares(mD * vP), [(vP[1] + vP[3]) == 1, isposdef([vP[1] (vP[2] / T(2)); (vP[2] / T(2)) vP[3]]) ] );
+    # sConvProb = minimize( Convex.sumsquares(mD * vP), [(vP[1] + vP[3]) == 1, isposdef([vP[1] (vP[2] / T(2)); (vP[2] / T(2)) vP[3]]) ] );
+    sConvProb = minimize( Convex.norm_1(mD * vP), [(vP[1] + vP[3]) == 1, isposdef([vP[1] (vP[2] / T(2)); (vP[2] / T(2)) vP[3]]) ] );
     Convex.solve!(sConvProb, SCS.Optimizer; silent = true);
     
     return vec(vP.value);
 
 end
 
-function JuMPSolver( mD :: Matrix{T} ) where {T <: AbstractFloat}
-    
-    sModel = Model(SCS.Optimizer);
-    set_silent(sModel);
-    @variable(sModel, vP[1:6]);
-    @constraint(sModel, vP[1] + vP[3] == 1);
-    @constraint(sModel, [vP[1] (vP[2] / T(2)); (vP[2] / T(2)) vP[3]] in PSDCone());
-    @objective(sModel, Min, sum(abs2, mD * vP));
-
-    optimize!(sModel);
-    
-    return value.(vP);
-
-end
-
 function SolveADMM( mD :: Matrix{T}; numItr :: N = 500, γ :: T = T(1.0) ) where {T <: AbstractFloat, N <: Integer}
-    # Solve 0.5 * || D q ||_2^2 s.t. A(q) ∈ S₊ⁿ, Tr(A(q)) == 1
+    # Solve || D q ||_1 s.t. A(q) ∈ S₊ⁿ, Tr(A(q)) == 1
     # `γ` - The Prox coefficient for || D q ||_2^2.
     # `γ` - Regularization (Assists with conditioning `mK`), must be > 0
     # `γ` - Lower values seems to bring higher accuracy.
@@ -162,10 +159,55 @@ function SolveADMM( mD :: Matrix{T}; numItr :: N = 500, γ :: T = T(1.0) ) where
 
 end
 
+function SolvePDHG( mD :: Matrix{T}; numItr :: N = 950, ρ :: T = T(0.001), γ :: T = T(0.001) ) where {T <: AbstractFloat, N <: Integer}
+    # Solve || D q ||_1 s.t. A(q) ∈ S₊ⁿ, Tr(A(q)) == 1
+    # Using Chambolle Pock method
+    # `γ` - The Prox coefficient for || D q ||_2^2.
+    # `γ` - Regularization (Assists with conditioning `mK`), must be > 0
+    # `γ` - Lower values seems to bring higher accuracy.
+
+    # The mode:
+    # \min_x f(p) + g(D p) = Iₛ(p) + || D p ||₁
+    # Where Iₛ(q) is the indicator over the set A(q) ∈ S₊ⁿ, Tr(A(q)) == 1.
+    
+    c1 = mean(mD[:, 4]);
+    c2 = mean(mD[:, 5]);
+    r2 = var(mD[:, 4]) + var(mD[:, 5]);
+
+    hProxF( vY, λ )  = ProjectP(vY);
+    hProxGꜛ( vY, λ ) = ProjectL∞Ball(vY);
+
+    # Smart initialization
+    vP = [T(0.5), T(0.5), T(0), -c1, -c2, (c1 ^ 2 + c2 ^ 2 - r2) / T(2)];
+    vP̄ = copy(vP);
+    vQ = mD * vP; #<! Dual
+    vP¹ = copy(vP); #<! Buffer to keep previous iteration
+
+    vQQ = copy(vQ); #<! Buffer 
+    vPP = copy(vP); #<! Buffer 
+
+    for ii ∈ 1:numItr
+        copy!(vQQ, vQ);
+        mul!(vQQ, mD, vP̄, ρ, one(T));
+        # vQ   = hProxGꜛ(vQQ, ρ);
+        vQ .= clamp.(vQQ, -one(T), one(T));
+        # vQ   = hProxGꜛ(vQ + ρ * mD * vP̄, ρ);
+        vP¹ .= vP; #<! Previous step
+        copy!(vPP, vP);
+        mul!(vPP, mD', vQ, -γ, one(T));
+        vP   = hProxF(vPP, γ);
+        # vP   = hProxF(vP - γ * mD' * vQ, γ);
+        vP̄  .= T(2) .* vP .- vP¹; 
+    end
+
+    return vP;
+
+end
+
 function ProjectP( vP :: Vector{T} ) where {T <: AbstractFloat}
     # 1. Extracting matrix A of the vector of parameters.
     # 2. Projecting matrix A onto the set of SPSD matrices with unit trace.
-    # 3. Collecting the updated values of A into the vector of parameters.
+    # 3. Collecting the updated values of A into teh vector of parameters.
     
     vQ = copy(vP);
     valFctr = T(2);
@@ -230,6 +272,14 @@ function ProjectSimplex( vY :: AbstractVector{T}; ballRadius :: T = T(1) ) where
 
 end
 
+function ProjectL∞Ball( vY :: AbstractVector{T}; ballRadius :: T = T(1.0) ) where {T <: AbstractFloat}
+    
+    vX = clamp.(vY, -ballRadius, ballRadius);
+
+    return vX;
+
+end
+
 
 ## Parameters
 
@@ -250,15 +300,14 @@ centerY   = -1.0;
 ## Load / Generate Data
 
 vX, vY = GenEllipseData(majRadius, minRadius, centerX, centerY, θ; σ = σ);
+vX, vY = AddOutliers(vX, vY);
 mD     = GenMatD(vX, vY);
-
-
 
 dSolvers = Dict();
 
 
 ## Analysis
-# # The Model: || D q ||_2^2 subject to A(q) ∈ S₊ⁿ, Tr(A(q)) == 1
+# The Model: || D q ||_1 subject to A(q) ∈ S₊ⁿ, Tr(A(q)) == 1
 
 # DCP Solver
 methodName = "Convex.jl"
@@ -271,26 +320,14 @@ vXX, vYY = GenEllipseDataAlgebric(vPRef; numPts = 1_000);
 # optVal = hObjFun(vXRef);
 
 # ADMM
-methodName = "ADMM";
+methodName = "Primal Dual Hybrid Gradient";
 
-vP = SolveADMM(mD);
+vP = SolvePDHG(mD; numItr = 50_000, ρ = 0.005, γ = 0.005);
 vXX, vYY = GenEllipseDataAlgebric(vP; numPts = 1_000);
 
 println(norm(vP - vPRef, Inf))
 
 # dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
-
-# ADMM
-methodName = "PDG"; #<! Projected Gradient Descent
-
-mK = mD' * mD;
-∇ObjFun( vX :: Vector{T} ) where {T <: AbstractFloat} = mK * vX;
-
-vP .= 0.0;
-vP = GradientDescentAccelerated(vP, 1000, 1e-5, ∇ObjFun; ProjFun = ProjectP);
-vXX, vYY = GenEllipseDataAlgebric(vP; numPts = 1_000);
-
-println(norm(vP - vPRef, Inf))
 
 
 ## Display Results
@@ -317,17 +354,13 @@ if (exportFigures)
 end
 
 # Run Time Analysis
-# runTime = @belapsed CVXSolver(mD) seconds = 2;
-# resAnalysis = @sprintf("The Convex.jl (SCS) solution run time: %0.5f [Sec]", runTime);
-# println(resAnalysis);
+runTime = @belapsed CVXSolver(mD) seconds = 2;
+resAnalysis = @sprintf("The Convex.jl (SCS) solution run time: %0.5f [Sec]", runTime);
+println(resAnalysis);
 
-# runTime = @belapsed JuMPSolver(mD) seconds = 2;
-# resAnalysis = @sprintf("The JuMP.jl (SCS) solution run time: %0.5f [Sec]", runTime);
-# println(resAnalysis);
-
-# runTime = @belapsed SolveADMM(mD) seconds = 2;
-# resAnalysis = @sprintf("The ADMM Method solution run time: %0.5f [Sec]", runTime);
-# println(resAnalysis);
+runTime = @belapsed SolvePDHG(mD) seconds = 2;
+resAnalysis = @sprintf("The ADMM Method solution run time: %0.5f [Sec]", runTime);
+println(resAnalysis);
 
 
 
