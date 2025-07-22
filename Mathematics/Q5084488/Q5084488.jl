@@ -130,11 +130,13 @@ function JuMPSolver( mD :: Matrix{T} ) where {T <: AbstractFloat}
 
 end
 
-function SolveADMM( mD :: Matrix{T}; numItr :: N = 500, γ :: T = T(1.0) ) where {T <: AbstractFloat, N <: Integer}
+function SolveDR( mD :: Matrix{T}; numItr :: N = 500, γ :: T = T(1.0) ) where {T <: AbstractFloat, N <: Integer}
     # Solve 0.5 * || D q ||_2^2 s.t. A(q) ∈ S₊ⁿ, Tr(A(q)) == 1
     # `γ` - The Prox coefficient for || D q ||_2^2.
     # `γ` - Regularization (Assists with conditioning `mK`), must be > 0
     # `γ` - Lower values seems to bring higher accuracy.
+    # Solves with Douglas Rachford Splitting:
+    # \arg \minₚ f(p) + g(p) = Iₛ (p) + 0.5 * || D p ||₂²
     
     mK = mD' * mD;
     
@@ -145,20 +147,40 @@ function SolveADMM( mD :: Matrix{T}; numItr :: N = 500, γ :: T = T(1.0) ) where
     mM = γ * mK + I; #<! SPD when γ > 0
     sC = cholesky(mM);
 
+    hProxF( vY ) = ProjectP(vY);
     hProxG( vY ) = sC \ vY;
-    hProxH( vY ) = ProjectP(vY);
+
+    # Smart initialization
+    vQ = [T(0.5), T(0.5), T(0), -c1, -c2, (c1 ^ 2 + c2 ^ 2 - r2) / T(2)];
+
+    for ii ∈ 1:numItr
+        vP   = hProxF(vQ);
+        vQ .+= hProxG(T(2) * vP - vQ) - vP;
+    end
+
+    vP = hProxF(vQ);
+
+    return vP;
+
+end
+
+function SolvePGD( mD :: Matrix{T}; numItr :: N = 500, μ :: T = T(1e-5) ) where {T <: AbstractFloat, N <: Integer}
+    # Solve 0.5 * || D q ||_2^2 s.t. A(q) ∈ S₊ⁿ, Tr(A(q)) == 1
+    # Using Projected Gradient Descent
+
+    c1 = mean(mD[:, 4]);
+    c2 = mean(mD[:, 5]);
+    r2 = var(mD[:, 4]) + var(mD[:, 5]);
 
     # Smart initialization
     vP = [T(0.5), T(0.5), T(0), -c1, -c2, (c1 ^ 2 + c2 ^ 2 - r2) / T(2)];
 
-    for ii ∈ 1:numItr
-        vQ   = hProxH(vP);
-        vP .+= hProxG(T(2) * vQ - vP) - vQ;
-    end
+    mK = mD' * mD;
+    ∇ObjFun( vX :: Vector{T} ) where {T <: AbstractFloat} = mK * vX;
+    
+    vP = GradientDescentAccelerated(vP, numItr, μ, ∇ObjFun; ProjFun = ProjectP);
 
-    vQ = hProxH(vQ);
-
-    return vQ;
+    return vP;
 
 end
 
@@ -273,21 +295,17 @@ vXX, vYY = GenEllipseDataAlgebric(vPRef; numPts = 1_000);
 # ADMM
 methodName = "ADMM";
 
-vP = SolveADMM(mD);
+vP = SolveDR(mD);
 vXX, vYY = GenEllipseDataAlgebric(vP; numPts = 1_000);
 
 println(norm(vP - vPRef, Inf))
 
 # dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
 
-# ADMM
-methodName = "PDG"; #<! Projected Gradient Descent
+# Projected Gradient Descent
+methodName = "PGD"; 
 
-mK = mD' * mD;
-∇ObjFun( vX :: Vector{T} ) where {T <: AbstractFloat} = mK * vX;
-
-vP .= 0.0;
-vP = GradientDescentAccelerated(vP, 1000, 1e-5, ∇ObjFun; ProjFun = ProjectP);
+vP = SolvePGD(mD; numItr = 500, μ = 5e-5);
 vXX, vYY = GenEllipseDataAlgebric(vP; numPts = 1_000);
 
 println(norm(vP - vPRef, Inf))
@@ -329,5 +347,7 @@ end
 # resAnalysis = @sprintf("The ADMM Method solution run time: %0.5f [Sec]", runTime);
 # println(resAnalysis);
 
-
+# runTime = @belapsed SolvePGD(mD) seconds = 2;
+# resAnalysis = @sprintf("The PGD Method solution run time: %0.5f [Sec]", runTime);
+# println(resAnalysis);
 
