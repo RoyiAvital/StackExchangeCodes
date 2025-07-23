@@ -117,11 +117,12 @@ The solver iterations:
  - For $k = 1, 2, \ldots, K$:
     1. $\boldsymbol{p}_{k} = \operatorname{prox}_{\gamma f} \left( \boldsymbol{q}_{k - 1} \right)$.
     2. $\boldsymbol{q}_{k} = \boldsymbol{q}_{k - 1} + \lambda \left( \operatorname{prox}_{\gamma g} \left( 2 \boldsymbol{p}_{k} - \boldsymbol{q}_{k - 1} \right) - \boldsymbol{p}_{k} \right)$.
- - Return $\operatorname{prox}_{\gamma f} \left( \boldsymbol{p}_{K} \right)$.
+ - Return $\operatorname{prox}_{\gamma g} \left( \boldsymbol{q}_{K} \right)$.
 
 Remarks:
  - One may use ${\lambda}_{k}$ to adapt its value per iteration.
  - One may check for convergence conditions on each iteration.
+ - The last operation, $\operatorname{prox}_{\gamma g} \left( \boldsymbol{q}_{K} \right)$, ensures the output obeys the constraints.
 
 Setting:
 

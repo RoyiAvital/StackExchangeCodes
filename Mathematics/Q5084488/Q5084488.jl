@@ -136,7 +136,7 @@ function SolveDR( mD :: Matrix{T}; numItr :: N = 500, γ :: T = T(1.0) ) where {
     # `γ` - Regularization (Assists with conditioning `mK`), must be > 0
     # `γ` - Lower values seems to bring higher accuracy.
     # Solves with Douglas Rachford Splitting:
-    # \arg \minₚ f(p) + g(p) = Iₛ (p) + 0.5 * || D p ||₂²
+    # \arg \minₚ f(p) + g(p) = 0.5 * || D p ||₂² + Iₛ (p)
     
     mK = mD' * mD;
     
@@ -147,18 +147,18 @@ function SolveDR( mD :: Matrix{T}; numItr :: N = 500, γ :: T = T(1.0) ) where {
     mM = γ * mK + I; #<! SPD when γ > 0
     sC = cholesky(mM);
 
-    hProxF( vY ) = ProjectP(vY);
-    hProxG( vY ) = sC \ vY;
+    hProxF( vY ) = sC \ vY;
+    hProxG( vY ) = ProjectP(vY);
 
     # Smart initialization
     vQ = [T(0.5), T(0.5), T(0), -c1, -c2, (c1 ^ 2 + c2 ^ 2 - r2) / T(2)];
 
     for ii ∈ 1:numItr
-        vP   = hProxF(vQ);
-        vQ .+= hProxG(T(2) * vP - vQ) - vP;
+        vP   = hProxG(vQ);
+        vQ .+= hProxF(T(2) * vP - vQ) - vP; #<! Implies λ = 1
     end
 
-    vP = hProxF(vQ);
+    vP = hProxG(vQ);
 
     return vP;
 
