@@ -22,7 +22,7 @@ $$
 
 Where 
  - $\boldsymbol{p} = {\left[ a, b, c, d, e, f \right]}^{\top}$ - The vector of parameters.
- - $\boldsymbol{A} = \begin{bmatrix} {q}_{1} & \frac{{q}_{2}}{2} \\ \frac{{q}_{2}}{2} & {q}_{3} \end{bmatrix}$.
+ - $\boldsymbol{A} = \begin{bmatrix} {p}_{1} & \frac{{p}_{2}}{2} \\ \frac{{p}_{2}}{2} & {p}_{3} \end{bmatrix}$.
  - The function $f : \mathbb{R}^{6} \to \mathbb{R}$ is a loss function which promotes lower values. Conceptually behaves like $\left\| \boldsymbol{D} \boldsymbol{p} \right\|$.
  - The constraint $\boldsymbol{A} \in \mathbb{S}_{+}^{2}$ means the matrix is SPSD (Symmetric Positive Semi Definite) which forces the solution to be an ellipse or parabola (See [Matrix Representation of Conic Sections][1]).
  - The constraint $\operatorname{tr} \left( \boldsymbol{A} \right) = 1$ solve the scaling issue and guarantees an ellipse as it forces the sum of eigenvalues to be 1.
@@ -31,7 +31,7 @@ Where
  
   * $\mathcal{A} \left( \boldsymbol{p} \right) = \boldsymbol{A}$ - A linear operator which extracts the matrix $\boldsymbol{A}$ from a vector.
   * $\mathcal{C} = \left\{ \boldsymbol{A} \mid \boldsymbol{A} \in \mathbb{S}_{+}^{2}, \operatorname{tr} \left( \boldsymbol{A} \right) = 1 \right\}$ - The set of matrices which obey the constraints.
-  * $\mathcal{A}^{-1} \left( \boldsymbol{A}, \boldsymbol{p} \right)$ A linear operator which updates the 3 elements of the vector $\boldsymbol{p}$ such that ${p}_{1} = {A}_{1, 1}, {p}_{2} = {A}_{1, 2}, {p}_{3} = {A}_{2, 2}$.
+  * $\mathcal{A}^{-1} \left( \boldsymbol{A}, \boldsymbol{p} \right)$ A linear operator which updates the 3 first elements of a vector $\boldsymbol{p}$ such that ${p}_{1} = {A}_{1, 1}, {p}_{2} = 2 {A}_{1, 2}, {p}_{3} = {A}_{2, 2}$.
   * $\boldsymbol{K} = \boldsymbol{D}^{\top} \boldsymbol{D}$ (Can be pre calculated).
 
 Then the problem can be rewritten:
