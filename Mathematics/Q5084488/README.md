@@ -134,7 +134,7 @@ The Proximal Operator of each function is given by:
 $$ \operatorname{prox}_{\gamma f} \left( \boldsymbol{y} \right) = {\left( \gamma \boldsymbol{K} + \boldsymbol{I} \right)}^{-1} \boldsymbol{y}, \; \operatorname{prox}_{\gamma g} \left( \boldsymbol{y} \right) = \mathcal{A}^{-1} \left( \operatorname{P}_{\mathcal{C}} \left( \mathcal{A} \left( \boldsymbol{y} \right) \right), \boldsymbol{y} \right) $$
 
 Remarks:
- * The matrix $\gamma \boldsymbol{K} + \boldsymbol{I}$ is SPD hence its Cholesky Decomposition can be pre calculated to accelerate the system of equations solution.
+ * The matrix $\gamma \boldsymbol{K} + \boldsymbol{I}$ is an SPD matrix hence its Cholesky Decomposition can be pre calculated to accelerate the system of equations solution. Adding the _Identity Matrix_ reduce the condition number and stabilizes the ability to solve the problem. If $\gamma < 1$ it also assists to regularize the condition number.
 
 
 ## Least Absolute Deviation Based Optimization 
