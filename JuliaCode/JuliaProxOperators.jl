@@ -32,15 +32,14 @@ end
 
 ## Functions
 
-function ProjectSimplexBall!( vX :: AbstractVector{T}, vY :: AbstractVector{T}; ballRadius :: T = T(1) ) where {T <: AbstractFloat}
+function ProjectSimplexBall!( vX :: AbstractVector{T}, vY :: AbstractVector{T}; ballRadius :: T = T(1.0) ) where {T <: AbstractFloat}
     # See http://arxiv.org/abs/1101.6081
     # Sorting vector in descending order, hence looping forward (Paper loops backward)
-    # TODO: Make it the go to Projection onto simplex (In `JuliaProxOperators.jl`).
     
     numElements = length(vY);
     
     copy!(vX, vY);
-    sort!(vY; rev = true);
+    sort!(vX; rev = true);
     sumT = zero(T); #<! Cumulative sum
     tᵢ   = zero(T); #<! Running sum
     isT  = false; #<! Is ̂t found before loop ends
@@ -90,7 +89,7 @@ function ProjSimplexBall!( vX :: AbstractVector{T}, vY :: AbstractVector{T}; bal
         return vX;
     end
 
-    sort!(vX); #<! TODO: Make inplace
+    sort!(vX);
 
     # Breakpoints of the piecewise function happens at xᵢ - μ = 0α → Search for points xᵢ - 0 
     vμ         = vcat(vX[1] - ballRadius, vX, vX[numElements] + ballRadius);
@@ -128,8 +127,7 @@ end
 function ProjSimplexBall( vY :: AbstractVector{T}; ballRadius :: T = T(1.0), ε :: T = T(1e-7) ) where {T <: AbstractFloat}
     #!!! Obsolete (Replaced by `ProjectSimplexBall()`)
     
-    numElements = length(vY);
-    vX = zeros(T, numElements);
+    vX = zero(vY);
 
     return ProjSimplexBall!(vX, vY; ballRadius = ballRadius, ε = ε);
 

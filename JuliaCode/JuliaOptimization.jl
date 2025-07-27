@@ -129,6 +129,8 @@ function GradientDescent( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ∇O
         vX .= ProjFun(vX .- (η .* ∇ObjFun(vX)));
     end
 
+    return vX;
+
 end
 
 function GradientDescent!( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ∇vX :: AbstractVecOrMat{T}, ∇ObjFun! :: Function; ProjFun! :: Function = identity ) where {T <: AbstractFloat, S <: Integer}
@@ -144,13 +146,14 @@ function GradientDescent!( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ∇
 
 end
 
-function GradientDescentBackTracking!( vX :: AbstractVecOrMat{T}, vG :: AbstractVecOrMat{T}, vZ :: AbstractVecOrMat{T}, numIter :: S, η :: T, ObjFun :: Function, ∇ObjFun :: Function; ProjFun :: Function = identity, α :: T = T(0.5), β :: T = T(1e-10) ) where {T <: AbstractFloat, S <: Integer}
+function GradientDescentBackTracking!( vX :: AbstractVecOrMat{T}, vG :: AbstractVecOrMat{T}, vZ :: AbstractVecOrMat{T}, numIter :: S, η :: T, ObjFun :: Function, ∇ObjFun :: Function; α :: T = T(0.5), β :: T = T(1e-10) ) where {T <: AbstractFloat, S <: Integer}
+    # Does not support projection (See `GradientDescentBackTrackingProj!()`, which adds a lot of overhead)
     # Non allocating assuming function are not allocating.
 
     for ii ∈ 1:numIter
         vG .= ∇ObjFun(vX);
         objFunVal = ObjFun(vX);
-        vZ .= vX .- η .*  vG;
+        vZ .= vX .- η .* vG;
         while ((ObjFun(vZ) > objFunVal) && (η > β))
             η *= α;
             vZ .= vX .- η .* vG;
@@ -159,18 +162,42 @@ function GradientDescentBackTracking!( vX :: AbstractVecOrMat{T}, vG :: Abstract
         η   /= α;
         vX .-= vG;
     
-        vX = ProjFun(vX);
     end
 
 end
 
-function GradientDescentBackTracking( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ObjFun :: Function, ∇ObjFun :: Function; ProjFun :: Function = identity, α :: T = T(0.5), β :: T = T(1e-10) ) where {T <: AbstractFloat, S <: Integer}
+# function GradientDescentBackTrackingProj!( vX :: AbstractVecOrMat{T}, vG :: AbstractVecOrMat{T}, vZ :: AbstractVecOrMat{T}, numIter :: S, η :: T, ObjFun :: Function, ∇ObjFun :: Function; ProjFun :: Function = identity, α :: T = T(0.5), β :: T = T(1e-10) ) where {T <: AbstractFloat, S <: Integer}
+#     # Non allocating assuming function are not allocating.
+
+#     # Based on https://www.stat.cmu.edu/~ryantibs/convexopt-S15/scribes/08-prox-grad-scribed.pdf Page 4
+#     hGradMap( vX :: Vector{T}, vG :: Vector{T}, α :: T ) = (vX .- ProjFun(vX .- α .* vG)) ./ α;
+
+#     for ii ∈ 1:numIter
+#         vG .= ∇ObjFun(vX);
+#         objFunVal = ObjFun(vX);
+#         vZ .= vX .- η .* hGradMap(vX, vG, η);
+#         while ((ObjFun(vZ) > objFunVal - η * dot(vG, hGradMap(vX, vG, η)) + T(0.5) * η * sum(abs2, hGradMap(vX, vG, η))) && (η > β))
+#             η *= α;
+#             vZ .= vX .- η .* hGradMap(vX, vG, η);
+#         end
+#         # vG .*= η;
+#         η   /= α;
+#         # vX .-= vG;
+    
+#         vX .-= η .* hGradMap(vX, vG, η);
+#     end
+
+# end
+
+function GradientDescentBackTracking( vX :: AbstractVecOrMat{T}, numIter :: S, η :: T, ObjFun :: Function, ∇ObjFun :: Function; α :: T = T(0.5), β :: T = T(1e-10) ) where {T <: AbstractFloat, S <: Integer}
     # Mutates vX
+    # Does not support projection (See `GradientDescentBackTrackingProj!()` which requires a lot of overhead).
+    # Projection should have its own variant (Use dispatch, or different name).
 
     vG = copy(vX);
     vZ = copy(vX);
 
-    GradientDescentBackTracking!(vX, vG, vZ, numIter, η, ObjFun, ∇ObjFun; ProjFun = ProjFun, α = α, β = β);
+    GradientDescentBackTracking!(vX, vG, vZ, numIter, η, ObjFun, ∇ObjFun; α = α, β = β);
 
     return vX;
 
