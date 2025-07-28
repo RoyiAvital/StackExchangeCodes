@@ -5,7 +5,12 @@
 # Remarks:
 #   1.  A
 # TODO:
-# 	1.  B
+# 	1.  Projection of a Symmetric Matrix onto the SPSD Cone.
+#       See discussion at [Projection of a Symmetric Matrix onto the Positive Semidefinite (PSD) Cone Using the Nuclear Norm](https://math.stackexchange.com/questions/3408840).  
+#       Same solution to many Norm based distance function.
+#   2.  Projection of a Symmetric Matrix onto SPSD with Bounded Rank.
+#       See [Projection onto Positive Semi Definite (PSD) Matrices with Bounded Rank](https://math.stackexchange.com/questions/2246047).  
+#       Though not convex can be solved efficiently. It includes a nice trick about Diagonalization.
 # Release Notes
 # - 1.2.000     22/07/2025  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `ProjectSimplexBall()` (Made `ProjSimplexBall()` obsolete).
