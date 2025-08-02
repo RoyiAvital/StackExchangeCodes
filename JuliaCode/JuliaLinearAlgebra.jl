@@ -7,13 +7,15 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.1.000     02/08/2025  Royi Avital RoyiAvital@yahoo.com
+#   *   Removed `LoopVectorization.jl`.
+#   *   Added `Adjugate()`.
 # - 1.0.000     18/09/2024  Royi Avital RoyiAvital@yahoo.com
 #   *   First release.
 
 ## Packages
 
 # Internal
-using LoopVectorization;
 
 # External
 
@@ -31,11 +33,11 @@ function QuadForm( vX :: Vector{T}, mA :: Matrix{T}, vY :: Vector{T} ) where {T 
     (axes(vX)..., axes(vY)...) == axes(mA) || throw(DimensionMismatch());
     m, n = size(mA);
     s = zero(T);
-    @tturbo for jj in 1:n
-        yj = vY[jj];
+    @fastmath for jj in 1:n
+        @inbounds yj = vY[jj];
         t = zero(T);
-        for ii in 1:m
-            t += mA[ii, jj] * vX[ii];
+        @simd for ii in 1:m
+            @inbounds t += mA[ii, jj] * vX[ii];
         end
         s += t * yj;
     end
@@ -67,6 +69,48 @@ function QuadForm( vX :: Vector{T}, mA :: S, vY :: Vector{T} ) where {T <: Abstr
     end
 
     return s;
+
+end
+
+# Based on https://discourse.julialang.org/t/125184 / https://stackoverflow.com/a/79385985 by Steven G. Johnson
+function Adjugate( mA :: AbstractMatrix )
+    
+    ishermitian(mA) && return adjugate(Hermitian(mA));
+    LinearAlgebra.checksquare(mA);
+    sF = svd(mA);
+    
+    return sF.V * (Adjugate(Diagonal(sF.S)) * det(sF.Vt * sF.U)) * sF.U';
+
+end
+
+function Adjugate( mA :: LinearAlgebra.RealHermSymComplexHerm )
+    
+    sF = eigen(mA);
+    
+    return sF.vectors * Adjugate(Diagonal(sF.values)) * sF.vectors';
+
+end
+
+function Adjugate( mD :: Diagonal{<:Number} )
+
+    vD = mD.diag;
+    Base.require_one_based_indexing(vD);
+    length(vD) < 2 && return Diagonal(one.(vD));
+
+    # compute diagonal of adj(D): dadj[i] = prod(d) / d[i], but avoid dividing by zero
+    dadj = similar(vD);
+    prod = one(eltype(vD));
+    for ii = 1:length(vD)
+        dadj[ii] = prod;
+        prod *= vD[ii];
+    end
+    prod = one(eltype(vD));
+    for i = length(vD):-1:1
+        dadj[i] *= prod;
+        prod *= vD[i];
+    end
+    
+    return Diagonal(dadj);
 
 end
 
