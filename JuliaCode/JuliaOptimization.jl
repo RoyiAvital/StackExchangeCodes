@@ -7,6 +7,10 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.0.008     05/08/2025  Royi Avital RoyiAvital@yahoo.com
+#   *   Fixed a typo in `IRLS!()`.
+#   *   Moved `normP` from a keyword to a parameter in `IRLS()` and `IRLS!()`.
+#   *   Added `ϵ` as a keyword parameter in `IRLS()`.
 # - 1.0.007     20/07/2025  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `FindZeroBinarySearch()`.
 #   *   Added `LsqBox()`.
@@ -412,7 +416,7 @@ function DouglasRachford( mD :: Matrix{T}, vY :: VecOrMat{T}, hProxF :: Function
 
 end
 
-function IRLS!( vX :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vW :: Vector{T}, mWA :: Matrix{T}, mC :: Matrix{T}, vT :: Vector{T}, sBKWorkSpace :: BunchKaufmanWs{T}; normP :: T = one(T), numItr :: N = UInt32(100), ϵ :: T = T(1e-6) ) where {T <: AbstractFloat, N <: Unsigned}
+function IRLS!( vX :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vW :: Vector{T}, mWA :: Matrix{T}, mC :: Matrix{T}, vT :: Vector{T}, sBKWorkSpace :: BunchKaufmanWs{T}, normP :: T; numItr :: N = 100, ϵ :: T = T(1e-6) ) where {T <: AbstractFloat, N <: Integer}
     # Solves ||A * x - b||ₚ
     # TODO: Optimize for the case m >> n.
 
@@ -441,7 +445,7 @@ function IRLS!( vX :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vW :: Vector{
         mul!(vX, mWA', vW); #<! (mWA' * mW * vB);
         # ldiv!(cholesky!(mC), vX); #<! vX = (mWA' * mWA) \ (mWA' * mW * vB);
         # Using Bunch-Kaufman as it works for SPSD (Cholesky requires SPD).
-        _, ipiv, _ = LAPACK.sytrf!(sBkWorkSpace, 'U', mC); #<! Applies the decomposition
+        _, ipiv, _ = LAPACK.sytrf!(sBKWorkSpace, 'U', mC; resize = false); #<! Applies the decomposition
         sBkFac = BunchKaufman(mC, ipiv, 'U', true, false, BLAS.BlasInt(0));
         ldiv!(sBkFac, vX); #<! vX = (mWA' * mWA) \ (mWA' * mW * vB);
         vT .= abs.(vX .- vT);
@@ -454,16 +458,17 @@ function IRLS!( vX :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vW :: Vector{
     
 end
 
-function IRLS( mA :: Matrix{T}, vB :: Vector{T}; normP :: T = one(T), numItr :: N = UInt32(100) ) where {T <: AbstractFloat, N <: Unsigned}
+function IRLS( mA :: Matrix{T}, vB :: Vector{T}, normP :: T; numItr :: N = 100, ϵ :: T = T(1e-6) ) where {T <: AbstractFloat, N <: Integer}
+    # Solves ||A * x - b||ₚ
 
     vX  = Vector{T}(undef, size(mA, 2));
     vT  = Vector{T}(undef, size(mA, 2));
     vW  = Vector{T}(undef, size(mA, 1));
     mWA = Matrix{T}(undef, size(mA));
     mC  = Matrix{T}(undef, size(mA, 2), size(mA, 2));
-    sBkWorkSpace = BunchKaufmanWs(mC);
+    sBKWorkSpace = BunchKaufmanWs(mC);
 
-    vX = IRLS!(vX, mA, vB, vW, mWA, mC, vT, sBkWorkSpace; normP = normP, numItr = numItr);
+    vX = IRLS!(vX, mA, vB, vW, mWA, mC, vT, sBKWorkSpace, normP; numItr = numItr, ϵ = ϵ);
 
     return vX;
     
