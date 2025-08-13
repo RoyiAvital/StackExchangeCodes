@@ -56,7 +56,7 @@ function KernelSVM( vα :: Vector{T}, paramB :: T, mK :: Matrix{T}, vY :: Vector
     numSamples = length(vY);
     
     # Regularization
-    objVal = λ * dot(vα, mK, vα);
+    objVal = 0.5 * λ * dot(vα, mK, vα);
 
     # Objective
     vH = [max(zero(T), T(1) - vY[ii] * (dot(vα, mK[:, ii]) + paramB)) for ii in 1:numSamples];
@@ -67,7 +67,7 @@ function KernelSVM( vα :: Vector{T}, paramB :: T, mK :: Matrix{T}, vY :: Vector
     objVal += sum(vH);
 
     # Vectorized form
-    # objVal = λ * dot(vα, mK, vα) + sum(max.(zero(T), T(1) .- vY .* (mK * vα .+ paramB)));
+    # objVal = 0.5 * λ * dot(vα, mK, vα) + sum(max.(zero(T), T(1) .- vY .* (mK * vα .+ paramB)));
 
     return objVal;
 
@@ -88,12 +88,54 @@ function SolveCVX( mK :: Matrix{T}, vY :: Vector{T}, λ :: T; squareHinge :: Boo
     end
     hingeLoss = Convex.sum(vcat(vH...));
 
-    sConvProb = minimize( λ * Convex.quadform(vα, mK; assume_psd = true) + hingeLoss ); #<! Problem
+    sConvProb = minimize( 0.5 * λ * Convex.quadform(vα, mK; assume_psd = true) + hingeLoss ); #<! Problem
     Convex.solve!(sConvProb, ECOS.Optimizer; silent = true);
 
     return vec(vα.value), paramB.value;
     
 end
+
+function SolveLinearSVM( mX :: Matrix{T}, vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat}
+    # SciKit Learn formulation
+
+    dataDim    = size(mX, 2);
+    numSamples = size(mX, 1);
+
+    vW     = Convex.Variable(dataDim);
+    paramB = Convex.Variable(1);
+
+    vH = [Convex.pos(T(1) - vY[ii] * (Convex.dot(vW, mX[ii, :]) + paramB)) for ii in 1:numSamples];
+    if squareHinge
+        vH = [Convex.square(vH[ii]) for ii in 1:numSamples];
+    end
+    hingeLoss = Convex.sum(vcat(vH...));
+
+    sConvProb = minimize( 0.5 * Convex.sumsquares(vW) + λ * hingeLoss ); #<! Problem
+    Convex.solve!(sConvProb, ECOS.Optimizer; silent = true);
+
+    return vec(vW.value), paramB.value;
+    
+end
+
+function ProxHingeLoss( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat}
+    # \arg \min_x 0.5 * || x - y ||_2^2 + λ * sum_i max(0, 1 - x_i)
+
+    vX = zero(vY);
+
+    for ii = 1:length(vY)
+        if vY[ii] < (one(T) - λ)
+            vX[ii] = vY[ii] + λ;
+        elseif vY[ii] > one(T)
+            vX[ii] = vY[ii];
+        else
+            vX[ii] = one(T);
+        end
+    end
+
+    return vX;
+    
+end
+
 
 function CalcXRangeLine( vW :: Vector{T}, tuRangeX :: Tuple{T, T}; tuRangeY :: Tuple{T, T} = tuRangeX ) where {T <: AbstractFloat}
     # Unpack input parameters for clarity
@@ -173,7 +215,7 @@ end
 # Data
 
 # Solver
-λ           = 0.5;
+λ           = 1.0;
 squareHinge = false;
 numIter     = 150_000;
 η           = 2.5e-2; #<! Step Size
@@ -188,8 +230,8 @@ numGridPts = 1000;
 # From SK Learn Example (https://scikit-learn.org/stable/auto_examples/svm/plot_svm_kernels.html)
 mX = [
      0.4 -0.7;
+    -1.5 -1.0;
     -1.4 -0.9;
-     1.5 -1.0;
     -1.3 -1.2;
     -1.1 -0.2;
     -1.2 -0.4;
@@ -216,7 +258,8 @@ mK = mX * mX';
 mK = 0.5 * (mK + mK');
 vα, paramBB = SolveCVX(mK, vY, λ; squareHinge = squareHinge);
 
-vSuppVecIdx = findall(abs.(mK' * vα .+ paramBB) .≈ 1.0);
+# vSuppVecIdx = findall(vY .* (mK' * vα .+ paramBB) .≈ 1.0); #<! Too restrictive
+vSuppVecIdx = findall(isapprox.(vY .* (mK' * vα .+ paramBB), 1.0; atol = 5e-3));
 
 # The solutions obey:
 # mK * vα + b == mX * vw + b0
@@ -228,34 +271,44 @@ vSuppVecIdx = findall(abs.(mK' * vα .+ paramBB) .≈ 1.0);
 
 # Sub Gradient
 vβ     = randn(oRng, numSamples);
-vβ0    = copy(vβ);
-paramB = 0.0;
+paramB = 0.1;
 
-hGradβ( vβ :: Vector{T}, paramB :: T ) where {T <: AbstractFloat} = -((vY .* ((mK * vβ) .+ paramB)) .< T(1.0)) .* (mK' * vY) + T(2.0) * λ * mK * vβ;
-hGradB( vβ :: Vector{T}, paramB :: T ) where {T <: AbstractFloat} = -((vY .* ((mK * vβ) .+ paramB)) .< T(1.0))' * vY * paramB;
+hGradβ( vβ :: Vector{T}, paramB :: T ) where {T <: AbstractFloat} = -((vY .* ((mK * vβ) .+ paramB)) .< T(1.0)) .* (mK' * vY) + λ * mK * vβ;
+hGradB( vβ :: Vector{T}, paramB :: T ) where {T <: AbstractFloat} = -((vY .* ((mK * vβ) .+ paramB)) .< T(1.0))' * vY;
 
 for ii in 1:numIter
-    global paramB, vβ0;
-    ηₖ = η / ii;
+    global vβ, paramB;
+    # global paramB;
 
-    # vβ    .-= η * hGradβ(vβ0, paramB);
-    # paramB -= η * hGradB(vβ0, paramB);
+    ηₖ  = η / ii;
+    vβ0 = copy(vβ);
 
-    hObjFunA(vβ :: Vector{T}) where {T <: AbstractFloat} = KernelSVM(vβ, paramB, mK, vY, λ);
-    vG = CalcFunGrad(vβ0, hObjFunA);
-    vβ .-= ηₖ .* vG;
-
-    hObjFunB(vParamB :: Vector{T}) where {T <: AbstractFloat} = KernelSVM(vβ0, vParamB[1], mK, vY, λ);
-    vG = CalcFunGrad([paramB], hObjFunB);
-    paramB -= ηₖ * vG[1];
-
-    vβ0     = copy(vβ);
+    vβ   .-= ηₖ * hGradβ(vβ0, paramB);
+    paramB = paramB - ηₖ * hGradB(vβ0, paramB);
 end
 
 vW = mX' * vβ;
 vW = [vW[1], vW[2], paramB];
 
-println(mX' * (vβ - vα))
+println(mX' * (vβ - vα));
+println(KernelSVM(vα, paramBB, mK, vY, λ));
+println(KernelSVM(vβ, paramB, mK, vY, λ));
+
+# ADMM
+mE = diagm(numSamples, numSamples + 1, ones(numSamples));
+mK1 = [mK ones(numSamples)];
+mK0 = mE' * mK * mE;
+mA  = diagm(vY) * mK1;
+mAA = mA' * mA;
+# vAy = mA' * vY;
+hProxF( vY :: Vector{T}, ρ :: T ) where {T <: AbstractFloat} = (λ * mK0 + ρ * mAA) \ (ρ * mA' * vY);
+hProxG( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat} = ProxHingeLoss(vY, λ);
+
+vγ = zeros(numSamples + 1);
+
+vγ = ADMM(vγ, mA, hProxF, hProxG, 1_000);
+vW = [mX' * vγ[1:numSamples]; vγ[end]];
+println(KernelSVM(vγ[1:numSamples], vγ[end], mK, vY, λ));
 
 
 ## Display Analysis
