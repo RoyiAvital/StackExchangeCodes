@@ -283,8 +283,8 @@ for ii in 1:numIter
     ηₖ  = η / ii;
     vβ0 = copy(vβ);
 
-    vβ   .-= ηₖ * hGradβ(vβ0, paramB);
-    paramB = paramB - ηₖ * hGradB(vβ0, paramB);
+    vβ    .-= ηₖ * hGradβ(vβ0, paramB);
+    paramB -= ηₖ * hGradB(vβ0, paramB);
 end
 
 vW = mX' * vβ;
