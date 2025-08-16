@@ -82,11 +82,19 @@ function SolveCVX( mK :: Matrix{T}, vY :: Vector{T}, λ :: T; squareHinge :: Boo
     vα     = Convex.Variable(numSamples);
     paramB = Convex.Variable(1);
 
-    vH = [Convex.pos(T(1) - vY[ii] * (Convex.dot(vα, mK[:, ii]) + paramB)) for ii in 1:numSamples];
+    # Loop Form
+    # vH = [Convex.pos(T(1) - vY[ii] * (Convex.dot(vα, mK[:, ii]) + paramB)) for ii in 1:numSamples];
+    # if squareHinge
+    #     vH = [Convex.square(vH[ii]) for ii in 1:numSamples];
+    # end
+    # hingeLoss = Convex.sum(vcat(vH...));
+
+    # Vectorized Form
     if squareHinge
-        vH = [Convex.square(vH[ii]) for ii in 1:numSamples];
+        hingeLoss = Convex.sum(Convex.square(Convex.pos(T(1) - vY .* (mK * vα + paramB))));
+    else
+        hingeLoss = Convex.sum(Convex.pos(T(1) - vY .* (mK * vα + paramB)));
     end
-    hingeLoss = Convex.sum(vcat(vH...));
 
     sConvProb = minimize( 0.5 * λ * Convex.quadform(vα, mK; assume_psd = true) + hingeLoss ); #<! Problem
     Convex.solve!(sConvProb, ECOS.Optimizer; silent = true);
