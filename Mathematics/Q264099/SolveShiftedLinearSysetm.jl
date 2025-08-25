@@ -159,8 +159,8 @@ end
 
 # Data
 numRows = 10;
-# vR = collect(250:250:1000);
-vR = collect(250:250:3500);
+vR = collect(250:250:1000);
+# vR = collect(250:250:3500);
 
 # Model
 α  = 0.275;
@@ -258,11 +258,11 @@ sLayout = Layout(title = "Solver Run Time per Matrix Size", width = 600, height 
                 xaxis_title = "Number of Rows", yaxis_title = "Run Time [Mili Sec]",
                 legend = attr(yanchor = "top", y = 0.99, xanchor = "left", x = 0.01));
 
-hP = plot([sTr1, sTr2, sTr3, sTr4], sLayout);
+hP = Plot([sTr1, sTr2, sTr3, sTr4], sLayout);
 display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    savefig(hP, figFileNme);
+    savefig(hP, figFileNme; width = hP.layout[:width], height = hP.layout[:height]);
 end
 

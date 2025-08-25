@@ -338,11 +338,11 @@ sLayout = Layout(title = "The Data Samples and Classifier", width = 600, height 
                 xaxis_title = "t", yaxis_title = "y", xaxis_range = tuRange, yaxis_range = tuRange,
                 legend = attr(yanchor = "top", y = 0.99, xanchor = "right", x = 0.99));
 
-hP = plot([sTr1, sTr2, sTr3], sLayout);
+hP = Plot([sTr1, sTr2, sTr3], sLayout);
 display(hP);
 
 if (exportFigures)
     figFileNme = @sprintf("Figure%04d.png", figureIdx);
-    savefig(hP, figFileNme);
+    savefig(hP, figFileNme; width = hP.layout[:width], height = hP.layout[:height]);
 end
 
