@@ -286,10 +286,9 @@ hGradB( vβ :: Vector{T}, paramB :: T ) where {T <: AbstractFloat} = -((vY .* ((
 
 for ii in 1:numIter
     global vβ, paramB;
-    # global paramB;
 
     ηₖ  = η / ii;
-    vβ0 = copy(vβ);
+    vβ0 = copy(vβ); #<! Buffer
 
     vβ    .-= ηₖ * hGradβ(vβ0, paramB);
     paramB -= ηₖ * hGradB(vβ0, paramB);
@@ -314,7 +313,8 @@ hProxG( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat} = ProxHingeLoss(vY
 
 vγ = zeros(numSamples + 1);
 
-vγ = ADMM(vγ, mA, hProxF, hProxG, 1_000);
+vγ = ADMM(vγ, mA, hProxF, hProxG, 1_000; ρ = 3.1);
+vγ = ADMM(vγ, mA, hProxF, hProxG, 1_000; ρ = 2.2);
 vW = [mX' * vγ[1:numSamples]; vγ[end]];
 println(KernelSVM(vγ[1:numSamples], vγ[end], mK, vY, λ));
 
