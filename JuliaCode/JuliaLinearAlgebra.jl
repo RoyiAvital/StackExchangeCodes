@@ -1,5 +1,5 @@
 # StackExchange Code - Julia Linear Algebra
-# Set of functions for Sparse Arrays.
+# Set of functions for Dense / Sparse Arrays.
 # References:
 #   1.  
 # Remarks:
