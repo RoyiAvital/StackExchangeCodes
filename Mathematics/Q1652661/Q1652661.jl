@@ -187,7 +187,7 @@ vTr[3] = contour(; x = vXX, y = vXX, z = mZ,
                  contours_coloring = "heatmap",
                  opacity = 0.50);
 
-titleStr =  @sprintf("Binary Logistics Regression Classifier, Accuracy: %0.2f%%", 100.0 * valAcc);
+titleStr =  @sprintf("Binary Logistic Regression Classifier, Accuracy: %0.2f%%", 100.0 * valAcc);
 
 sLayout = Layout(title = titleStr, width = 600, height = 600, 
                  xaxis_title = "x₁", yaxis_title = "x₂",
