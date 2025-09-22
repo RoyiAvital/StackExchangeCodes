@@ -523,7 +523,7 @@ function LsqBox( mA :: AbstractMatrix{T}, vB :: AbstractVector{T}, vL :: Abstrac
     AᵀA = mA' * mA;
     Aᵀb = mA' * vB;
     # Gradient ∇ₓ of ½‖Ax - b‖²
-    vG = AᵀA*vX;
+    vG = AᵀA * vX;
     vG .-= Aᵀb;
     # Inactive constraints mask
     vInactive = Bool[vL[i] < vU[i] && (vX[i] != vL[i] || vG[i] ≤ T(0)) && (vX[i] != vU[i] || vG[i] ≥ T(0)) for i in eachindex(vX)];
