@@ -175,7 +175,7 @@ end
 function ProjectP( vP :: Vector{T} ) where {T <: AbstractFloat}
     # 1. Extracting matrix A of the vector of parameters.
     # 2. Projecting matrix A onto the set of SPSD matrices with unit trace.
-    # 3. Collecting the updated values of A into teh vector of parameters.
+    # 3. Collecting the updated values of A into the vector of parameters.
     
     vQ = copy(vP);
     valFctr = T(2);
@@ -193,7 +193,7 @@ end
 
 function ProjectSPDUnitTr( mY :: Matrix{T} ) where {T <: AbstractFloat}
     # \arg \min_{X} 0.5 * || X - Y||_2^2 s.t. Tr(X) = 1, X is SPSD
-    # Y is assumed ot be symmetric
+    # Y is assumed to be symmetric
     
     # `mY` Assumed ot be symmetric
     sF = eigen(mY); #<! Eigen decomposition

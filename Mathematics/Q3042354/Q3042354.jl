@@ -255,7 +255,7 @@ vTr = Vector{GenericTrace{Dict{Symbol, Any}}}(undef, length(dSolvers));
 # shapeLine = vline(sOptRes.minimizer, line_color = "green", name = "Optimal Value");
 for (ii, methodName) in enumerate(keys(dSolvers))
     vTr[ii] = scatter(x = 1:numIterations, y = 20 * log10.(abs.(dSolvers[methodName] .- optVal) ./ abs(optVal)), 
-               mode = "lines", text = methodName, name = methodName, line = attr(width = 3.0))
+               mode = "lines", text = methodName, name = methodName, line = attr(width = 3.0));
 end
 oLayout = Layout(title = "Objective Function, Condition Number = $(cond(mA))", width = 600, height = 600, hovermode = "closest",
                  xaxis_title = "Iteration", yaxis_title = raw"$$\frac{ \left| {f}^{\star} - {f}_{i} \right| }{ \left| {f}^{\star} \right| }$ [dB]$");
