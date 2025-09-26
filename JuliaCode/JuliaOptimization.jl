@@ -402,17 +402,18 @@ function OrthogonalProjectionOntoConvexSets( vY :: AbstractVecOrMat{T}, vProjFun
 
 end
 
-function DouglasRachford( mD :: Matrix{T}, vY :: VecOrMat{T}, hProxF :: Function, hProxG :: Function; numItr :: N = 500, γ :: T = T(1.0), λ :: T = T(1.0) ) where {T <: AbstractFloat, N <: Integer}
+function DouglasRachford( vX :: VecOrMat{T}, vY :: VecOrMat{T}, hProxF :: Function, hProxG :: Function; numItr :: N = 500, γ :: T = T(1.0), λ :: T = T(1.0) ) where {T <: AbstractFloat, N <: Integer}
     # Solves with Douglas Rachford Splitting:
     # \arg \minₚ f(x) + g(x)
+    # Based on [Proximal Splitting Methods in Signal Processing](https://arxiv.org/abs/0912.3522).
     # TODO: Find optimization for γ and λ
 
     for ii ∈ 1:numItr
-        vX   = hProxG(vY);
-        vY .+= λ * (hProxF(T(2) * vX - vY) - vP);
+        vX   = hProxG(vY, γ);
+        vY .+= λ * (hProxF(T(2) * vX - vY, γ) - vX);
     end
 
-    return vP;
+    return vX;
 
 end
 

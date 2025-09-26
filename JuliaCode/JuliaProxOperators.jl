@@ -12,6 +12,8 @@
 #       See [Projection onto Positive Semi Definite (PSD) Matrices with Bounded Rank](https://math.stackexchange.com/questions/2246047).  
 #       Though not convex can be solved efficiently. It includes a nice trick about Diagonalization.
 # Release Notes
+# - 1.3.000     23/09/2025  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `ProxHingeLoss()` and `ProxHingeLoss!()`.
 # - 1.2.000     22/07/2025  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `ProjectSimplexBall()` (Made `ProjSimplexBall()` obsolete).
 #   *   Added `ProjectL∞Ball()`.
@@ -239,4 +241,32 @@ function ProjectL∞Ball( vY :: AbstractVector{T}; ballRadius :: T = T(1.0) ) wh
 
     return ProjectL2Ball!(vX, vY; ballRadius = ballRadius);
 
+end
+
+function ProxHingeLoss!( vX :: Vector{T}, vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat}
+    # \arg \min_x 0.5 * || x - y ||_2^2 + λ * sum_i max(0, 1 - x_i)
+
+    for ii = 1:length(vY)
+        if vY[ii] < (one(T) - λ)
+            vX[ii] = vY[ii] + λ;
+        elseif vY[ii] > one(T)
+            vX[ii] = vY[ii];
+        else
+            vX[ii] = one(T);
+        end
+    end
+
+    return vX;
+    
+end
+
+function ProxHingeLoss( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat}
+    # \arg \min_x 0.5 * || x - y ||_2^2 + λ * sum_i max(0, 1 - x_i)
+
+    vX = zero(vY);
+
+    vX = ProxHingeLoss!(vX, vY, λ);
+
+    return vX;
+    
 end

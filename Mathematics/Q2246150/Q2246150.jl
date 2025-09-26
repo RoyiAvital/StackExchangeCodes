@@ -1,6 +1,6 @@
 # StackExchange Mathematics Q2246150
 # https://math.stackexchange.com/questions/2246150
-# Solving SVM with a Large Kernel Matrix.
+# Solving Kernel SVM with a Large Kernel Matrix.
 # References:
 #   1.  A
 # Remarks:
@@ -260,7 +260,7 @@ function SolveKernelSvm( mX :: Matrix{T}, vY :: Vector{M}, σ :: T, λ :: T; num
     # Using Newton Method as in Olivier Chapelle - Training a Support Vector Machine in the Primal.
     # This implementation does not use the matrix K explicitly.
 
-    numSamplesThr = 1_000_500;
+    numSamplesThr = 100;
 
     dataDim    = size(mX, 1);
     numSamples = size(mX, 2);
@@ -274,29 +274,25 @@ function SolveKernelSvm( mX :: Matrix{T}, vY :: Vector{M}, σ :: T, λ :: T; num
         vZ[ii] = T(vY[ii]);
     end
 
-    if numSamples > numSamplesThr
-        # Solve sub set for initialization
-        # vIdx = randperm(numSamples)[1:numSamplesThr]; #<! Not efficient, better use `StatBase` sample(1:100000, 100, replace = false);
-        # vβ =  SolvKernelSvm(mX[:, vIdx], vY[vIdx], σ, λ; numIter = numIter);
-        # vS = vβ .≠ zero(T);
-        # MulKβ!(mX, vS, vK, vB, vβᵢ, vKβ, σ);
+    vS  = zeros(Bool, numSamples); #<! Indicator of Support Vectors
+    vSS = ones(Bool, numSamples + 1); #<! Indicator of Support Vectors (Includes bias)
+    vβ  = zeros(T, numSamples + 1); #<! Last element as b
+    vKβ = zeros(T, numSamples); #<! mK * vβ[1:numSamples]
 
-        vS = ones(Bool, numSamples + 1); #<! Indicator of Support Vectors (Includes bias, multipliers should ignore last term)
-        vSS = ones(Bool, numSamples + 1); #<! Indicator of Support Vectors (Includes bias)
-        vβ = zeros(T, numSamples + 1); #<! Last element as b
-        vKβ = zeros(T, numSamples); #<! mK * vβ[1:numSamples]
-    else
-        # Initialize solving for all
-        vS  = ones(Bool, numSamples); #<! Indicator of Support Vectors
-        vSS = ones(Bool, numSamples + 1); #<! Indicator of Support Vectors (Includes bias)
-        vβ  = zeros(T, numSamples + 1); #<! Last element as b
-        vKβ = zeros(T, numSamples); #<! mK * vβ[1:numSamples]
+    if (numSamples > numSamplesThr) && (1 < 0)
+        # Solve sub set for initialization
+        # Does not seem to reduce the number of needed iterations -> Hence deactivated
+        vIdx = randperm(numSamples)[1:numSamplesThr]; #<! Not efficient, better use `StatBase` sample(1:100000, 100, replace = false);
+        vβᵢ =  SolveKernelSvm(mX[:, vIdx], vY[vIdx], σ, λ; numIter = numIter);
+        vβ[vIdx] .= vβᵢ[1:numSamplesThr];
+        vβ[end]   = vβᵢ[end];
+        vS[vIdx] .= true;
+        MulKβ!(mX, vS, vK, vB, vβᵢ, vKβ, σ);        
     end
 
     vS1 = copy(vS); #<! Previous cycle
 
     for ii in 1:numIter
-        # @infiltrate
         copy!(vS1, vS); #<! Save previous iteration
 
         numSv = 0;
@@ -307,7 +303,7 @@ function SolveKernelSvm( mX :: Matrix{T}, vY :: Vector{M}, σ :: T, λ :: T; num
         end
         if (ii > 1) && (vS == vS1) #<! For `AbstractVectors`, `all(vA .== vB)` is equivalent to `vA == vB`
             # No change in support vectors -> Convergence
-            println("Number of iterations: $(ii)");
+            # println("Number of iterations: $(ii)");
             break;
         end
 

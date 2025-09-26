@@ -91,12 +91,12 @@ function SolveCVX( mK :: Matrix{T}, vY :: Vector{T}, λ :: T; squareHinge :: Boo
 
     # Vectorized Form
     if squareHinge
-        hingeLoss = Convex.sum(Convex.square(Convex.pos(T(1) - vY .* (mK * vα + paramB))));
+        hingeLoss = T(0.5) * Convex.sum(Convex.square(Convex.pos(T(1) - vY .* (mK * vα + paramB))));
     else
         hingeLoss = Convex.sum(Convex.pos(T(1) - vY .* (mK * vα + paramB)));
     end
 
-    sConvProb = minimize( 0.5 * λ * Convex.quadform(vα, mK; assume_psd = true) + hingeLoss ); #<! Problem
+    sConvProb = minimize( T(0.5) * λ * Convex.quadform(vα, mK; assume_psd = true) + hingeLoss ); #<! Problem
     Convex.solve!(sConvProb, ECOS.Optimizer; silent = true);
 
     return vec(vα.value), paramB.value;
@@ -118,7 +118,7 @@ function SolveLinearSVM( mX :: Matrix{T}, vY :: Vector{T}, λ :: T ) where {T <:
     end
     hingeLoss = Convex.sum(vcat(vH...));
 
-    sConvProb = minimize( 0.5 * Convex.sumsquares(vW) + λ * hingeLoss ); #<! Problem
+    sConvProb = minimize( T(0.5) * Convex.sumsquares(vW) + λ * hingeLoss ); #<! Problem
     Convex.solve!(sConvProb, ECOS.Optimizer; silent = true);
 
     return vec(vW.value), paramB.value;
