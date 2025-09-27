@@ -309,6 +309,8 @@ function ChamPock!( vX :: AbstractVector{T}, mK :: Matrix{T}, vY :: Vector{T}, v
     # Assumes efficient ProxF⁺ and ProxG.
     # Following the notations of Wikipedia.
     # ProxF⁺(y, λ) = y - λ * ProxF(y / λ, inv(λ))
+    # See Proximal Splitting Algorithms for Convex Optimization: A Tour of Recent Advances, with New Twists (https://lcondat.github.io/publis/Condat_SIAM_Review.pdf).
+    # Primal Dual Extragradient Methods for Non Linear Non Smooth PDE Constrained Optimization (https://arxiv.org/abs/1606.06219)
 
     τᵢ = τ;
     σᵢ = σ;
