@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.0.009     27/09/2025  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `ChamPock!()` as a Primal Dual Hybrid Gradient (PDHG) method.
 # - 1.0.008     05/08/2025  Royi Avital RoyiAvital@yahoo.com
 #   *   Fixed a typo in `IRLS!()`.
 #   *   Moved `normP` from a keyword to a parameter in `IRLS()` and `IRLS!()`.
@@ -259,9 +261,8 @@ function ADMM!(vX :: AbstractVector{T}, vZ :: AbstractVector{T}, vU :: AbstractV
     # Solves f(x) + λ g(Ax)
     # Where z = Ax, and g(z) has a well defined Prox.
     # ADMM for the case Ax + z = 0
-    # ProxF(y) = \arg \minₓ 0.5ρ * || A x - y ||_2^2 + f(x)
-    # ProxG(y) = \arg \minₓ 0.5ρ * || x - y ||_2^2 + λ g(x)
-    # Initialization by mX[:, 1]
+    # ProxF(y) = \arg \minₓ 0.5ρ * || A x - y ||_2^2 + f(x) where y = z - u
+    # ProxG(y) = \arg \minₓ 0.5ρ * || x - y ||_2^2 + λ g(x) where y = A x + u
     # Supports in place ProxG
     
     for ii ∈ 1:numIterations
@@ -272,6 +273,7 @@ function ADMM!(vX :: AbstractVector{T}, vZ :: AbstractVector{T}, vU :: AbstractV
         vZ .= hProxG(vZ, λ / ρ);
         # vX .= hProxF(vZ - vU, ρ);
         # vZ .= hProxG(mA * vX + vU, λ / ρ);
+        # vU  = vU + mA * vX - vZ
         vU .= mul!(vU, mA, vX, one(T), one(T)) .- vZ;
     end
 
@@ -298,6 +300,31 @@ function ADMM(vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, hProxF :: Functi
     vX = ADMM!(vX, vZ, vU, mA, hProxF, hProxG, numIterations; ρ = ρ, λ = λ);
     
     return vX;
+
+end
+
+function ChamPock!( vX :: AbstractVector{T}, mK :: Matrix{T}, vY :: Vector{T}, vX̄ :: Vector{T}, hProxF⁺ :: Function, hProxG :: Function, σ :: T, τ :: T; θ :: T = T(1) ) where {T <: AbstractFloat}
+    # Solving using Chambolle Pock algorithm (Also called Primal Dual Hybrid Gradient (PDHG) Method).
+    # Solves: \arg \min_x f(K x) + g(x), f: Y ➡ [0, inf), g: X ➡ [0, inf).
+    # Assumes efficient ProxF⁺ and ProxG.
+    # Following the notations of Wikipedia.
+    # ProxF⁺(y, λ) = y - λ * ProxF(y / λ, inv(λ))
+
+    τᵢ = τ;
+    σᵢ = σ;
+
+    vX1 = copy(vX); #<! Previous iteration
+    
+    for ii ∈ 2:numIterations
+        vT = view(mX, :, ii - 1); #<! Previous iteration
+        vX = view(mX, :, ii);
+        
+        # Calculation of `vY` depends on f() and should be adapted per function
+        vY .= hProxF⁺(vY + σ * (mK * vX̄), σ); #<! Previous iteration
+        vX .= hProxG(vT - (τ * mK' * vY), τ); #<! Primal Update
+        
+        vX̄ .= vX + (θᵢ * (vX - vT));
+    end
 
 end
 
@@ -553,3 +580,4 @@ function LsqBox( mA :: AbstractMatrix{T}, vB :: AbstractVector{T}, vL :: Abstrac
     return vX, false;
 
 end
+

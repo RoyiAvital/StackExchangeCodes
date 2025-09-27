@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.1.001     27/09/2025  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `OpNormSquaredApprox()`.
 # - 1.1.000     02/08/2025  Royi Avital RoyiAvital@yahoo.com
 #   *   Removed `LoopVectorization.jl`.
 #   *   Added `Adjugate()`.
@@ -111,6 +113,36 @@ function Adjugate( mD :: Diagonal{<:Number} )
     end
     
     return Diagonal(dadj);
+
+end
+
+function OpNormSquaredApprox( mA :: AbstractMatrix{T}; maxIter :: N = 50, ϵ :: T = T(1e-8) ) where {T <: AbstractFloat, N <: Integer}
+    # Approximates method to estimate the squared spectral norm of the operator $A$: || A ||_2^2.
+    # Uses the _Power Iteration_ method.
+    numRows = size(mA, 1);
+    numCols = size(mA, 2);    
+    vU = zeros(numRows);
+    vX = randn(numCols);
+    vX ./= norm(vX);
+    vW = zeros(numCols);
+    λ = zero(T);
+    λ₋ = zero(T); #<! Previous iteration
+
+
+    for _ in 1:maxIter
+        # vW  = mA' * (mA * vX); #<! Equivalent to (A'A) * v
+        mul!(vU, mA, vX);
+        mul!(vW, mA', vU);
+        λ   = dot(vX, vW);      #<! Rayleigh quotient (Approx eigenvalue)
+        vX .= vW ./ norm(vW); #<! Normalize for next iteration
+
+        if (abs(λ - λ₋) < (ϵ * abs(λ)))
+            break;
+        end
+        λ₋ = λ;
+    end
+
+    return λ;
 
 end
 

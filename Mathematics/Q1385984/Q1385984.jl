@@ -69,7 +69,7 @@ function ProjSubGrad( mX :: Matrix{T}, hSubGrad :: Function, hProj :: Function; 
 
 end
 
-function ChamPock!( mX :: Matrix{T}, mK :: Matrix{T}, vB :: Vector{T}, vY :: Vector{T}, vX̄ :: Vector{T}, hProxF⁺ :: Function, hProxG :: Function, σ :: T, τ :: T; θ :: T = 1.0 ) where {T <: AbstractFloat}
+function ChamPock!( mX :: Matrix{T}, mK :: Matrix{T}, vB :: Vector{T}, vY :: Vector{T}, vX̄ :: Vector{T}, hProxF⁺ :: Function, hProxG :: Function, σ :: T, τ :: T; θ :: T = T(1) ) where {T <: AbstractFloat}
     # Solving using Chambolle Pock algorithm (Also called Primal Dual Hybrid Gradient (PDHG) Method).
     # Solves: \arg \min_x f(K x) + g(x), f: Y ➡ [0, inf), g: X ➡ [0, inf).
     # Assumes efficient ProxF⁺ and ProxG.

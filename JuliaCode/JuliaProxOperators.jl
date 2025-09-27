@@ -140,7 +140,7 @@ function ProjSimplexBall( vY :: AbstractVector{T}; ballRadius :: T = T(1.0), ε 
 
 end
 
-function ProjectL1Ball!(vX :: Vector{T}, vY :: Vector{T}, ballRadius :: T) where {T <: AbstractFloat}
+function ProjectL1Ball!(vX :: Vector{T}, vY :: Vector{T}; ballRadius :: T = one(T)) where {T <: AbstractFloat}
 
     numElements = length(vY);
     
@@ -206,7 +206,7 @@ function ProjectL1Ball( vY :: AbstractVector{T}; ballRadius :: T = T(1.0), ε ::
     numElements = length(vY);
     vX = zeros(T, numElements);
 
-    return ProjectL1Ball!(vX, vY; ballRadius = ballRadius, ε = ε);
+    return ProjectL1Ball!(vX, vY; ballRadius = ballRadius);
 
 end
 
@@ -246,7 +246,7 @@ end
 function ProxHingeLoss!( vX :: Vector{T}, vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat}
     # \arg \min_x 0.5 * || x - y ||_2^2 + λ * sum_i max(0, 1 - x_i)
 
-    for ii = 1:length(vY)
+    @simd for ii = 1:length(vY)
         if vY[ii] < (one(T) - λ)
             vX[ii] = vY[ii] + λ;
         elseif vY[ii] > one(T)
@@ -269,4 +269,28 @@ function ProxHingeLoss( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat}
 
     return vX;
     
+end
+
+function ProxL1Norm!( vX :: Vector{T}, vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat}
+    # \arg \min_x 0.5 * || x - y ||_2^2 + λ * || x ||_1
+    # Soft Threshold Operator
+
+    @simd for ii in 1:length(vX)
+        yᵢ = vY[ii];
+        vX[ii] = sign(yᵢ) * max(zero(T), abs(yᵢ) - λ);
+    end
+
+    return vX;
+
+end
+
+function ProxL1Norm( vY :: Vector{T}, λ :: T ) where {T <: AbstractFloat}
+    # \arg \min_x 0.5 * || x - y ||_2^2 + λ * || x ||_1
+    # Soft Threshold Operator
+    
+    vX = zero(vY);
+    vX = ProxL1Norm!(vX, vY, λ);
+
+    return vX;
+
 end
