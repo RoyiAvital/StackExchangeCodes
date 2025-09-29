@@ -1,0 +1,283 @@
+# StackExchange Mathematics Q2607494
+# https://math.stackexchange.com/questions/2607494
+# Solving Large Linear System Originated from Matrix Equation with Kronecker Product Vectorization.
+# References:
+#   1.  A
+# Remarks:
+#   1.  Use in Julia as following:
+#       -   Move to folder using `cd(raw"<PathToFolder>");`.
+#       -   Activate the environment using `] activate .`.
+#       -   Instantiate the environment using `] instantiate`.
+#   2.  A
+# TODO:
+# 	1.  AA.
+# Release Notes Royi Avital RoyiAvital@yahoo.com
+# - 1.0.000     29/09/2025  Royi Avital
+#   *   First release.
+
+## Packages
+
+# Internal
+using LinearAlgebra;
+using Printf;
+using Random;
+# External
+using BenchmarkTools;
+using Convex;
+using ECOS;
+using FastLapackInterface; #<! Required for Optimization
+using PlotlyJS;            #<! Use `add Kaleido_jll@v0.1;` (See https://github.com/JuliaPlots/PlotlyJS.jl/issues/479)
+using StableRNGs;
+
+
+## Constants & Configuration
+RNG_SEED = 1234;
+
+juliaCodePath = joinpath(".", "..", "..", "JuliaCode");
+include(joinpath(juliaCodePath, "JuliaInit.jl"));
+include(joinpath(juliaCodePath, "JuliaLinearAlgebra.jl"));
+include(joinpath(juliaCodePath, "JuliaOptimization.jl"));
+include(joinpath(juliaCodePath, "JuliaVisualization.jl"));
+
+
+## Settings
+
+figureIdx = 0;
+
+exportFigures = true;
+
+oRng = StableRNG(1234);
+
+
+## Functions
+
+function ObjFun( vD :: Vector{T}, mP :: Matrix{T}, mB :: Matrix{T} ) where {T <: AbstractFloat}
+    # 0.5 * || mB * Diag(vD) * mB^T - P ||_F^2
+
+    return T(0.5) * sum(abs2, mB * Diagonal(vD) * mB' - mP);
+    
+end
+
+function SolveCVX( mP :: Matrix{T}, mB :: Matrix{T} ) where {T <: AbstractFloat}
+    # \arg \min_d 0.5 * || B * Diag(d) * B^T - P ||_F^2
+
+    numCols = size(mB, 2);
+    vD      = Convex.Variable(numCols);
+
+    sConvProb = minimize( T(0.5) * Convex.sumsquares(mB * diagm(vD) * mB - mP) ); #<! Problem
+    Convex.solve!(sConvProb, ECOS.Optimizer; silent = true);
+
+    return vec(vD.value);
+    
+end
+
+function LSMR!( vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, vB :: AbstractVector, vU :: AbstractVector{T}, vV :: AbstractMatrix{T}, vW :: AbstractMatrix{T}, vAtu :: AbstractMatrix{T}, vAv :: AbstractMatrix{T}, vResHist :: AbstractMatrix{T}; ϵ :: T = T(1e-6), maxIter :: N = 1_000 ) where {T <: AbstractFloat, N <: Integer}
+    # size(mA) = m, n
+    # `vU` - Length of `vB`
+    # `vV` - Length of `vX`
+    # `vW` - Length of `vX`
+    # `vAtu` - Length of `vX`
+    # `vAv` - Length of `vB`
+
+    # Initialization
+    # u = b - A*x (residual)
+    mul!(vU, mA, vX); #<! u = A*x
+    @. vU = vB - vU;  #<! u = b - A*x
+    β = norm(vU);     #<! β = ||u||
+
+    @. vU = vU / β; #<! Normalize u
+
+    mul!(vV, mA', vU); #<! v = A'*u
+    α = norm(vV); #<! α = ||v||
+    @. vV = vV / α; #<! normalize v
+
+    copyto!(vW, vV); #<! w = v (search direction)
+    θ̅  = α; #<! θ̅ = α (initial variables)
+    ρ̅  = α; #<! ρ̅ = α
+    φ̅  = β; #<! φ̅ = β
+
+    @. vX = zero(T); #<! start from zero solution (if desired)
+
+    for kk in 1:maxIter
+        # Bidiagonalization step
+        mul!(vAv, mA, vV);     #<! Av = A*v
+        @. vAv = vAv - α * vU; #<! Av = Av - α*u
+        β = norm(vAv);         #<! β = ||Av||
+        @. vU = vAv / β;       #<! u = Av / β
+
+        mul!(vAtu, mA', vU);     #<! Atv = A'*u
+        @. vAtu = vAtu - β * vV; #<! Atv = Atv - β*v
+        α = norm(vAtu);          #<! α = ||Atv||
+        @. vV = vAtu / α;        #<! v = Atv / α
+
+        # Construct and apply rotation
+        ρ = sqrt(ρ̅  ^ 2 + β ^ 2); #<! ρ = sqrt(ρ̅^2 + β^2)
+        c = ρ̅ / ρ;                #<! cos
+        s = β / ρ;                #<! sin
+        θ = s * α;                #<! θ = s*α
+        ρ̅ = -c * α;               #<! ρ̅ = -c*α
+        φ = c * φ̅ ;               #<! φ = c*φ̅
+        φ̅ = s * φ̅ ;               #<! φ̅ = s*φ̅
+
+        # Update x and w
+        @. vX = vX + (φ / ρ) * vW; #<! x update
+        @. vW = vV - (θ / ρ) * vW; #<! w update
+
+        # Residual norm monitoring
+        resNorm = abs(φ̅); #<! estimated residual norm
+        vResHist[kk] = resNorm;
+        if resNorm < ϵ
+            return vX, kk, resNorm;
+        end
+    end
+
+    return vX, maxIter, abs(φ̅);
+
+end
+
+function GradientDescentAccelerated( mX :: AbstractMatrix{T}, η :: T, ∇ObjFun :: Function; ProjFun :: Function = identity ) where {T <: AbstractFloat, S <: Integer} #, F <: Function, G <: Function}
+    # This variation allocates memory.
+    # No requirements from ∇ObjFun, ProjFun to be allocations free.
+
+    vX = view(mX, 1);
+    vW = Array{T, ndims(vX)}(undef, size(vX));
+    vZ = copy(vX);
+
+    ∇vZ = Array{T, ndims(vX)}(undef, size(vX));
+
+    for ii ∈ 2:size(mX, 2)
+        # FISTA (Nesterov) Accelerated
+    
+        ∇vZ = ∇ObjFun(vZ);
+    
+        vW .= view(mX, ii - 1); #<! Previous iteration
+        vX  = view(mX, ii); 
+        vX .= vZ .- (η .* ∇vZ);
+        vX .= ProjFun(vX);
+    
+        fistaStepSize = (ii - 1) / (ii + 2);
+    
+        vZ .= vX .+ (fistaStepSize .* (vX .- vW));
+    end
+
+    return mX;
+
+end
+
+
+
+## Parameters
+
+# Data
+numRows = 576;
+numCols = 1296;
+
+# Solvers
+numIterations = 25_000;
+η = 1e-5;
+
+
+## Load / Generate Data
+
+mB = randn(numRows, numCols);
+vD = randn(numCols);
+mP = mB * Diagonal(vD) * mB';
+
+
+## Analysis
+
+hObjFun(vD :: Vector{T}) where {T <: AbstractFloat} = ObjFun(vD, mP, mB);
+
+# DCP Solver
+
+vDRef  = SolveCVX(mP, mB);
+optVal = hObjFun(vDRef);
+
+# Primal Dual Hybrid Gradient (PDHG) Method
+# Solves: \arg \min f(Kx) + g(x) : HingeLoss(A x) + λ || x ||_1
+methodName = "Accelerated Gradient Descent";
+
+hGradF(vD :: Vector{T}) where {T <: AbstractFloat} = diag(mB' * (mB * Diagonal(vD) * mB - mP) * mB);
+
+mX = zeros(numCols, numIterations);
+
+mX = GradientDescentAccelerated(mX, η, hGradF);
+
+dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
+
+# CG Method
+# Solves: A d̄ = p, A = B ⊗ B, p = Vec(P)
+methodName = "CG";
+
+mA  = diagm(vY) * [mX ones(numSamples)]; #<! For large cases should be defined as Linear Operator
+mE = [Float64.(collect(I(dataDim))) zeros(dataDim)];
+
+function ProjFCVX( mA :: Matrix{T}, vY :: Vector{T}, ρ :: T, λ :: T ) where {T <: AbstractFloat}
+    # Solves a variant of the L1 Prox
+    #  0.5 * ρ || A x - y ||_2^2 + λ * || x[1:(end - 1)] ||_1
+
+    dataDim = size(mA, 2);
+
+    vX = Convex.Variable(dataDim);
+
+    sConvProb = minimize( (λ / ρ) * Convex.norm_1(vX[1:(dataDim - 1)]) + T(0.5) * Convex.sumsquares(mA * vX - vY) ); #<! Problem
+    Convex.solve!(sConvProb, ECOS.Optimizer; silent = true);
+
+    return vec(vX.value);
+    
+end
+
+σ = 0.85 / sqrt(OpNormSquaredApprox(mE));
+τ = σ;
+
+hProxF(vY :: Vector{T}, ρ :: T) where {T <: AbstractFloat} = SolveLsTvChambolle(mA, vY, mE, λ / ρ, τ, σ); 
+# hProxF(vY :: Vector{T}, τ :: T) where {T <: AbstractFloat} = ProjFCVX(mA, vY, τ, λ); #<! Reference
+hProxG(vY :: Vector{T}, σ :: T) where {T <: AbstractFloat} = ProxHingeLoss(vY, σ);
+
+mW .= 0.0;
+
+vZ = zeros(numSamples);
+vU = zeros(numSamples);
+
+ADMM!(mW, vZ, vU, mA, hProxF, hProxG; ρ = ρ);
+
+dSolvers[methodName] = [hObjFun(mW[:, ii]) for ii ∈ 1:size(mW, 2)];
+
+# numRows = 12;
+# numCols = 8;
+# mA = randn(numRows, numCols);
+# vB = randn(numRows);
+# mD = randn(numRows - 1, numCols);
+# λ = 5 * rand();
+# vXRef = SolveLsTvCVX(mA, vB, mD, λ);
+# # σ * τ * || A ||_2^2 ≤ 1
+# σ = 0.85 / sqrt(OpNormSquaredApprox(mD));
+# τ = σ;
+# θ = 0.97 * minimum(eigvals(mA' * mA));
+# vX = SolveLsTvChambolle(mA, vB, mD, λ, τ, σ; θ = 1.0, numIterations = 500_000, useAccel = false);
+# maximum(abs.(vXRef - vX))
+
+
+## Display Results
+
+figureIdx += 1;
+
+vTr = Vector{GenericTrace{Dict{Symbol, Any}}}(undef, length(dSolvers));
+
+# shapeLine = vline(sOptRes.minimizer, line_color = "green", name = "Optimal Value");
+for (ii, methodName) in enumerate(keys(dSolvers))
+    vTr[ii] = scatter(x = 1:numIterations, y = 20 * log10.(abs.(dSolvers[methodName] .- optVal) ./ abs(optVal)), 
+               mode = "lines", line = attr(width = 3.0),
+               text = methodName, name = methodName);
+end
+sLayout = Layout(title = "Objective Function", width = 600, height = 600, hovermode = "closest",
+                 xaxis_title = "Iteration", yaxis_title = raw"$\frac{ \left| {f}^{\star} - {f}_{i} \right| }{ \left| {f}^{\star} \right| }$ [dB]");
+
+hP = Plot(vTr, sLayout);
+display(hP);
+
+if (exportFigures)
+    figFileNme = @sprintf("Figure%04d.png", figureIdx);
+    savefig(hP, figFileNme; width = hP.layout[:width], height = hP.layout[:height]);
+end
+

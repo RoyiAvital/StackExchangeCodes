@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.0.010     30/09/2025  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `ConjugateGradient()`.
 # - 1.0.009     27/09/2025  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `ChamPock!()` as a Primal Dual Hybrid Gradient (PDHG) method.
 # - 1.0.008     05/08/2025  Royi Avital RoyiAvital@yahoo.com
@@ -583,3 +585,45 @@ function LsqBox( mA :: AbstractMatrix{T}, vB :: AbstractVector{T}, vL :: Abstrac
 
 end
 
+function ConjugateGradient!( vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, vB :: AbstractVector{T}, vR :: AbstractVector{T}, vP :: AbstractVector{T}, vAp :: AbstractVector; ϵ :: T = T(1e-8), maxIter :: N = 1_000 ) where {T <: AbstractFloat, N <: Integer}
+    # `vR` - Residuals (Length of `vB`)
+    # `vP` - Search Direction (Length of `vB`)
+    # `vAp` - mA * vP (Length of `vB`)
+    # r = b - A*x
+    
+    mul!(vR, mA, vX);
+    @. vR = vB - vR;
+
+    copyto!(vP, vR);
+    resNorm₁ = dot(vR, vR); #<! Previous iteration
+
+    for kk in 1:maxIter
+        mul!(vAp, mA, vP); #<! Ap = A*p
+        α = resNorm₁ / dot(vP, vAp);
+        @. vX = vX + α * vP; #<! x += α*p
+        @. vR = vR - α * vAp; #<! r -= α*Ap
+
+        resNorm = dot(vR, vR);
+        if sqrt(resNorm) < ϵ
+            return vX, kk, sqrt(resNorm);
+        end
+
+        β = resNorm / resNorm₁;
+        @. vP = vR + β * vP;
+        resNorm₁ = resNorm;
+    end
+
+    return vX, kk, sqrt(resNorm₁);
+
+end
+
+function ConjugateGradient( mA :: AbstractMatrix{T}, vB :: AbstractVector{T}; vX0 :: AbstractVector{T} = zeros(T, size(mA, 1)), ϵ :: T = T(1e-8), maxIter :: N = 1_000 ) where {T <: AbstractFloat, N <: Integer}
+    
+    vX  = copy(vX0);
+    vR  = zero(vX);
+    vP  = zero(vX);
+    vAp = zero(vX);
+
+    return ConjugateGradient!(vX, mA, vB, vR, vP, vAp; ϵ = ϵ, maxIter = maxIter);
+
+end
