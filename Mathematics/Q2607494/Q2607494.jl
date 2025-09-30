@@ -26,6 +26,7 @@ using BenchmarkTools;
 using Convex;
 using ECOS;
 using FastLapackInterface; #<! Required for Optimization
+using LinearOperators;
 using PlotlyJS;            #<! Use `add Kaleido_jll@v0.1;` (See https://github.com/JuliaPlots/PlotlyJS.jl/issues/479)
 using StableRNGs;
 
@@ -64,7 +65,7 @@ function SolveCVX( mP :: Matrix{T}, mB :: Matrix{T} ) where {T <: AbstractFloat}
     numCols = size(mB, 2);
     vD      = Convex.Variable(numCols);
 
-    sConvProb = minimize( T(0.5) * Convex.sumsquares(mB * diagm(vD) * mB - mP) ); #<! Problem
+    sConvProb = minimize( T(0.5) * Convex.sumsquares(mB * diagm(vD) * mB' - mP) ); #<! Problem
     Convex.solve!(sConvProb, ECOS.Optimizer; silent = true);
 
     return vec(vD.value);
@@ -135,7 +136,7 @@ function LSMR!( vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, vB :: Abstract
 
 end
 
-function GradientDescentAccelerated( mX :: AbstractMatrix{T}, η :: T, ∇ObjFun :: Function; ProjFun :: Function = identity ) where {T <: AbstractFloat, S <: Integer} #, F <: Function, G <: Function}
+function GradientDescentAccelerated( mX :: AbstractMatrix{T}, η :: T, ∇ObjFun :: Function; ProjFun :: Function = identity ) where {T <: AbstractFloat} #, F <: Function, G <: Function}
     # This variation allocates memory.
     # No requirements from ∇ObjFun, ProjFun to be allocations free.
 
@@ -161,6 +162,42 @@ function GradientDescentAccelerated( mX :: AbstractMatrix{T}, η :: T, ∇ObjFun
     end
 
     return mX;
+
+end
+
+function LinOpKronProduct!( vD :: AbstractVector{T}, mA :: AbstractMatrix{T},  mB :: AbstractMatrix{T}, vC :: AbstractVector{T}, mT :: AbstractMatrix{T} ) where {T <: AbstractFloat}
+    # Implements vD = (mB' ⊗ mA) * vC
+    # Equivalent of vD = vec(mA * mC * mB) where mC = mat(vC)
+    # TODO: Optimize the order `(mA * mC) * mB` or `mA * (mC * mB)`
+
+    numRowsA = size(mA, 1);
+    numColsA = size(mA, 2);
+    numRowsB = size(mB, 1);
+    numColsB = size(mB, 2);
+
+    mC = reshape(vC, numColsA, numRowsB);
+    mD = reshape(vD, numColsB, numRowsA);
+    
+    mul!(mT, mA, mC);
+    mul!(mD, mT, mB);
+
+end
+
+function LinOpKronProductT!( vD :: AbstractVector{T}, mA :: AbstractMatrix{T},  mB :: AbstractMatrix{T}, vC :: AbstractVector{T}, mT :: AbstractMatrix{T} ) where {T <: AbstractFloat}
+    # Implements vD = (mB' ⊗ mA)' * vC -> vD = (mB ⊗ mA') * vC
+    # Equivalent of vD = vec(mA' * mC * mB) where mC = mat(vC)
+    # TODO: Optimize the order `(mA' * mC) * mB or `mA' * (mC * mB)`
+
+    numRowsA = size(mA, 1);
+    numColsA = size(mA, 2);
+    numRowsB = size(mB, 1);
+    numColsB = size(mB, 2);
+
+    mC = reshape(vC, numRowsA, numRowsB);
+    mD = reshape(vD, numColsA, numColsB);
+    
+    mul!(mT, mA', mC);
+    mul!(mD, mT, mB);
 
 end
 
@@ -205,9 +242,22 @@ mX = GradientDescentAccelerated(mX, η, hGradF);
 
 dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
 
-# CG Method
-# Solves: A d̄ = p, A = B ⊗ B, p = Vec(P)
-methodName = "CG";
+# LSMR Method
+# Solves: `vP = (mB ⊗ mB) * vD` where `vP = vec(mP)`
+methodName = "LSMR";
+
+mT1 = zeros(numRows, numCols);
+mT2 = zeros(numCols, numRows);
+
+vYRef = vec(mB * mD * mB');
+vY = zero(vYRef);
+LinOpKronProduct!(vY, mB, mB', vec(mD), mT1);
+norm(vY - vYRef, 1)
+
+mBB = LinearOperator(Float64, numRows * numRows, numCols * numCols, false, false, (vO, vI) -> LinOpKronProduct!(vO, mB, mB, vI, mT1), (vO, vI) -> LinOpKronProductT!(vO, mB, mB, vI, mT2)); #<! Stand for `mB ⊗ mB`
+vT = rand(size(mBB, 1));
+mBB' * vT;
+
 
 mA  = diagm(vY) * [mX ones(numSamples)]; #<! For large cases should be defined as Linear Operator
 mE = [Float64.(collect(I(dataDim))) zeros(dataDim)];
