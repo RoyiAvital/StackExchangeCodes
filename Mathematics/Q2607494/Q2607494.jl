@@ -340,11 +340,7 @@ mT  = zeros(numRows, numCols);
 vT  = zeros(numRows * numRows);
 mBB = LinearOperator(Float64, numRows * numRows, numCols, false, false, (vO, vI) -> LinOpKronProductDiag!(vO, mB, mB', vI, mT), (vO, vI) -> LinOpKronProductDiagT!(vO, mB, mB', vI, vT)); #<! Stand for `(mB ⊗ mB)[:, vI]`
 
-
-
-
-
-
+# Variables for `LSMR!()`
 vX0 = zeros(size(mBB, 2));
 vP  = vec(mP);
 
@@ -360,41 +356,10 @@ mX = LSMR!(mX, mBB, vP, vU, vV, vW, vAtu, vAv);
 dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
 
 
-# numRows = 4;
-# numCols = 8;
-
-# mB = randn(numRows, numCols);
-# mBB = kron(mB, mB);
-
-# # mBB * vD
-# vD = randn(numCols);
-# mD = randn(numCols, numCols);
-# vI = diagind(numCols, numCols);
-
-# mD[vI] = vD;
-
-# mP = mB * Diagonal(vD) * mB';
-# mP = mB * Diagonal(mD) * mB';
-# vP = mBB[:, vI] * vD;
-
-# norm(vec(mP) - vP, Inf)
-
-# # mBB[:, vI]' * vA
-# vA = randn(size(mBB, 1));
-# vT = zero(vA);
-# vP = mBB[:, vI]' * vA;
-# mP = mB' * reshape(vA, numRows, numRows) * mB;
-
-# norm(diag(mP) - vP, Inf)
-
-# vPP = zero(vP);
-# LinOpKronProductDiagT!(vPP, mB, mB', vA, vT);
-# norm(vPP - vP, Inf)
-
+# Check Run Time
 mX = zeros(numCols, 10);
 @btime GradientDescentAccelerated($mX, $η, $hGradF);
 @btime LSMR!($mX, $mBB, $vP, $vU, $vV, $vW, $vAtu, $vAv);
-
 
 
 ## Display Results
