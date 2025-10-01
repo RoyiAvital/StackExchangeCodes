@@ -585,7 +585,9 @@ function LsqBox( mA :: AbstractMatrix{T}, vB :: AbstractVector{T}, vL :: Abstrac
 
 end
 
-function ConjugateGradient!( vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, vB :: AbstractVector{T}, vR :: AbstractVector{T}, vP :: AbstractVector{T}, vAp :: AbstractVector; ϵ :: T = T(1e-8), maxIter :: N = 1_000 ) where {T <: AbstractFloat, N <: Integer}
+function ConjugateGradient!( vX :: AbstractVector{T}, mA, vB :: AbstractVector{T}, vR :: AbstractVector{T}, vP :: AbstractVector{T}, vAp :: AbstractVector; ϵ :: T = T(1e-8), maxIter :: N = 1_000 ) where {T <: AbstractFloat, N <: Integer}
+    # Solves `mA * vX = vB` for `mA` ∈ SPD
+    # `mA` has no type to support `LinearOperator` type from `LinearOperators.jl`
     # `vR` - Residuals (Length of `vB`)
     # `vP` - Search Direction (Length of `vB`)
     # `vAp` - mA * vP (Length of `vB`)
@@ -617,7 +619,9 @@ function ConjugateGradient!( vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, v
 
 end
 
-function ConjugateGradient( mA :: AbstractMatrix{T}, vB :: AbstractVector{T}; vX0 :: AbstractVector{T} = zeros(T, size(mA, 1)), ϵ :: T = T(1e-8), maxIter :: N = 1_000 ) where {T <: AbstractFloat, N <: Integer}
+function ConjugateGradient( mA, vB :: AbstractVector{T}; vX0 :: AbstractVector{T} = zeros(T, size(mA, 1)), ϵ :: T = T(1e-8), maxIter :: N = 1_000 ) where {T <: AbstractFloat, N <: Integer}
+    # Solves `mA * vX = vB` for `mA` ∈ SPD
+    # `mA` has no type to support `LinearOperator` type from `LinearOperators.jl`
     
     vX  = copy(vX0);
     vR  = zero(vX);
@@ -625,5 +629,92 @@ function ConjugateGradient( mA :: AbstractMatrix{T}, vB :: AbstractVector{T}; vX
     vAp = zero(vX);
 
     return ConjugateGradient!(vX, mA, vB, vR, vP, vAp; ϵ = ϵ, maxIter = maxIter);
+
+end
+
+function LSMR!( vX :: AbstractVector{T}, mA, vB :: AbstractVector, vU :: AbstractVector{T}, vV :: AbstractVector{T}, vW :: AbstractVector{T}, vAtu :: AbstractVector{T}, vAv :: AbstractVector{T}, vResHist :: AbstractVector{T}; ϵ :: T = T(1e-6), maxIter :: N = 1_000 ) where {T <: AbstractFloat, N <: Integer}
+    # Solves `|| mA * vX - vB ||_2^2`
+    # `mA` has no type to support `LinearOperator` type from `LinearOperators.jl`
+    # size(mA) = m, n
+    # `vU` - Length of `vB`
+    # `vV` - Length of `vX`
+    # `vW` - Length of `vX`
+    # `vAtu` - Length of `vX`
+    # `vAv` - Length of `vB`
+
+    # Initialization
+    # u = b - A*x (residual)
+    mul!(vU, mA, vX); #<! u = A*x
+    @. vU = vB - vU;  #<! u = b - A*x
+    β = norm(vU);     #<! β = ||u||
+
+    @. vU = vU / β; #<! Normalize u
+
+    mul!(vV, mA', vU); #<! v = A'*u
+    α = norm(vV); #<! α = ||v||
+    @. vV = vV / α; #<! normalize v
+
+    copyto!(vW, vV); #<! w = v (search direction)
+    θ̅  = α; #<! θ̅ = α (initial variables)
+    ρ̅  = α; #<! ρ̅ = α
+    φ̅  = β; #<! φ̅ = β
+
+    # @. vX = zero(T); #<! start from zero solution (if desired)
+
+    for kk in 1:maxIter
+        # Bidiagonalization step
+        mul!(vAv, mA, vV);     #<! Av = A*v
+        @. vAv = vAv - α * vU; #<! Av = Av - α*u
+        β = norm(vAv);         #<! β = ||Av||
+        @. vU = vAv / β;       #<! u = Av / β
+
+        mul!(vAtu, mA', vU);     #<! Atv = A'*u
+        @. vAtu = vAtu - β * vV; #<! Atv = Atv - β*v
+        α = norm(vAtu);          #<! α = ||Atv||
+        @. vV = vAtu / α;        #<! v = Atv / α
+
+        # Construct and apply rotation
+        ρ = sqrt(ρ̅  ^ 2 + β ^ 2); #<! ρ = sqrt(ρ̅^2 + β^2)
+        c = ρ̅ / ρ;                #<! cos
+        s = β / ρ;                #<! sin
+        θ = s * α;                #<! θ = s*α
+        ρ̅ = -c * α;               #<! ρ̅ = -c*α
+        φ = c * φ̅ ;               #<! φ = c*φ̅
+        φ̅ = s * φ̅ ;               #<! φ̅ = s*φ̅
+
+        # Update x and w
+        @. vX = vX + (φ / ρ) * vW; #<! x update
+        @. vW = vV - (θ / ρ) * vW; #<! w update
+
+        # Residual norm monitoring
+        resNorm = abs(φ̅); #<! estimated residual norm
+        vResHist[kk] = resNorm;
+        if resNorm < ϵ
+            return vX, kk, resNorm;
+        end
+    end
+
+    return vX, maxIter, vResHist;
+
+end
+
+function LSMR( mA, vB :: AbstractVector; ϵ :: T = T(1e-6), maxIter :: N = 1_000 ) where {T <: AbstractFloat, N <: Integer}
+    # Solves `|| mA * vX - vB ||_2^2`
+    # `mA` has no type to support `LinearOperator` type from `LinearOperators.jl`
+
+    numRows = size(mA, 1);
+    numCols = size(mA, 2);
+
+    vX = zeros(T, numRows);
+    
+    vU   = zero(vB);
+    vV   = zero(vX);
+    vW   = zero(vX);
+    vAtu = zero(vX);
+    vAv  = zero(vB);
+
+    vResHist = zeros(T, maxIter);
+
+    return LSMR!(vX, mA, vB, vU, vV, vW, vAtu, vAv, vResHist; ϵ = ϵ, maxIter = maxIter);
 
 end

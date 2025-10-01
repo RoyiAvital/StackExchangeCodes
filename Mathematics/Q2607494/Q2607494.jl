@@ -72,7 +72,7 @@ function SolveCVX( mP :: Matrix{T}, mB :: Matrix{T} ) where {T <: AbstractFloat}
     
 end
 
-function LSMR!( vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, vB :: AbstractVector, vU :: AbstractVector{T}, vV :: AbstractMatrix{T}, vW :: AbstractMatrix{T}, vAtu :: AbstractMatrix{T}, vAv :: AbstractMatrix{T}, vResHist :: AbstractMatrix{T}; ϵ :: T = T(1e-6), maxIter :: N = 1_000 ) where {T <: AbstractFloat, N <: Integer}
+function LSMR!( mX :: AbstractMatrix{T}, mA :: Union{LinearOperator{T}, AbstractVector{T}}, vB :: AbstractVector, vU :: AbstractVector{T}, vV :: AbstractVector{T}, vW :: AbstractVector{T}, vAtu :: AbstractVector{T}, vAv :: AbstractVector{T} ) where {T <: AbstractFloat}
     # size(mA) = m, n
     # `vU` - Length of `vB`
     # `vV` - Length of `vX`
@@ -81,6 +81,9 @@ function LSMR!( vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, vB :: Abstract
     # `vAv` - Length of `vB`
 
     # Initialization
+    numIterations = size(mX, 2);
+
+    vX = view(mX, :, 1);
     # u = b - A*x (residual)
     mul!(vU, mA, vX); #<! u = A*x
     @. vU = vB - vU;  #<! u = b - A*x
@@ -97,9 +100,7 @@ function LSMR!( vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, vB :: Abstract
     ρ̅  = α; #<! ρ̅ = α
     φ̅  = β; #<! φ̅ = β
 
-    @. vX = zero(T); #<! start from zero solution (if desired)
-
-    for kk in 1:maxIter
+    for kk in 2:numIterations
         # Bidiagonalization step
         mul!(vAv, mA, vV);     #<! Av = A*v
         @. vAv = vAv - α * vU; #<! Av = Av - α*u
@@ -121,18 +122,13 @@ function LSMR!( vX :: AbstractVector{T}, mA :: AbstractMatrix{T}, vB :: Abstract
         φ̅ = s * φ̅ ;               #<! φ̅ = s*φ̅
 
         # Update x and w
-        @. vX = vX + (φ / ρ) * vW; #<! x update
+        vX = view(mX, :, kk);
+        vX1 = view(mX, :, kk - 1); #<! Previous iteration
+        @. vX = vX1 + (φ / ρ) * vW; #<! x update
         @. vW = vV - (θ / ρ) * vW; #<! w update
-
-        # Residual norm monitoring
-        resNorm = abs(φ̅); #<! estimated residual norm
-        vResHist[kk] = resNorm;
-        if resNorm < ϵ
-            return vX, kk, resNorm;
-        end
     end
 
-    return vX, maxIter, abs(φ̅);
+    return mX;
 
 end
 
@@ -140,7 +136,7 @@ function GradientDescentAccelerated( mX :: AbstractMatrix{T}, η :: T, ∇ObjFun
     # This variation allocates memory.
     # No requirements from ∇ObjFun, ProjFun to be allocations free.
 
-    vX = view(mX, 1);
+    vX = view(mX, :, 1);
     vW = Array{T, ndims(vX)}(undef, size(vX));
     vZ = copy(vX);
 
@@ -151,8 +147,8 @@ function GradientDescentAccelerated( mX :: AbstractMatrix{T}, η :: T, ∇ObjFun
     
         ∇vZ = ∇ObjFun(vZ);
     
-        vW .= view(mX, ii - 1); #<! Previous iteration
-        vX  = view(mX, ii); 
+        vW .= view(mX, :, ii - 1); #<! Previous iteration
+        vX  = view(mX, :, ii); 
         vX .= vZ .- (η .* ∇vZ);
         vX .= ProjFun(vX);
     
@@ -165,7 +161,7 @@ function GradientDescentAccelerated( mX :: AbstractMatrix{T}, η :: T, ∇ObjFun
 
 end
 
-function LinOpKronProduct!( vD :: AbstractVector{T}, mA :: AbstractMatrix{T},  mB :: AbstractMatrix{T}, vC :: AbstractVector{T}, mT :: AbstractMatrix{T} ) where {T <: AbstractFloat}
+function LinOpKronProduct!( vD :: AbstractVector{T}, mA :: AbstractMatrix{T},  mB :: AbstractMatrix{T}, vC :: AbstractVector{T}, mT :: AbstractMatrix{T}; isDiag :: Bool = false ) where {T <: AbstractFloat}
     # Implements vD = (mB' ⊗ mA) * vC
     # Equivalent of vD = vec(mA * mC * mB) where mC = mat(vC)
     # TODO: Optimize the order `(mA * mC) * mB` or `mA * (mC * mB)`
@@ -176,6 +172,9 @@ function LinOpKronProduct!( vD :: AbstractVector{T}, mA :: AbstractMatrix{T},  m
     numColsB = size(mB, 2);
 
     mC = reshape(vC, numColsA, numRowsB);
+    if isDiag
+        mC = Diagonal(mC);
+    end
     mD = reshape(vD, numColsB, numRowsA);
     
     mul!(mT, mA, mC);
@@ -183,24 +182,105 @@ function LinOpKronProduct!( vD :: AbstractVector{T}, mA :: AbstractMatrix{T},  m
 
 end
 
-function LinOpKronProductT!( vD :: AbstractVector{T}, mA :: AbstractMatrix{T},  mB :: AbstractMatrix{T}, vC :: AbstractVector{T}, mT :: AbstractMatrix{T} ) where {T <: AbstractFloat}
+function LinOpKronProductT!( vD :: AbstractVector{T}, mA :: AbstractMatrix{T},  mB :: AbstractMatrix{T}, vC :: AbstractVector{T}, mT :: AbstractMatrix{T}; isDiag :: Bool = false ) where {T <: AbstractFloat}
     # Implements vD = (mB' ⊗ mA)' * vC -> vD = (mB ⊗ mA') * vC
-    # Equivalent of vD = vec(mA' * mC * mB) where mC = mat(vC)
-    # TODO: Optimize the order `(mA' * mC) * mB or `mA' * (mC * mB)`
+    # Equivalent of vD = vec(mA' * mC * mB') where mC = mat(vC)
+    # TODO: Optimize the order `(mA' * mC) * mB' or `mA' * (mC * mB')`
 
     numRowsA = size(mA, 1);
     numColsA = size(mA, 2);
     numRowsB = size(mB, 1);
     numColsB = size(mB, 2);
 
-    mC = reshape(vC, numRowsA, numRowsB);
-    mD = reshape(vD, numColsA, numColsB);
+    mC = reshape(vC, numRowsA, numColsB);
+    if isDiag
+        mC = Diagonal(mC);
+    end
+    mD = reshape(vD, numRowsB, numColsA);
     
     mul!(mT, mA', mC);
-    mul!(mD, mT, mB);
+    mul!(mD, mT, mB');
 
 end
 
+function LinOpKronProductDiag!( vO :: AbstractVector{T}, mA :: AbstractMatrix{T},  mB :: AbstractMatrix{T}, vD :: AbstractVector{T}, mT :: AbstractMatrix{T} ) where {T <: AbstractFloat}
+    # Implements vO = (mB' ⊗ mA)[:, vI] * vD
+    # Equivalent of vO = vec(mA * Diag(vD) * mB)
+    # mA * diagm(vD) ⇄ mA .* vD'
+    # diagm(vD) * mB ⇄ vD .* mB
+
+    numRowsA = size(mA, 1);
+    numColsA = size(mA, 2);
+    numRowsB = size(mB, 1);
+    numColsB = size(mB, 2);
+
+    mO = reshape(vO, numColsB, numRowsA);
+    
+    # mul!(mT, mA, mC);
+    mT .= mA .* vD';
+    mul!(mO, mT, mB);
+
+end
+
+function LinOpKronProductDiagT!( vO :: AbstractVector{T}, mA :: AbstractMatrix{T},  mB :: AbstractMatrix{T}, vD :: AbstractVector{T}, vT :: AbstractVector{T} ) where {T <: AbstractFloat}
+    # Implements vO = ((mB' ⊗ mA)[:, vI])' * vD
+    # Equivalent of vO = diag(mA' * mat(vD) * mB')
+    # size(vO) = (numColsA, )
+
+    numRowsA = size(mA, 1);
+    numColsA = size(mA, 2);
+    numRowsB = size(mB, 1);
+    numColsB = size(mB, 2);
+
+    vI = diagind(numCols, numCols);
+
+    for ii in 1:numColsA
+        vT = GetIColKron!(vT, mB', mA, vI[ii]);
+        vO[ii] = dot(vT, vD);
+    end
+
+end
+
+function GetIColKron!( vO :: AbstractVector{T}, mA :: AbstractMatrix{T}, mB :: AbstractMatrix{T}, ii :: N ) where {T <: AbstractFloat, N <: Integer}
+    # Gets the `ii` column of `mA ⊗ mB`
+    
+    m, n = size(mA);
+    p, q = size(mB);
+
+    # Map ii → (jA, jB)
+    jB = (ii - 1) % q + 1;
+    jA = (ii - 1) ÷ q + 1;
+
+    vA = @view mA[:, jA];
+    vB = @view mB[:, jB];
+
+    # Fill vO with vA ⊗ vB
+    idx = 1;
+    for a in vA
+        for b in vB
+            vO[idx] = a * b;
+            idx += 1;
+        end
+    end
+
+    return vO;
+
+end
+
+function GetIColKron( mA :: AbstractMatrix{T}, mB :: AbstractMatrix{T}, ii :: N ) where {T <: AbstractFloat, N <: Integer}
+    # Gets the `ii` column of `mA ⊗ mB`
+
+    numRowsA = size(mA, 1);
+    numColsA = size(mA, 2);
+    numRowsB = size(mB, 1);
+    numColsB = size(mB, 2);
+
+    vO = zeros(T, numRowsA * numRowsB);
+    vO = GetIColKron!(vO, mA, mB, ii);
+
+    return vO;
+
+end
 
 
 ## Parameters
@@ -209,16 +289,22 @@ end
 numRows = 576;
 numCols = 1296;
 
+numRows = 576 ÷ 4;
+numCols = 1296 ÷ 4;
+
 # Solvers
-numIterations = 25_000;
+numIterations = 200;
 η = 1e-5;
 
 
 ## Load / Generate Data
 
-mB = randn(numRows, numCols);
-vD = randn(numCols);
-mP = mB * Diagonal(vD) * mB';
+mB = randn(oRng, numRows, numCols);
+mP = randn(oRng, numRows, numRows);
+
+dSolvers = Dict();
+
+mX = zeros(numCols, numIterations);
 
 
 ## Analysis
@@ -234,9 +320,7 @@ optVal = hObjFun(vDRef);
 # Solves: \arg \min f(Kx) + g(x) : HingeLoss(A x) + λ || x ||_1
 methodName = "Accelerated Gradient Descent";
 
-hGradF(vD :: Vector{T}) where {T <: AbstractFloat} = diag(mB' * (mB * Diagonal(vD) * mB - mP) * mB);
-
-mX = zeros(numCols, numIterations);
+hGradF(vD :: AbstractVector{T}) where {T <: AbstractFloat} = diag(mB' * (mB * Diagonal(vD) * mB' - mP) * mB);
 
 mX = GradientDescentAccelerated(mX, η, hGradF);
 
@@ -246,66 +330,71 @@ dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
 # Solves: `vP = (mB ⊗ mB) * vD` where `vP = vec(mP)`
 methodName = "LSMR";
 
-mT1 = zeros(numRows, numCols);
-mT2 = zeros(numCols, numRows);
+# mT1 = zeros(numRows, numCols);
+# mT2 = zeros(numCols, numRows);
 
-vYRef = vec(mB * mD * mB');
-vY = zero(vYRef);
-LinOpKronProduct!(vY, mB, mB', vec(mD), mT1);
-norm(vY - vYRef, 1)
-
-mBB = LinearOperator(Float64, numRows * numRows, numCols * numCols, false, false, (vO, vI) -> LinOpKronProduct!(vO, mB, mB, vI, mT1), (vO, vI) -> LinOpKronProductT!(vO, mB, mB, vI, mT2)); #<! Stand for `mB ⊗ mB`
-vT = rand(size(mBB, 1));
-mBB' * vT;
+# mBB = LinearOperator(Float64, numRows * numRows, numCols * numCols, false, false, (vO, vI) -> LinOpKronProduct!(vO, mB, mB', vI, mT1; isDiag = true), (vO, vI) -> LinOpKronProductT!(vO, mB, mB', vI, mT2; isDiag = true)); #<! Stand for `mB ⊗ mB`
 
 
-mA  = diagm(vY) * [mX ones(numSamples)]; #<! For large cases should be defined as Linear Operator
-mE = [Float64.(collect(I(dataDim))) zeros(dataDim)];
+mT  = zeros(numRows, numCols);
+vT  = zeros(numRows * numRows);
+mBB = LinearOperator(Float64, numRows * numRows, numCols, false, false, (vO, vI) -> LinOpKronProductDiag!(vO, mB, mB', vI, mT), (vO, vI) -> LinOpKronProductDiagT!(vO, mB, mB', vI, vT)); #<! Stand for `(mB ⊗ mB)[:, vI]`
 
-function ProjFCVX( mA :: Matrix{T}, vY :: Vector{T}, ρ :: T, λ :: T ) where {T <: AbstractFloat}
-    # Solves a variant of the L1 Prox
-    #  0.5 * ρ || A x - y ||_2^2 + λ * || x[1:(end - 1)] ||_1
 
-    dataDim = size(mA, 2);
 
-    vX = Convex.Variable(dataDim);
 
-    sConvProb = minimize( (λ / ρ) * Convex.norm_1(vX[1:(dataDim - 1)]) + T(0.5) * Convex.sumsquares(mA * vX - vY) ); #<! Problem
-    Convex.solve!(sConvProb, ECOS.Optimizer; silent = true);
 
-    return vec(vX.value);
-    
-end
 
-σ = 0.85 / sqrt(OpNormSquaredApprox(mE));
-τ = σ;
+vX0 = zeros(size(mBB, 2));
+vP  = vec(mP);
 
-hProxF(vY :: Vector{T}, ρ :: T) where {T <: AbstractFloat} = SolveLsTvChambolle(mA, vY, mE, λ / ρ, τ, σ); 
-# hProxF(vY :: Vector{T}, τ :: T) where {T <: AbstractFloat} = ProjFCVX(mA, vY, τ, λ); #<! Reference
-hProxG(vY :: Vector{T}, σ :: T) where {T <: AbstractFloat} = ProxHingeLoss(vY, σ);
+vU   = zero(vP);
+vV   = zero(vX0);
+vW   = zero(vX0);
+vAtu = zero(vX0);
+vAv  = zero(vP);
 
-mW .= 0.0;
+mX .= 0.0;
+mX = LSMR!(mX, mBB, vP, vU, vV, vW, vAtu, vAv);
 
-vZ = zeros(numSamples);
-vU = zeros(numSamples);
+dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
 
-ADMM!(mW, vZ, vU, mA, hProxF, hProxG; ρ = ρ);
 
-dSolvers[methodName] = [hObjFun(mW[:, ii]) for ii ∈ 1:size(mW, 2)];
-
-# numRows = 12;
+# numRows = 4;
 # numCols = 8;
-# mA = randn(numRows, numCols);
-# vB = randn(numRows);
-# mD = randn(numRows - 1, numCols);
-# λ = 5 * rand();
-# vXRef = SolveLsTvCVX(mA, vB, mD, λ);
-# # σ * τ * || A ||_2^2 ≤ 1
-# σ = 0.85 / sqrt(OpNormSquaredApprox(mD));
-# τ = σ;
-# θ = 0.97 * minimum(eigvals(mA' * mA));
-# vX = SolveLsTvChambolle(mA, vB, mD, λ, τ, σ; θ = 1.0, numIterations = 500_000, useAccel = false);
-# maximum(abs.(vXRef - vX))
+
+# mB = randn(numRows, numCols);
+# mBB = kron(mB, mB);
+
+# # mBB * vD
+# vD = randn(numCols);
+# mD = randn(numCols, numCols);
+# vI = diagind(numCols, numCols);
+
+# mD[vI] = vD;
+
+# mP = mB * Diagonal(vD) * mB';
+# mP = mB * Diagonal(mD) * mB';
+# vP = mBB[:, vI] * vD;
+
+# norm(vec(mP) - vP, Inf)
+
+# # mBB[:, vI]' * vA
+# vA = randn(size(mBB, 1));
+# vT = zero(vA);
+# vP = mBB[:, vI]' * vA;
+# mP = mB' * reshape(vA, numRows, numRows) * mB;
+
+# norm(diag(mP) - vP, Inf)
+
+# vPP = zero(vP);
+# LinOpKronProductDiagT!(vPP, mB, mB', vA, vT);
+# norm(vPP - vP, Inf)
+
+mX = zeros(numCols, 10);
+@btime GradientDescentAccelerated($mX, $η, $hGradF);
+@btime LSMR!($mX, $mBB, $vP, $vU, $vV, $vW, $vAtu, $vAv);
+
 
 
 ## Display Results
