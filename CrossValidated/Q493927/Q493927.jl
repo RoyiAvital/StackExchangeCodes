@@ -102,26 +102,23 @@ vY = rand((-1.0, 1.0), numSamples); #<! Labels vector
 
 vW = randn(dataDim + 1);
 
+
 ## Analysis
 
 hObjFun(vW :: Vector{T}) where {T <: AbstractFloat} = HingeLoss(vW, mS, vY);
 
-vGRef = CalcFunGrad(vW, hObjFun);
-
 # Numerical Gradient (Reference)
-
-
+vGRef = CalcFunGrad(vW, hObjFun);
 
 # Analytic Gradient
 mX = [mS' ones(numSamples)];
 mY = Diagonal(vY);
 
-hGradF(vW :: AbstractVector{T}) where {T <: AbstractFloat} = ∇HingeLoss(vW, mS, vY); #<! Analytic by loop
-# hGradF(vW :: AbstractVector{T}) where {T <: AbstractFloat} = sum(-(mX' * mY) .* reshape((mY * mX * vW) .< one(T), (1, :)); dims = 2); #<! Analytic vectorized
+# hGradF(vW :: AbstractVector{T}) where {T <: AbstractFloat} = ∇HingeLoss(vW, mS, vY); #<! Analytic by loop
+hGradF(vW :: AbstractVector{T}) where {T <: AbstractFloat} = sum(-(mX' * mY) .* reshape((mY * mX * vW) .< one(T), (1, :)); dims = 2); #<! Analytic vectorized
 
 vG = hGradF(vW);
 
-
-# Verify Analysis
+# Verify Implementation
 
 norm(vG - vGRef, Inf)
