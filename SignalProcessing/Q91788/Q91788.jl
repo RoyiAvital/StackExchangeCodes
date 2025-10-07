@@ -1,4 +1,4 @@
-# StackExchnage Signal Processing Q91788
+# StackExchange Signal Processing Q91788
 # https://dsp.stackexchange.com/questions/91788
 # Fit Data Samples with Large Number of Samples and Outliers with a Ronust Fit.
 # References:

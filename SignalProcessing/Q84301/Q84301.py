@@ -1,6 +1,6 @@
 # %% [markdown]
 #
-# # StackExchnage Signal Processing Q84301
+# # StackExchange Signal Processing Q84301
 # https://dsp.stackexchange.com/questions/84301
 # Estimate the Blur Kernel of a Linear 2D Operator.
 # 

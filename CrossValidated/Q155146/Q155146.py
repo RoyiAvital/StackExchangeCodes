@@ -1,7 +1,7 @@
 # %% [markdown]
 #
-# # StackExchnage Cross Validated Q155146
-# https://dsp.stackexchange.com/questions/155146
+# # StackExchange Cross Validated Q155146
+# https://stats.stackexchange.com/questions/155146
 # Visualizing Classifier Decision Boundary of High Dimensional Data.
 # 
 # > Notebook by:
@@ -27,7 +27,6 @@ from sklearn.decomposition import PCA
 from sklearn.svm import SVC
 
 # Miscellaneous
-import math
 import os
 from platform import python_version
 import random

@@ -1,4 +1,4 @@
-# StackExchnage Signal Processing Q1227
+# StackExchange Signal Processing Q1227
 # https://dsp.stackexchange.com/questions/1227
 # Piece Wise Linear Fit without Known Knots.
 # References:

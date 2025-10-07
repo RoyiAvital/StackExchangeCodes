@@ -1,4 +1,4 @@
-# StackExchnage Signal Processing Q94226
+# StackExchange Signal Processing Q94226
 # https://dsp.stackexchange.com/questions/94226
 # Detect and Localize Abrupt Changes on a Noisy Non Periodic Signal
 # References:
