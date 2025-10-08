@@ -54,9 +54,6 @@ random.seed(seedNum)
 
 # %% Constants
 
-# PROJECT_FOLDER      = os.path.abspath(os.path.join(__file__, '../../..'))
-# DATA_FOLDER_NAME    = 'Data'
-
 PROJECT_NAME        = 'StackExchangeCodes'
 DATA_FOLDER_NAME    = 'Data'
 
@@ -72,7 +69,7 @@ from SEPythonModule import *
 # %% Auxiliary Functions
 
 @njit(cache = True, fastmath = True)
-def ComputerCost( mP: NDArray, mCost: NDArray ) -> NDArray:
+def CalcCost( mP: NDArray, mCost: NDArray ) -> NDArray:
     # `mP` - Probability per point per class. Each row is a point, each column is a class.
     # `mCost` - Cost per class. Each row is the true class, each column is the predicted class.
     numPts = mP.shape[0]
@@ -88,8 +85,6 @@ def ComputerCost( mP: NDArray, mCost: NDArray ) -> NDArray:
                 mC[ii, kk] += mP[ii, jj] * mCost[jj, kk]
 
     return mC
-
-
 
 # %% Parameters
 
@@ -142,7 +137,7 @@ mP = np.column_stack([lM[ii].pdf(mG) for ii in range(numModels)]) #<! Each model
 mPx = np.reshape(mP @ vModelProb, (numGridPts, numGridPts)) #<! GMM Probability
 
 # Cost per class
-mC = ComputerCost(mP, mCostModel)
+mC = CalcCost(mP, mCostModel)
 vY = np.argmin(mC, axis = 1) #<! Minimum Cost Class
 mYY = np.reshape(vY, (numGridPts, numGridPts)) #<! 2D Grid for Contour Plot
 
