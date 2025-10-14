@@ -258,6 +258,8 @@ end
 # end
 
 # Pegasos (Fastest)
+# Following Shai Shalev Shwartz, Shai Ben David - Understanding Machine Learning: From Theory to Algorithms.
+# See page 223 - SGD for Solving Soft SVM with Kernels.
 # mX  = zeros(numSamples, numIterations);
 # vβₜ = zeros(numSamples);
 # vαₜ = zeros(numSamples);
