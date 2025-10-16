@@ -66,7 +66,7 @@ function KernelSVM( vβ :: Vector{T}, mK :: Matrix{T}, vY :: Vector{T}, λ :: T;
         vH = [vH[ii] * vH[ii] for ii in 1:numSamples];
     end
 
-    objVal += sum(vH);
+    objVal += sum(vH) / numSamples;
 
     # Vectorized form
     # objVal = 0.5 * λ * dot(vβ, mK, vβ) + sum(max.(zero(T), T(1) .- vY .* (mK * vβ)));
@@ -170,11 +170,11 @@ csvFileName = raw"BinaryClassificationData.csv";
 # SVM Model
 σ = 1.0;
 λ = 0.1;
-α = 1e-5; #<! Regularization to make `mK` SPD
+α = 1e-3; #<! Regularization to make `mK` SPD
 
 # Solvers
 numIterations = 50_000;
-η             = 1e-4;
+η             = 1e-8;
 
 ## Load / Generate Data
 
@@ -223,9 +223,11 @@ hProxG(vY :: Vector{T}, vZ :: Vector{T}, γ :: T) where {T <: AbstractFloat} = P
 mX  = zeros(numSamples, numIterations);
 vX  = zeros(numSamples);
 vZ  = zeros(numSamples);
-vT  = zeros(numSamples);
+vG  = zeros(numSamples);
 
-# Stochastic PGM
+η = 1e-4;
+
+# Stochastic PGM ()
 for ii in 2:numIterations
     global vX, η;
     copy!(vX, view(mX, :, ii - 1));
@@ -234,51 +236,78 @@ for ii in 2:numIterations
     vKₖ = view(mK, :, kk);
     vZ .= yₖ .* vKₖ;
 
-    vX = hProxG(vX .- η * hGradF(vX), vZ, 1.0 * η);
+    # vG[kk] = λ * dot(vKₖ, vX) * numSamples;
+    # vX = hProxG(vX .- η * vG, vZ, 1.0 * η);
+
+    # The gradient only updates a single element of `vX`
+    vX[kk] -= η * λ * dot(vKₖ, vX) * numSamples;
+    vX = hProxG(vX, vZ, 1.0 * η);
+
+    mX[:, ii] .= vX;
+
+    # vG[kk] = 0.0;
+end
+
+dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
+
+# Accelerated Stochastic Proximal Method
+methodName = "Accelerated Stochastic PGM";
+
+mX  = zeros(numSamples, numIterations);
+vX  = zeros(numSamples);
+vZ  = zeros(numSamples);
+vT  = zeros(numSamples);
+
+η = 4e-8;
+
+# Accelerated Stochastic PGM (Requires very small `η` [`η = 1e-8;`])
+for ii in 2:numIterations
+    global vX, vT, vG, η;
+
+    kk = rand(oRng, 1:numSamples);
+    yₖ = vY[kk];
+    vKₖ = view(mK, :, kk);
+    vZ .= yₖ .* vKₖ;
+
+    # The gradient only updates a single element of `vT`
+    vT[kk] -= η * λ * dot(vKₖ, vT) * numSamples;
+    vX .= hProxG(vT, vZ, 1.0 * η);
+    
+    fistaStepSize = (ii - 2) / (ii + 1);
+    vT .= vX .+ fistaStepSize .* (vX .- view(mX, :, ii - 1));
+
     mX[:, ii] .= vX;
 end
 
-# Accelerated (Does not work)
-# for ii in 2:numIterations
-#     global vX, vT, η;
-
-#     kk = rand(oRng, 1:numSamples);
-#     yₖ = vY[kk];
-#     vKₖ = view(mK, :, kk);
-#     vZ .= yₖ .* vKₖ;
-
-#     vX .= hProxG(vT .- η * hGradF(vT), vZ, 1.0 * η);
-#     fistaStepSize = (ii - 1) / (ii + 2);
-#     # fistaStepSize = 0.0;
-#     vT .= vX .+ fistaStepSize .* (vX .- view(mX, :, ii - 1));
-
-#     # η = η * 0.97;
-
-#     mX[:, ii] .= vX;
-# end
+dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
 
 # Pegasos (Fastest)
+methodName = "Pegasos";
+
 # Following Shai Shalev Shwartz, Shai Ben David - Understanding Machine Learning: From Theory to Algorithms.
 # See page 223 - SGD for Solving Soft SVM with Kernels.
-# mX  = zeros(numSamples, numIterations);
-# vβₜ = zeros(numSamples);
-# vαₜ = zeros(numSamples);
-# for ii in 2:numIterations
-#     global vαₜ, vβₜ;
+mX  = zeros(numSamples, numIterations);
+vβₜ = zeros(numSamples);
+vαₜ = zeros(numSamples);
 
-#     tt = ii - 1;
-#     η = inv(λ * tt);
+η = 1e-4;
 
-#     vαₜ .= η .* vβₜ;
+for ii in 2:numIterations
+    global vαₜ, vβₜ;
 
-#     kk = rand(oRng, 1:numSamples);
-#     yₖ = vY[kk];
+    tt = ii - 1;
+    ηₜ = inv(λ * tt);
 
-#     @views valSum = yₖ * dot(mK[:, kk], vαₜ);
-#     vβₜ[kk] += (valSum < 1.0) * yₖ;
+    vαₜ .= ηₜ .* vβₜ;
 
-#     @views mX[:, ii] .= (0.5 .* mX[:, ii - 1]) + (0.5 .* vαₜ);
-# end
+    kk = rand(oRng, 1:numSamples);
+    yₖ = vY[kk];
+
+    @views valSum = yₖ * dot(mK[:, kk], vαₜ);
+    vβₜ[kk] += (valSum < 1.0) * yₖ;
+
+    @views mX[:, ii] .= (0.5 .* mX[:, ii - 1]) + (0.5 .* vαₜ);
+end
 
 dSolvers[methodName] = [hObjFun(mX[:, ii]) for ii ∈ 1:size(mX, 2)];
 
@@ -294,7 +323,8 @@ for (ii, methodName) in enumerate(keys(dSolvers))
                mode = "lines", text = methodName, name = methodName, line = attr(width = 3.0))
 end
 oLayout = Layout(title = "Objective Function", width = 600, height = 600, hovermode = "closest",
-                 xaxis_title = "Iteration", yaxis_title = raw"$\frac{ \left| {f}^{\star} - {f}_{i} \right| }{ \left| {f}^{\star} \right| }$ [dB]");
+                 xaxis_title = "Iteration", yaxis_title = raw"$\frac{ \left| {f}^{\star} - {f}_{i} \right| }{ \left| {f}^{\star} \right| }$ [dB]",
+                 legend = attr(yanchor = "top", y = 0.99, xanchor = "right", x = 0.99));
 
 hP = Plot(vTr, oLayout);
 display(hP);
@@ -311,7 +341,8 @@ for (ii, methodName) in enumerate(keys(dSolvers))
                mode = "lines", text = methodName, name = methodName, line = attr(width = 3.0))
 end
 oLayout = Layout(title = "Objective Function", width = 600, height = 600, hovermode = "closest",
-                 xaxis_title = "Iteration", yaxis_title = "Objective Value");
+                 xaxis_title = "Iteration", yaxis_title = "Objective Value",
+                 legend = attr(yanchor = "top", y = 0.99, xanchor = "right", x = 0.99));
 
 hP = Plot(vTr, oLayout);
 display(hP);
