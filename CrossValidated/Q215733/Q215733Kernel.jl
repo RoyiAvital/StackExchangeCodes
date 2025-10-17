@@ -182,7 +182,8 @@ function PredictKernelSVM( vβ :: Vector{T}, vX :: Vector{T}, mX :: Matrix{T}, v
     valSum = zero(T);
 
     for ii in 1:numSamples
-        valSum += vβ[ii] * vY[ii] * CalcRbfKernel(vX, view(mX, :, ii), γ);
+        # If `vβ` was the dual it should have been: `valSum += vβ[ii] * vY[ii] * CalcRbfKernel(vX, view(mX, :, ii), γ);`
+        valSum += vβ[ii] * CalcRbfKernel(vX, view(mX, :, ii), γ);
     end
 
     return sign(valSum);
@@ -196,9 +197,9 @@ end
 csvFileName = raw"BinaryClassificationData.csv";
 
 # SVM Model
-σ = 0.1;
+σ = 0.025;
 λ = 0.1;
-α = 1e-3; #<! Regularization to make `mK` SPD
+α = 1e-5; #<! Regularization to make `mK` SPD
 
 # Solvers
 numIterations = 2_000;
@@ -251,7 +252,6 @@ mβ = PegasosKernelSVM!(mβ, hKᵢ, vY, λ, vαₜ, vβₜ);
 dSolvers[methodName] = [hObjFun(mβ[:, ii]) for ii ∈ 1:size(mβ, 2)];
 
 vβ = mβ[:, end];
-vβ = vβRef;
 vŶ = [PredictKernelSVM(vβ, mX[:, ii], mX, vY, σ) for ii in 1:numSamples];
 valAcc = mean(vY .== vŶ);
 
