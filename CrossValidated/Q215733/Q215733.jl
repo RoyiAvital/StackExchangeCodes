@@ -194,7 +194,7 @@ optVal = hObjFun(vWRef);
 dSolvers[methodName] = optVal * ones(numIterations);
 
 
-# Stochastic Proximal Method
+# Pegasos Method
 methodName = "Pegasos";
 
 vWₜ = zeros(dataDim);

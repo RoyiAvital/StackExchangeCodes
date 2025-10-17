@@ -175,6 +175,7 @@ function PegasosKernelSVM!( mX :: Matrix{T}, hKₖ :: Function, vY :: Vector{T},
 end
 
 function PredictKernelSVM( vβ :: Vector{T}, vX :: Vector{T}, mX :: Matrix{T}, vY :: Vector{T}, σ :: T ) where {T <: AbstractFloat}
+    # Treat any point as "Out of Sample" data
 
     numSamples = length(vβ);
 
@@ -237,7 +238,7 @@ optVal = hObjFun(vβRef);
 dSolvers[methodName] = optVal * ones(numIterations);
 
 
-# Stochastic Proximal Method
+# Pegasos Method
 methodName = "Pegasos";
 
 vαₜ = zeros(numSamples);
