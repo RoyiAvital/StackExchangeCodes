@@ -193,7 +193,6 @@ optVal = hObjFun(vWRef);
 
 dSolvers[methodName] = optVal * ones(numIterations);
 
-
 # Pegasos Method
 methodName = "Pegasos";
 
