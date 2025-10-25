@@ -1,0 +1,12 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
+ECOS = "e2685f51-7e38-5353-a97d-a921fd2c8199"
+FastLapackInterface = "29a986be-02c6-4525-aec4-84b980013641"
+Kaleido_jll = "f7e6163d-2fa5-5f23-b69c-1db539e41963"
+MKL = "33e6dc65-8f57-5167-99aa-e5a354878fb2"
+OSQP = "ab2f91bb-94b4-55e3-9ba0-7f65df51de79"
+PlotlyJS = "f0f68f2c-4968-5e81-91da-67840de0976a"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+StableRNGs = "860ef19b-820b-49d6-a774-d7a799459cd3"
+StatusSwitchingQP = "73a7d86c-03e3-42fb-a0f5-70ef6cda08f4"
