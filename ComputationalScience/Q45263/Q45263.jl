@@ -66,7 +66,7 @@ function SolveOSQP( vY :: Vector{T}, mA :: Matrix{T}, vB :: Vector{T}, vL :: Vec
 
     numElements = length(vY);
     
-    mP = sparse(I, numElements, numElements);
+    mP = sparse(T, I, numElements, numElements);
     vQ = -vY;
 
     mAA = sparse(mA);
