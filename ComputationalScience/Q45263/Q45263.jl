@@ -1,6 +1,6 @@
 # StackExchange Computational Science Q45263
 # https://scicomp.stackexchange.com/questions/45263
-# Solve Projection Problem with Linear Equality and Box Cosntraints.
+# Solve Projection Problem with Linear Equality and Box Constraints.
 # References:
 #   1.  A
 # Remarks:

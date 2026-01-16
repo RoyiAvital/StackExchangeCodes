@@ -7,6 +7,8 @@
 # TODO:
 # 	1.  B
 # Release Notes
+# - 1.1.002     17/01/2026  Royi Avital RoyiAvital@yahoo.com
+#   *   Added `AlignSparsePattern()` to align the sparsity pattern of 2 sparse matrices.
 # - 1.1.001     21/06/2025  Royi Avital RoyiAvital@yahoo.com
 #   *   Added `SqueezeArray()` which imitates MATLAB's `squeeze()`.
 # - 1.1.000     22/09/2024  Royi Avital RoyiAvital@yahoo.com
@@ -161,4 +163,26 @@ function SqueezeArray( mA :: Array )
 
 end
 
+function AlignSparsePattern(mT :: SparseMatrixCSC{T, Int}, mA :: SparseMatrixCSC{T, Int}) where {T}
+    # Creates a new sparse matrix `mB` with the same pattern as `mT` and copies values from `mA` where the patterns overlap.
+    # It is assumed that the pattern of `mT` is a superset of the pattern of `mA`.
+    
+    mB = SparseMatrixCSC(mT.m, mT.n, copy(mT.colptr), copy(mT.rowval), zeros(T, length(mT.rowval)));
+
+    @inbounds for jj in 1:mT.n
+        loT = mT.colptr[jj];
+        hiT = mT.colptr[jj + 1] - 1;
+        vRow = @view mT.rowval[loT:hiT];
+
+        for pA in mA.colptr[jj]:(mA.colptr[jj + 1] - 1)
+            ii = mA.rowval[pA];
+            kk = searchsortedfirst(vRow, ii);
+            if (kk <= length(vRow)) && (vRow[kk] == ii)
+                mB.nzval[loT + kk - 1] = mA.nzval[pA];
+            end
+        end
+    end
+
+    return mB;
+end
 
