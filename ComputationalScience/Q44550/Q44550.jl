@@ -137,7 +137,7 @@ function SolveASystem( mA :: AbstractSparseMatrix{T}, mI :: Matrix{T}, mM :: Bit
     # Similar to `SolveBSystem()`.
     # 
     # Ideas for optimization:
-    # 1. Build `mAu`, `mAv` while building teh affinity graph.
+    # 1. Build `mAu`, `mAv` while building the affinity graph.
     # 2. Pre allocated buffers.
     # 3. Inplace multiplication.
     # 4. Use views.

@@ -137,7 +137,7 @@ function ProjBoxHalfSpace( vY :: Vector{T}, vL :: Vector{T}, vU :: Vector{T}, vA
         μmax *= T(2);
     end
 
-    # Find teh optimal value of μ
+    # Find the optimal value of μ
     μ = FindZeroBinarySearch(hH, μmin, μmax);
 
     return clamp.(vY - μ * vA, vL, vU);

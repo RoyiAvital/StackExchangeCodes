@@ -68,7 +68,7 @@ function QuantizeImageColors( mI :: Array{T, 3}, numColors :: N; numIter :: N = 
 
     # Assigning each pixel to the cluster centroid color
     mC = oKmeansRes.centers[:, oKmeansRes.assignments];
-    # Rebuild teh image from teh samples
+    # Rebuild the image from the samples
     mO = reshape(permutedims(mC, (2, 1)), (numRows, numCols, 3));
 
     return mO;

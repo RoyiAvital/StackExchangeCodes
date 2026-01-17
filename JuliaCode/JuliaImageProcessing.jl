@@ -6,7 +6,7 @@
 #   1.  A
 # TODO:
 # 	1.  Add convolution in frequency domain as in DSP `Q90036`.
-#       It should include an auxiliary function: `GenWorkSpace()` for teh buffers.  
+#       It should include an auxiliary function: `GenWorkSpace()` for the buffers.  
 #       It should also be optimized for `rfft()`.
 #   2.  Optimize `BoxBlur()` with a running sum method.
 # Release Notes
