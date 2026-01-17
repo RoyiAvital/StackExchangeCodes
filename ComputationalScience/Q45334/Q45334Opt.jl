@@ -99,41 +99,46 @@ function SplineQPSmooth( vY :: Vector{T}, mD :: SpMat{T}, λ :: T, vI :: Vector{
     #      A x <= 0
     # Solve the problem using ADMM
 
+    # This variation breaks the problem into:
+    # vJ = {1, 2, 3, ...} \ vI
+    # Then: D = [D_J, D_I], A = [A_J, A_I]
+    # Then one can only optimize for the indices in `vJ`
+
+
     numSamples = length(vY);
     numEq      = length(vI);
     numInEq    = size(mA, 1);
 
-    # Quadratic Terms
-    mP = I + λ * (mD' * mD);
-    vQ = -vY;
+    # Extract `vJ` as the set subtraction of `1:numSamples` and `vI`
+    vJ = setdiff(1:numSamples, vI);
 
-    # Equality Constraints
-    mE = sparse(1:numEq, vI, T(1), numEq, numSamples);
-    vD = vY[vI];
-    # The `mE` operator can be replaced by:
-    # `vM = mE * vN;` => `vM = vN[vI];`
-    # `vF = mE' * vG;` => `vF = zeros(size(mE, 2)); vF[vI] = vG;`
+    mAi = mA[:, vI];
+    mAj = mA[:, vJ];
+    mDi = mD[:, vI];
+    mDj = mD[:, vJ];
+
+    # Quadratic Terms (Equality is implicit)
+    mP = I + λ * (mDj' * mDj);
+    vQ = -vY[vJ] + λ * (mDj' * (mDi * vY[vI]));
+    vB = -mAi * vY[vI];
 
     ρ¹ = inv(ρ);
 
     # ADMM Variables
     vX  = copy(vY);       #<! Optimization variable
-    vR  = copy(vY);       #<! Right Hand Side
+    vXj = vX[vJ];     #<! Optimization variable for `vJ` only
+    vR  = zeros(length(vJ));       #<! Right Hand Side
     vS  = zeros(numInEq); #<! Slack variable for inequality
     vS1 = zeros(numInEq); #<! Previous iteration buffer
     vμ  = zeros(numInEq); #<! Dual variable for inequality (`vMu`)
-    vν  = zeros(numEq);   #<! Dual variable for equality (`vNu`)
-    vZ1 = copy(vμ);       #<! Auxiliary variable
-    vZ2 = copy(vν);       #<! Auxiliary variable
+    vZ  = copy(vμ);       #<! Auxiliary variable
 
     # Factorize the KKT System
-    # (P + rho * A' * A + rho * E' * E) * z = r
-    mAA = mA' * mA;
-    mEE = mE' * mE;
-    mAE = mAA + mEE;
-    mK  = mP + ρ * mAE;
+    # (P + rho * A' * A) * z = r
+    mAjAj = mAj' * mAj; 
+    mK  = mP + ρ * mAjAj;
     mP  = AlignSparsePattern(mK, mP);
-    mAE = AlignSparsePattern(mK, mAE);
+    mAjAj = AlignSparsePattern(mK, mAjAj);
     sK  = cholesky(Symmetric(mK); check = false);
 
     isConv   = false;
@@ -143,40 +148,35 @@ function SplineQPSmooth( vY :: Vector{T}, mD :: SpMat{T}, λ :: T, vI :: Vector{
         copy!(vS1, vS); #<! Previous iteration
         
         # Solve the Linear System
-        # vR = -vQ - mA' * (ρ * vS + vμ) + mE' * (ρ * vD - vν); #<! Right hand vector
+        # vR = -vQ + ρ * mAj' * (vB - vS - vμ); #<! Right hand vector
         @. vR = -vQ;
-        @. vZ1 = ρ * vS + vμ;
-        mul!(vR, mA', vZ1, -one(T), one(T));
-        @. vZ2 = ρ * vD - vν;
-        mul!(vR, mE', vZ2, one(T), one(T));
+        @. vZ = vB - vS - vμ;
+        mul!(vR, mAj', vZ, ρ, one(T));
 
         # vX = sK \ vR;
-        ldiv!(vX, sK, vR);
+        ldiv!(vXj, sK, vR);
         
         # Proximal / Projection Step
-        # s = -A * z with s >= 0
+        # s = vB -A * z with s >= 0
         # vS = max.(zero(T), -(mA * vX + ρ¹ * vμ));
-        @. vS = -ρ¹ * vμ;
-        mul!(vS, mA, vX, -one(T), one(T));
+        @. vS = vB - vμ;
+        mul!(vS, mAj, vXj, -one(T), one(T));
         @. vS = max(vS, zero(T));
         
         # Update Dual Variables
-        # vμ .+= ρ * (mA * vX + vS);
-        mul!(vμ, mA, vX, ρ, one(T));
-        @. vμ += ρ * vS;
-        # vν .+= ρ * (mE * vX - vD);
-        mul!(vν, mE, vX, ρ, one(T));
-        @. vν -= ρ * vD;
+        # vμ .+= (mAj * vXj + vS - vB);
+        @. vμ += vS - vB;
+        mul!(vμ, mAj, vXj, one(T), one(T));
         
         # Check Convergence
         if mod(ii, convInterval) == 0
-            # primRes = norm(mA * vX + vS, Inf);
-            copy!(vZ1, vS);
-            mul!(vZ1, mA, vX, one(T), one(T));
-            primRes = norm(vZ1, Inf);
+            # primRes = norm(mA * vX + vS - vB, Inf);
+            @. vZ = vS - vB;
+            mul!(vZ, mAj, vXj, one(T), one(T));
+            primRes = norm(vZ, Inf);
             # dualRes = norm(ρ * mA' * (vS - vS1), Inf);
-            @. vZ1 = ρ * (vS - vS1);
-            mul!(vR, mA', vZ1, one(T), zero(T));
+            @. vZ = ρ * (vS - vS1);
+            mul!(vR, mAj', vZ, one(T), zero(T));
             dualRes = norm(vR, Inf);
             
             if ((primRes < ϵAbs) && (dualRes < ϵAbs))
@@ -197,13 +197,15 @@ function SplineQPSmooth( vY :: Vector{T}, mD :: SpMat{T}, λ :: T, vI :: Vector{
                 ρ = ρ * sqrt(resRatio);
                 ρ = clamp.(ρ, T(1e-5), T(1e5));
                 ρ¹  = inv(ρ);
-                @. mK.nzval = mP.nzval + ρ * mAE.nzval;
+                @. mK.nzval = mP.nzval + ρ * mAjAj.nzval;
                 # sK = cholesky(Symmetric(mK); check = false);
                 cholesky!(sK, Symmetric(mK); check = false);
             end
         end
     
     end
+
+    vX[vJ] .= vXj;
 
     return vX, isConv;
 
