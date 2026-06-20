@@ -718,3 +718,110 @@ function LSMR( mA, vB :: AbstractVector; ϵ :: T = T(1e-6), maxIter :: N = 1_000
     return LSMR!(vX, mA, vB, vU, vV, vW, vAtu, vAv, vResHist; ϵ = ϵ, maxIter = maxIter);
 
 end
+
+function LevenbergMarquardt( vY :: Vector{T}, mX :: Matrix{T}, vβ :: Vector{T}, hF :: Function, h∇f :: Function; vW :: Vector{T} = ones(T, length(vY)), λ :: T = T(1e-3), maxIter :: N = 1_000, λFactor :: T = T(10), ϵ :: T = T(1e-8) ) where {T <: AbstractFloat, N <: Integer}
+    # Solves min_β Σᵢ wᵢ (yᵢ - f(xᵢ, β))².
+    # Assumes each column of `mX` is a single sample xᵢ.
+    # `hF(xᵢ, β)` returns the model value for the i-th sample.
+    # `h∇f(xᵢ, β)` returns the gradient of `hF()` with respect to `β`.
+
+    numSamples = size(mX, 2);
+    numParams  = length(vβ);
+
+    length(vY) == numSamples || error("The number of samples in `mX` must match the length of `vY`");
+    length(vW) == numSamples || error("The length of `vW` must match the length of `vY`");
+    λ > zero(T) || error("The damping factor `λ` must be positive");
+    λFactor > one(T) || error("`λFactor` must be larger than 1");
+
+    vβ      = copy(vβ);
+    vβCand  = similar(vβ); #<! Candidate for the next iteration
+    vΔβ     = similar(vβ);
+    vG      = similar(vβ);
+    vR      = Vector{T}(undef, numSamples); #<! Residuals
+    vRCand  = similar(vR); #<! Candidate for the next iteration residuals
+    mJ      = Matrix{T}(undef, numSamples, numParams);
+    mA      = Matrix{T}(undef, numParams, numParams);
+
+    function CalcObjJac!( vR :: Vector{T}, mJ :: Matrix{T}, vY :: Vector{T}, mX :: Matrix{T}, vβ :: Vector{T}, vW :: Vector{T} ) where {T <: AbstractFloat}
+        objVal = zero(T);
+
+        for ii ∈ 1:numSamples
+            vXi = view(mX, :, ii);
+            valW = vW[ii];
+
+            sqrtW = sqrt(valW);
+            valRes = vY[ii] - hF(vXi, vβ);
+            vJ = h∇f(vXi, vβ);
+
+            vR[ii] = sqrtW * valRes;
+            @views mJ[ii, :] .= sqrtW .* vJ;
+            objVal += abs2(vR[ii]);
+        end
+
+        return objVal;
+    end
+
+    function CalcObj( vR :: Vector{T}, vY :: Vector{T}, mX :: Matrix{T}, vβ :: Vector{T}, vW :: Vector{T} ) where {T <: AbstractFloat}
+        objVal = zero(T);
+
+        for ii ∈ 1:numSamples
+            vXi = view(mX, :, ii);
+            valW = vW[ii];
+
+            vR[ii] = sqrt(valW) * (vY[ii] - hF(vXi, vβ));
+            objVal += abs2(vR[ii]);
+        end
+
+        return objVal;
+    end
+
+    objVal = CalcObjJac!(vR, mJ, vY, mX, vβ, vW);
+
+    for kk ∈ 1:maxIter
+        if !isfinite(λ)
+            return vβ;
+        end
+
+        mul!(mA, mJ', mJ);
+        mul!(vG, mJ', vR);
+
+        if maximum(abs, vG) ≤ ϵ
+            return vβ;
+        end
+
+        for ii ∈ 1:numParams
+            mA[ii, ii] += λ;
+        end
+
+        # println("Iteration $kk: objVal = $objVal, λ = $λ, max|∇| = $(maximum(abs, vG))");
+
+        vΔβ    .= mA \ vG;
+        vβCand .= vβ .+ vΔβ;
+
+        if !all(isfinite, vβCand)
+            λ *= λFactor;
+            continue;
+        end
+
+        objValCand = CalcObj(vRCand, vY, mX, vβCand, vW);
+
+        if objValCand <= objVal
+            vβ .= vβCand;
+            copyto!(vR, vRCand);
+
+            if norm(vΔβ) ≤ ϵ * max(one(T), norm(vβ))
+                return vβ;
+            end
+
+            objVal = CalcObjJac!(vR, mJ, vY, mX, vβ, vW);
+            λ = max(λ / λFactor, eps(T));
+        elseif norm(vΔβ) ≤ ϵ * max(one(T), norm(vβ))
+            return vβ;
+        else
+            λ *= λFactor;
+        end
+    end
+
+    return vβ;
+
+end
