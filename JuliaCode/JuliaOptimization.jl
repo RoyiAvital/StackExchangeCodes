@@ -320,8 +320,7 @@ function ChamPock!( vX :: AbstractVector{T}, mK :: Matrix{T}, vY :: Vector{T}, v
     vX1 = copy(vX); #<! Previous iteration
     
     for ii ∈ 2:numIterations
-        vT = view(mX, :, ii - 1); #<! Previous iteration
-        vX = view(mX, :, ii);
+        copy!(vX1, vX); #<! Previous iteration
         
         # Calculation of `vY` depends on f() and should be adapted per function
         vY .= hProxF⁺(vY + σ * (mK * vX̄), σ); #<! Previous iteration
@@ -724,6 +723,7 @@ function LevenbergMarquardt( vY :: Vector{T}, mX :: Matrix{T}, vβ :: Vector{T},
     # Assumes each column of `mX` is a single sample xᵢ.
     # `hF(xᵢ, β)` returns the model value for the i-th sample.
     # `h∇f(xᵢ, β)` returns the gradient of `hF()` with respect to `β`.
+    # See Henri P. Gavin - The Levenberg Marquardt Algorithm for Non Linear Least Squares Curve Fitting Problems (https://people.duke.edu/~hpgavin/ce281/lm.pdf)
 
     numSamples = size(mX, 2);
     numParams  = length(vβ);
