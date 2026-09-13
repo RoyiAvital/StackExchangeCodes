@@ -6,6 +6,8 @@
 % TODO:
 % 	1.  ds
 % Release Notes
+% - 1.1.000     15/09/2026
+%   *   Added calculation of the difference in implementation.
 % - 1.0.000     18/07/2017
 %   *   First release.
 
@@ -29,6 +31,16 @@ mI = imread('Lena256.png');
 mI = double(mI) ./ 255;
 
 
+%% Compare Implementations
+
+filterRadius = 3;
+regFctr      = 0.2;
+
+mO1 = ApplyLocalLinearFilter(mI, filterRadius, regFctr);
+mO2 = ApplyLocalLinearKernel(mI, filterRadius, regFctr);
+fprintf('The maximum implementation difference: %0.3e\n', max(abs(mO1 - mO2), [], 'all'));
+
+
 %% Apply Local Linear Filter
 
 hFigure         = figure('Position', [100, 100, 760, 720]);
@@ -44,11 +56,11 @@ hFigure = figure('Position', figPosLarge);
 
 for ii = 1:length(vFilterRadius)
     for jj = 1:length(vRegFctr)
-        
+
         filterRadius    = vFilterRadius(ii);
         regFctr         = vRegFctr(jj);
         mO              = ApplyLocalLinearFilter(mI, filterRadius, regFctr);
-        
+
         hAxes           = subplot_tight(length(vFilterRadius), length(vRegFctr), ((ii - 1) * length(vFilterRadius)) + jj, [0.05, 0.05]);
         hImageObject    = image(repmat(mO, [1, 1, 3]));
         set(hAxes, 'DataAspectRatio', [1, 1, 1]);

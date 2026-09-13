@@ -47,8 +47,10 @@ function [ mO ] = ApplyLocalLinearKernel( mI, filterRadius, regFctr )
 %   1.  Create Multi Variable Linear Model.
 %   2.  Some speed optimization could be made (Taking advantage of 'mNumEffPixels').
 % Release Notes:
+%   -   1.1.000     13/09/2026  Royi Avital
+%       *   Adapted the weights to match the Guided Filter.
 %   -   1.0.000     05/01/2016  Royi Avital
-%       *   First release version
+%       *   First release version.
 % ----------------------------------------------------------------------------------------------- %
 
 FALSE   = 0;
@@ -81,11 +83,13 @@ for jj = 1:numCols
     for ii = 1:numRows
         % The coordinate i, j are set.
         
-        sumWeights = 0;
+        % sumWeights = 0;
+
+        avgRadius = 2 * filterRadius;
         
         % Running on the Neighborhood of the pixel
-        for ll = -filterRadius:filterRadius
-            for kk = -filterRadius:filterRadius
+        for ll = -avgRadius:avgRadius
+            for kk = -avgRadius:avgRadius
                 
                 jRowIdx = ii + kk;
                 jColIdx = jj + ll;
@@ -109,7 +113,8 @@ for jj = 1:numCols
                                 numPixels = numPixels + 1;
                                 
                                 % Weight
-                                jPixelWeight = jPixelWeight + 1 + (((mI(ii, jj) - mLocalMean(kRowIdx, kColIdx)) * (mI(jRowIdx, jColIdx) - mLocalMean(kRowIdx, kColIdx))) / (mLocalCovariance(kRowIdx, kColIdx) + regFctr));
+                                % jPixelWeight = jPixelWeight + 1 + (((mI(ii, jj) - mLocalMean(kRowIdx, kColIdx)) * (mI(jRowIdx, jColIdx) - mLocalMean(kRowIdx, kColIdx))) / (mLocalCovariance(kRowIdx, kColIdx) + regFctr));
+                                jPixelWeight = jPixelWeight + (1 / mNumEffPixels(kRowIdx, kColIdx)) * (1 + ((mI(ii, jj) - mLocalMean(kRowIdx, kColIdx)) * (mI(jRowIdx, jColIdx) - mLocalMean(kRowIdx, kColIdx))) / (mLocalCovariance(kRowIdx, kColIdx) + regFctr));
                             end
                         end
                     end
@@ -117,13 +122,14 @@ for jj = 1:numCols
                     % jPixelWeight = jPixelWeight / (numPixels * numPixels);
                     mO(ii, jj) = mO(ii, jj) + (jPixelWeight * mI(jRowIdx, jColIdx));
                     
-                    sumWeights = sumWeights + jPixelWeight;
+                    % sumWeights = sumWeights + jPixelWeight;
                     
                 end
             end
         end
         
-        mO(ii, jj) = mO(ii, jj) / sumWeights;
+        % mO(ii, jj) = mO(ii, jj) / sumWeights;
+        mO(ii, jj) = mO(ii, jj) / mNumEffPixels(ii, jj);
         
     end
 end
